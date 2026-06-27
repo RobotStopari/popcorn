@@ -1,0 +1,266 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function adminDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && adminDoc().data.admin == true;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.admin == false;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.admin == resource.data.get('admin', false);
+
+      allow update: if isAdmin()
+        && userId != request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['admin', 'updatedAt']);
+
+      allow delete: if isOwner(userId);
+
+      allow delete: if isAdmin()
+        && userId != request.auth.uid
+        && get(/databases/$(database)/documents/users/$(userId)).data.get('admin', false) == false;
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    function hasCompleteProfile() {
+      return isSignedIn()
+        && adminDoc().data.name is string
+        && adminDoc().data.name.size() > 0;
+    }
+
+    function isBlogPostAuthor(data) {
+      return isSignedIn()
+        && data.author is map
+        && data.author.uid == request.auth.uid;
+    }
+
+    function validBlogAuthor(author) {
+      return author is map
+        && author.uid is string
+        && author.uid.size() > 0
+        && author.name is string
+        && author.name.size() > 0;
+    }
+
+    function validBlogPostCore(data) {
+      return data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 200
+        && data.slug is string
+        && data.slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$')
+        && data.body is string
+        && data.body.size() > 0
+        && data.keywords is list
+        && data.publishedDate is string
+        && data.publishedDate.size() > 0
+        && data.publishedTime is string
+        && data.publishedTime.size() > 0
+        && validBlogAuthor(data.author);
+    }
+
+    function validBlogPostData(data) {
+      return validBlogPostCore(data)
+        && data.author.uid == request.auth.uid;
+    }
+
+    function validBlogPostDataAdmin(data) {
+      return validBlogPostCore(data);
+    }
+
+    function blogPublishTimeUnchanged() {
+      return request.resource.data.publishedDate == resource.data.publishedDate
+        && request.resource.data.publishedTime == resource.data.publishedTime;
+    }
+
+    function blogAuthorUidUnchanged() {
+      return request.resource.data.author.uid == resource.data.author.uid;
+    }
+
+    function blogLikeCountOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'updatedAt'])
+        && request.resource.data.likeCount >= 0
+        && (
+          request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1
+          || request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1
+        );
+    }
+
+    function blogCommentCountOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'updatedAt'])
+        && request.resource.data.commentCount >= 0
+        && (
+          request.resource.data.commentCount == resource.data.get('commentCount', 0) + 1
+          || request.resource.data.commentCount == resource.data.get('commentCount', 0) - 1
+        );
+    }
+
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && validBlogPostDataAdmin(request.resource.data)
+        || (hasCompleteProfile() && validBlogPostData(request.resource.data));
+      allow update: if isAdmin()
+        && validBlogPostDataAdmin(request.resource.data)
+        || (hasCompleteProfile()
+          && isBlogPostAuthor(resource.data)
+          && blogAuthorUidUnchanged()
+          && blogPublishTimeUnchanged()
+          && validBlogPostData(request.resource.data))
+        || blogLikeCountOnlyUpdate()
+        || blogCommentCountOnlyUpdate();
+      allow delete: if isAdmin()
+        || (hasCompleteProfile() && isBlogPostAuthor(resource.data));
+
+      match /likes/{likeId} {
+        allow get, list: if true;
+
+        allow create: if !exists(/databases/$(database)/documents/blogPosts/$(postId)/likes/$(likeId))
+          && (
+            (isSignedIn()
+              && likeId == request.auth.uid
+              && request.resource.data.keys().hasOnly(['uid', 'anonymous', 'createdAt'])
+              && request.resource.data.uid == request.auth.uid
+              && request.resource.data.anonymous == false)
+            || (!isSignedIn()
+              && request.resource.data.keys().hasOnly(['uid', 'anonymous', 'createdAt'])
+              && request.resource.data.anonymous == true
+              && request.resource.data.uid == null
+              && likeId.matches('^anon_.+$'))
+          );
+
+        allow delete: if (isSignedIn()
+          && likeId == request.auth.uid
+          && resource.data.anonymous == false)
+          || (resource.data.anonymous == true && likeId.matches('^anon_.+$'));
+      }
+
+      match /comments/{commentId} {
+        allow get, list: if true;
+
+        allow create: if hasCompleteProfile()
+          && request.resource.data.keys().hasAll(['author', 'body', 'createdAt', 'updatedAt', 'editedAt'])
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.body.size() <= 2000
+          && request.resource.data.author is map
+          && request.resource.data.author.uid == request.auth.uid
+          && request.resource.data.editedAt == null;
+
+        allow update: if hasCompleteProfile()
+          && resource.data.author.uid == request.auth.uid
+          && request.resource.data.author == resource.data.author
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.body.size() <= 2000;
+
+        allow delete: if isAdmin()
+          || (hasCompleteProfile() && resource.data.author.uid == request.auth.uid);
+      }
+    }
+
+    match /organiserPresets/{presetId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    function validSiteTextsData() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['heroQuote', 'upcomingIntro', 'pastIntro', 'blogIntro', 'updatedAt'])
+        && data.heroQuote is string
+        && data.upcomingIntro is string
+        && data.pastIntro is string
+        && data.blogIntro is string;
+    }
+
+    match /siteTexts/{docId} {
+      allow read: if true;
+
+      allow create: if isAdmin()
+        && docId == 'config'
+        && validSiteTextsData();
+
+      allow update: if isAdmin()
+        && docId == 'config'
+        && validSiteTextsData();
+
+      allow delete: if false;
+    }
+
+    function isProtectedPage(pageId) {
+      return pageId == 'home'
+        || pageId == 'vypukne'
+        || pageId == 'probehle'
+        || pageId == 'blog';
+    }
+
+    function validPageType(type) {
+      return type == 'home'
+        || type == 'events-upcoming'
+        || type == 'events-past'
+        || type == 'blog-list'
+        || type == 'content';
+    }
+
+    function validPageSlug(slug) {
+      return slug == ''
+        || slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$');
+    }
+
+    function validPageFields() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['slug', 'title', 'type'])
+        && data.title is string
+        && data.title.size() > 0
+        && data.slug is string
+        && data.type is string
+        && validPageType(data.type)
+        && validPageSlug(data.slug)
+        && (data.type != 'home' || data.slug == '')
+        && (data.type == 'home' || data.slug.size() > 0);
+    }
+
+    match /pages/{pageId} {
+      allow read: if true;
+
+      allow create: if isAdmin() && validPageFields();
+
+      allow update: if isAdmin()
+        && validPageFields()
+        && request.resource.data.type == resource.data.type
+        && (pageId != 'home'
+          || (request.resource.data.title == resource.data.title
+            && request.resource.data.slug == resource.data.slug));
+
+      allow delete: if isAdmin() && !isProtectedPage(pageId);
+    }
+
+    match /siteMenu/{docId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && docId == 'config';
+      allow delete: if false;
+    }
+  }
+}

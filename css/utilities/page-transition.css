@@ -1,0 +1,97 @@
+/* ── Page transitions (internal navigation) ── */
+:root {
+  --page-curtain-in: 220ms ease;
+  --page-curtain-out: 550ms ease;
+}
+
+html.page-enter-pending .page-main,
+html.page-enter-pending .footer {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+html.page-skip-loader #pageLoader {
+  display: none !important;
+}
+
+.page-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: var(--white);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--page-curtain-in),
+    visibility var(--page-curtain-in);
+}
+
+body.page-switch-active .page-curtain {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--page-curtain-in),
+    visibility var(--page-curtain-in);
+}
+
+body:not(.page-switch-active) .page-curtain {
+  transition:
+    opacity var(--page-curtain-out),
+    visibility var(--page-curtain-out);
+}
+
+/* Hold scroll-reveal elements hidden until the curtain is gone */
+body.page-reveal-pending .page-main .reveal {
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+body.page-reveal-pending .page-main .reveal.reveal--scale {
+  transform: translateY(28px) scale(0.94) !important;
+}
+
+body.page-reveal-pending .page-main .reveal:not(.reveal--scale) {
+  transform: translateY(36px) !important;
+}
+
+body.page-reveal-pending .page-main .section__label .section__label-line {
+  transform: scaleX(0) !important;
+  transition: none !important;
+}
+
+body.page-reveal-pending .page-main .section__label .section__label-text {
+  transform: scale(0.88) !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.page-enter-pending .page-main,
+  html.page-enter-pending .footer {
+    opacity: 1;
+    transform: none;
+  }
+
+  body.page-reveal-pending .page-main .reveal,
+  body.page-reveal-pending .page-main .section__label .section__label-line,
+  body.page-reveal-pending .page-main .section__label .section__label-text {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .page-curtain {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  body.page-reveal-pending .page-main .reveal.reveal--scale {
+    transform: translateY(20px) !important;
+  }
+
+  body.page-reveal-pending .page-main .section__label .section__label-text {
+    transform: none !important;
+  }
+}

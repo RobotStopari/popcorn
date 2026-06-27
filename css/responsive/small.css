@@ -1,0 +1,76 @@
+@media (max-width: 480px) {
+  .section__cta--double {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section__cta--double .btn {
+    width: 100%;
+  }
+
+  .section__label-line {
+    max-width: 36px;
+  }
+
+  .section__label-text {
+    font-size: 1.1rem;
+    padding: 0.5rem 0.85rem;
+  }
+
+  .events-list__intro {
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .events-pagination {
+    gap: 0.75rem;
+  }
+
+  .events-pagination__btn {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .event-detail__title {
+    font-size: clamp(1.65rem, 7vw, 2rem);
+  }
+
+  .blog-detail__title {
+    font-size: clamp(1.55rem, 6.5vw, 2rem);
+  }
+
+  .social-row {
+    gap: 0.75rem;
+  }
+
+  .social-btn span {
+    font-size: 0.8rem;
+  }
+
+  .cal__toolbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .cal__nav {
+    width: 36px;
+    height: 36px;
+  }
+
+  .cal__weekday {
+    font-size: 0.65rem;
+    padding: 0.5rem 0.15rem;
+  }
+
+  .cal__week-grid {
+    min-height: 4.25rem;
+    grid-template-rows: auto repeat(var(--cal-bar-rows, 1), 1.1rem);
+  }
+
+  .cal__day-num {
+    font-size: 0.7rem;
+  }
+}

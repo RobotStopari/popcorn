@@ -1,0 +1,27 @@
+# Dependencies & build output
+node_modules/
+dist/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# OS & editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Vite
+*.local
+
+# Firebase local/debug (keep rules in repo)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Cloudflare
+.wrangler/
+.dev.vars

@@ -1,0 +1,67 @@
+/* ── Sections ── */
+.section {
+  padding: 3rem 0 4rem;
+}
+
+.section--calendar {
+  padding-top: 3rem;
+  padding-bottom: 5rem;
+}
+.section__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  overflow: visible;
+  padding: 0.35rem 0;
+}
+
+.section__label-text {
+  display: inline-block;
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 1.25rem 0.5rem;
+  background-color: var(--orange);
+  color: var(--black);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.section__label-line {
+  flex: 1;
+  max-width: 120px;
+  height: 5px;
+  border-radius: 3px;
+}
+
+.section__label-line--orange {
+  background: var(--orange);
+  border: 2px solid var(--black);
+}
+
+.section__label-line--red {
+  background: var(--red);
+  border: 2px solid var(--black);
+}
+
+.section__cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+}
+
+.section__cta--double {
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.section__empty {
+  text-align: center;
+  color: var(--gray);
+  margin: 0 0 1rem;
+}

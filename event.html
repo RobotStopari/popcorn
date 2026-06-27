@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Komunita Popcorn</title>
+  <link rel="icon" href="assets/images/PopcornNew.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/images/PopcornNew.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    if (sessionStorage.getItem('popcorn:transition') === '1') {
+      document.documentElement.classList.add('page-skip-loader', 'page-enter-pending');
+    }
+  </script>
+  <script type="module" src="js/apply-tokens.js"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="is-loading">
+
+  <div id="pageLoader" class="loader" role="status" aria-live="polite" aria-label="Načítání stránky">
+    <div class="loader__inner">
+      <div class="loader__burst" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="loader__logo-wrap">
+        <img src="assets/images/PopcornNew.png" alt="" class="loader__logo" width="120" height="120">
+      </div>
+      <p class="loader__tagline">Komunita Popcorn</p>
+      <div class="loader__bar" aria-hidden="true">
+        <span class="loader__bar-fill"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-dots" aria-hidden="true"></div>
+
+  <header class="navbar" id="navbar">
+    <div class="navbar__inner container">
+      <a href="index.html" class="navbar__brand">
+        <img src="assets/images/PopcornNew.png" alt="Popcorn logo" class="navbar__logo">
+        <span class="navbar__title">
+          <span>Komunita</span>
+          <span>Popcorn</span>
+        </span>
+      </a>
+
+      <button class="navbar__toggle" id="navToggle" aria-label="Otevřít menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav class="navbar__nav" id="navMenu" aria-label="Hlavní navigace"></nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <article class="event-detail container" id="eventDetail"></article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner reveal-stagger">
+      <div id="footer-socials" class="footer__socials reveal"></div>
+      <div id="footer-brand" class="footer__brand reveal"></div>
+      <div id="footer-contact" class="footer__contact reveal"></div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/event-main.js"></script>
+</body>
+</html>

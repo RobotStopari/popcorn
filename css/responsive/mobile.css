@@ -1,0 +1,144 @@
+@media (max-width: 768px) {
+  :root {
+    --nav-height: 70px;
+    --page-offset-top: calc(var(--nav-height) + 1.5rem);
+  }
+
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flow-connector {
+    max-width: 200px;
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .navbar__toggle {
+    display: flex;
+  }
+
+  .navbar__title {
+    font-size: 0.82rem;
+  }
+
+  .navbar__title span:last-child {
+    font-size: 0.95rem;
+  }
+
+  .navbar__logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .navbar__nav {
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem 1.5rem 1.5rem;
+    background: var(--white);
+    border-bottom: var(--border);
+    gap: 0.5rem;
+    transform: translateY(-120%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform var(--transition), opacity var(--transition), visibility var(--transition);
+  }
+
+  .navbar__nav--open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .nav-dropdown__menu {
+    position: static;
+    box-shadow: none;
+    border: 2px solid var(--black);
+    margin-top: 0.25rem;
+    display: none;
+  }
+
+  .nav-dropdown--open .nav-dropdown__menu {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  .nav-btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .hero {
+    padding-top: calc(var(--nav-height) + 3rem);
+    padding-bottom: 3rem;
+  }
+
+  .hero__text {
+    font-size: clamp(1.5rem, 6.5vw, 2rem);
+    line-height: 1.45;
+  }
+
+  .hero__mark--open,
+  .hero__mark--close {
+    font-size: 1.35em;
+  }
+
+  .parallax-section {
+    height: 38vh;
+    min-height: 260px;
+  }
+
+  .social-btn {
+    padding: 1rem 1.5rem;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .section:not(.events-list):not(.content-page-section):not(.blog-list):not(.blog-detail) {
+    padding-top: 3rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .section.events-list,
+  .section.content-page-section,
+  .section.blog-list,
+  .section.blog-detail {
+    padding-top: var(--page-offset-top);
+    padding-bottom: 2.5rem;
+  }
+
+  .section--calendar {
+    padding-top: 3rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .event-detail {
+    padding-top: var(--page-offset-top);
+    padding-bottom: 3rem;
+  }
+
+  .section__label {
+    margin-bottom: 2rem;
+  }
+
+  .cal__week-grid {
+    min-height: 4.75rem;
+    grid-template-rows: auto repeat(var(--cal-bar-rows, 1), 1.2rem);
+  }
+
+  .cal__event {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
+  }
+
+  .cal__today {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.65rem;
+  }
+}

@@ -1,0 +1,125 @@
+/* ── Scroll reveal animations ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(36px);
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+  overflow: visible;
+}
+
+.reveal--scale {
+  transform: translateY(28px) scale(0.94);
+}
+
+.reveal--visible {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal--delay-1 { transition-delay: 0.1s; }
+.reveal--delay-2 { transition-delay: 0.2s; }
+.reveal--delay-3 { transition-delay: 0.3s; }
+.reveal--delay-4 { transition-delay: 0.4s; }
+
+.section__label .section__label-line {
+  transform: scaleX(0);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+
+.section__label .section__label-line--orange {
+  transform-origin: right center;
+}
+
+.section__label .section__label-line--red {
+  transform-origin: left center;
+}
+
+.section__label.reveal--visible .section__label-line {
+  transform: scaleX(1);
+}
+
+.section__label .section__label-text {
+  transform: scale(0.88);
+  transform-origin: center center;
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 0.05s;
+}
+
+.section__label.reveal--visible .section__label-text {
+  transform: scale(1);
+}
+
+.reveal--connector {
+  opacity: 1;
+  transform: none;
+}
+
+.flow-connector.reveal .flow-connector__line {
+  transform: scaleX(0);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.flow-connector.reveal .flow-connector__line--orange {
+  transform-origin: right center;
+}
+
+.flow-connector.reveal .flow-connector__line--red {
+  transform-origin: left center;
+  transition-delay: 0.35s;
+}
+
+.flow-connector.reveal .flow-connector__dot {
+  transform: scale(0) rotate(-18deg);
+  opacity: 0;
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) 0.2s,
+    opacity 0.35s ease 0.2s;
+}
+
+.flow-connector.reveal--visible .flow-connector__line {
+  transform: scaleX(1);
+}
+
+.flow-connector.reveal--visible .flow-connector__dot {
+  transform: scale(1) rotate(0deg);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal--scale,
+  .reveal--connector {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .section__label .section__label-line,
+  .section__label .section__label-text,
+  .flow-connector .flow-connector__line,
+  .flow-connector .flow-connector__dot {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .reveal--scale {
+    transform: translateY(20px);
+  }
+
+  .section__label.reveal--scale {
+    transform: translateY(16px);
+  }
+
+  .section__label .section__label-text {
+    transform: none;
+    transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .section__label.reveal--visible .section__label-text {
+    transform: none;
+  }
+}

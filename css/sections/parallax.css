@@ -1,0 +1,32 @@
+/* ── Parallax section ── */
+.parallax-section {
+  position: relative;
+  height: 45vh;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.parallax-section__bg {
+  position: absolute;
+  inset: -80% 0;
+  background-image: url('/assets/images/Zapalovač26-JP-3421.webp');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  will-change: transform;
+}
+
+.parallax-section__overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-parallax-overlay);
+}
+
+.parallax-section__content {
+  position: relative;
+  z-index: 2;
+}
+

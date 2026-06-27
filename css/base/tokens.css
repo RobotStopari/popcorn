@@ -1,0 +1,13 @@
+/* ── Design tokens (colors come from data/colors.js via js/apply-tokens.js) ── */
+:root {
+  --border: 3px solid var(--black);
+  --shadow: 4px 4px 0 var(--black);
+  --shadow-hover: 6px 6px 0 var(--black);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --font: 'Poppins', sans-serif;
+  --container: 1200px;
+  --nav-height: 80px;
+  --page-offset-top: calc(var(--nav-height) + 2rem);
+}

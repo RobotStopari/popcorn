@@ -1,0 +1,74 @@
+.social-row {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.social-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 2rem;
+  background-color: var(--white);
+  color: var(--black);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition);
+}
+
+.social-btn.shine-hover > * {
+  position: relative;
+  z-index: 3;
+}
+
+.social-btn:hover {
+  transform: translate(-3px, -3px) scale(1.03);
+  box-shadow: var(--shadow-hover);
+}
+
+.social-btn--instagram:hover {
+  background-color: #e1306c;
+  border-color: #e1306c;
+  color: var(--white);
+}
+
+.social-btn--facebook:hover {
+  background-color: #1877f2;
+  border-color: #1877f2;
+  color: var(--white);
+}
+
+.social-btn--komunita:hover {
+  background-color: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}
+
+/* Footer social brand hovers (shared colors) */
+.footer__social-link--instagram:hover {
+  background-color: #e1306c;
+  border-color: #e1306c;
+  color: var(--white);
+}
+
+.footer__social-link--facebook:hover {
+  background-color: #1877f2;
+  border-color: #1877f2;
+  color: var(--white);
+}
+
+.footer__social-link--email:hover {
+  background-color: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}

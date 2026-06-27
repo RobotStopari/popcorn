@@ -1,0 +1,239 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import AdminDeleteEventDialog from '../components/AdminDeleteEventDialog';
+import AdminEventFormModal from '../components/AdminEventFormModal';
+import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { createEvent, deleteEvent, updateEvent } from '../services/events';
+import { useEvents } from '../contexts/EventsContext';
+import { formatEventDateLabel, isEventPast, sortByStart } from '../utils/event-dates';
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+const FILTERS = [
+  { id: 'all', label: 'Všechny' },
+  { id: 'upcoming', label: 'Nadcházející' },
+  { id: 'past', label: 'Proběhlé' },
+];
+
+export default function AdminEventsPage() {
+  const { canAccessAdmin, loading } = useAdminAuth();
+  const { events, loading: eventsLoading, error: eventsError } = useEvents();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortDescending, setSortDescending] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [saveError, setSaveError] = useState('');
+
+  useEffect(() => {
+    document.title = 'Akce — Admin';
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    let list = events;
+
+    if (statusFilter === 'upcoming') {
+      list = list.filter((event) => !isEventPast(event));
+    } else if (statusFilter === 'past') {
+      list = list.filter((event) => isEventPast(event));
+    }
+
+    if (query) {
+      list = list.filter((event) => (
+        event.title.toLowerCase().includes(query)
+          || event.place.toLowerCase().includes(query)
+          || event.organisers.some((organiser) => (
+            organiser.name.toLowerCase().includes(query)
+              || organiser.email.toLowerCase().includes(query)
+          ))
+      ));
+    }
+
+    return sortByStart(list, sortDescending);
+  }, [events, search, statusFilter, sortDescending]);
+
+  if (loading) {
+    return (
+      <div className="admin-content">
+        <p className="admin-loading">Načítání…</p>
+      </div>
+    );
+  }
+
+  if (!canAccessAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  const handleCreate = () => {
+    setEditingEvent(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (event) => {
+    setEditingEvent(event);
+    setFormOpen(true);
+  };
+
+  const handleSave = async (payload) => {
+    setSaveError('');
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, payload);
+      } else {
+        await createEvent(payload);
+      }
+      return true;
+    } catch (err) {
+      setSaveError(err.message || 'Uložení akce se nezdařilo.');
+      return false;
+    }
+  };
+
+  const handleConfirmDelete = async (eventId) => {
+    try {
+      await deleteEvent(eventId);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  return (
+    <div className="admin-content container">
+      <header className="admin-content__header admin-content__header--actions">
+        <div>
+          <h1 className="admin-content__title">Akce</h1>
+          <p className="admin-content__subtitle">Správa nadcházejících i proběhlých akcí</p>
+        </div>
+        <button type="button" className="btn btn--primary" onClick={handleCreate}>
+          Nová akce
+        </button>
+      </header>
+
+      <div className="admin-events__toolbar">
+        <div className="admin-events__filters" role="group" aria-label="Filtrovat akce">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              className={`admin-events__filter${statusFilter === filter.id ? ' admin-events__filter--active' : ''}`}
+              aria-pressed={statusFilter === filter.id}
+              onClick={() => setStatusFilter(filter.id)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        <input
+          type="search"
+          className="admin-form__input admin-events__search"
+          placeholder="Hledat podle názvu, místa nebo organizátora…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button
+          type="button"
+          className="btn btn--outline btn--small"
+          onClick={() => setSortDescending((value) => !value)}
+        >
+          {sortDescending ? 'Nejnovější nahoře' : 'Nejstarší nahoře'}
+        </button>
+      </div>
+
+      {(eventsError || saveError) && (
+        <p className="admin-error admin-content__error">{eventsError || saveError}</p>
+      )}
+
+      {eventsLoading ? (
+        <p className="admin-loading">Načítám akce…</p>
+      ) : (
+        <div className="admin-events">
+          <div className="admin-events__head" aria-hidden="true">
+            <span>Název</span>
+            <span>Termín</span>
+            <span>Stav</span>
+            <span>Akce</span>
+          </div>
+
+          <ul className="admin-events__list">
+            {filteredEvents.map((event) => {
+              const past = isEventPast(event);
+              return (
+                <li key={event.id} className="admin-events__row">
+                  <div className="admin-events__title">{event.title}</div>
+                  <div className="admin-events__date">{formatEventDateLabel(event)}</div>
+                  <div className="admin-events__status">
+                    <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
+                      {past ? 'Proběhlá' : 'Nadcházející'}
+                    </span>
+                  </div>
+                  <div className="admin-events__actions">
+                    <button
+                      type="button"
+                      className="admin-events__action"
+                      aria-label={`Upravit akci ${event.title}`}
+                      onClick={() => handleEdit(event)}
+                    >
+                      <EditIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-events__action admin-events__action--danger"
+                      aria-label={`Smazat akci ${event.title}`}
+                      onClick={() => setEventToDelete(event)}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {!filteredEvents.length && (
+            <p className="admin-loading">
+              {search.trim()
+                ? 'Žádné akce neodpovídají hledání.'
+                : statusFilter === 'upcoming'
+                  ? 'Žádné budoucí akce.'
+                  : statusFilter === 'past'
+                    ? 'Žádné proběhlé akce.'
+                    : 'Zatím žádné akce.'}
+            </p>
+          )}
+        </div>
+      )}
+
+      <AdminEventFormModal
+        open={formOpen}
+        event={editingEvent}
+        onClose={() => setFormOpen(false)}
+        onSave={handleSave}
+      />
+
+      <AdminDeleteEventDialog
+        open={Boolean(eventToDelete)}
+        event={eventToDelete}
+        onClose={() => setEventToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
+    </div>
+  );
+}

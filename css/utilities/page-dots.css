@@ -1,0 +1,27 @@
+/* ── Page dot pattern ── */
+.page-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.1;
+  background:
+    radial-gradient(circle, var(--orange) 2px, transparent 2px) 0 0 / 28px 28px,
+    radial-gradient(circle, var(--red) 1.5px, transparent 1.5px) 14px 14px / 28px 28px;
+}
+
+.page-main {
+  position: relative;
+  z-index: 1;
+}
+
+.page-main > :not(.page-dots) {
+  position: relative;
+  z-index: 1;
+}
+
+.navbar,
+.footer {
+  position: relative;
+  z-index: 1;
+}

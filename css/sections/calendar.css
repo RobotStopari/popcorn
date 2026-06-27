@@ -1,0 +1,296 @@
+/* ── Calendar widget ── */
+.cal {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  max-width: 960px;
+  margin: 0 auto;
+  --cal-line: color-mix(in srgb, var(--black) 15%, transparent);
+}
+
+.cal__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--orange);
+  border-bottom: var(--border);
+}
+
+.cal__toolbar-start {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cal__title {
+  font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+  font-weight: 700;
+  text-align: center;
+  flex: 1;
+}
+
+.cal__today {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--black);
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.cal__today:hover {
+  background: var(--red);
+  color: var(--white);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+.cal__today:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.cal__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--black);
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.cal__nav:hover {
+  background: var(--red);
+  color: var(--white);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+.cal__nav:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.cal__grid-wrap {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+}
+
+.cal__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  column-gap: 0;
+  background: var(--white);
+  border-bottom: 2px solid var(--cal-line);
+}
+
+.cal__weekday {
+  padding: 0.65rem 0.25rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray);
+  background: var(--white);
+}
+
+.cal__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.cal__body--out-prev {
+  animation: cal-out-prev 0.22s ease forwards;
+}
+
+.cal__body--out-next {
+  animation: cal-out-next 0.22s ease forwards;
+}
+
+.cal__body--in-prev {
+  animation: cal-in-prev 0.28s ease forwards;
+}
+
+.cal__body--in-next {
+  animation: cal-in-next 0.28s ease forwards;
+}
+
+@keyframes cal-out-prev {
+  to { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes cal-out-next {
+  to { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes cal-in-prev {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cal-in-next {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal__body--out-prev,
+  .cal__body--out-next,
+  .cal__body--in-prev,
+  .cal__body--in-next {
+    animation: none;
+  }
+}
+
+.cal__week {
+  background: var(--white);
+  border-bottom: 2px solid var(--cal-line);
+}
+
+.cal__week:last-child {
+  border-bottom: none;
+}
+
+.cal__week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto repeat(var(--cal-bar-rows, 1), 1.35rem);
+  column-gap: 0;
+  row-gap: 0;
+  padding: 0 0 0.35rem;
+  min-height: 5.5rem;
+  background: var(--white);
+}
+
+.cal__day {
+  padding: 0.35rem 0.35rem 0.15rem;
+  background: var(--white);
+  grid-row: 1;
+  min-width: 0;
+}
+
+.cal__day--other {
+  background: var(--white);
+}
+
+.cal__day--other .cal__day-num {
+  color: var(--gray-muted);
+}
+
+.cal__day--today {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+}
+
+.cal__day--today .cal__day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  background: var(--orange);
+  border: 2px solid var(--black);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.cal__day-num {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cal__event {
+  display: block;
+  align-self: stretch;
+  min-width: 0;
+  margin: 0;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.25;
+  border-top: 2px solid var(--black);
+  border-bottom: 2px solid var(--black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  z-index: 2;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    filter var(--transition);
+}
+
+.cal__event:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 2px 0 var(--black);
+}
+
+.cal__event--segment-start {
+  margin-left: 3px;
+  padding-left: 0.45rem;
+  border-left: 2px solid var(--black);
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.cal__event--segment-end {
+  margin-right: 3px;
+  padding-right: 0.45rem;
+  border-right: 2px solid var(--black);
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.cal__event--segment-continue {
+  margin-left: 0;
+  padding-left: 0.45rem;
+  border-left: 2px solid var(--black);
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.cal__event--segment-continues {
+  margin-right: 0;
+  padding-right: 0.45rem;
+  border-right: 2px solid var(--black);
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.cal__event--segment-start.cal__event--segment-end {
+  border: 2px solid var(--black);
+  border-radius: 4px;
+  margin-left: 3px;
+  margin-right: 3px;
+}
+
+.cal__event--upcoming {
+  background: var(--orange);
+  color: var(--black);
+}
+
+.cal__event--past {
+  background: color-mix(in srgb, var(--orange) 48%, white);
+  color: var(--black);
+  border-color: color-mix(in srgb, var(--black) 45%, transparent);
+}

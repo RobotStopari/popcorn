@@ -1,0 +1,37 @@
+/* ── Flow connector ── */
+.flow-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  max-width: 280px;
+  margin: 0 auto;
+  padding: 2rem 1rem 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.flow-connector__line {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  border: 2px solid var(--black);
+}
+
+.flow-connector__line--orange {
+  background: var(--orange);
+}
+
+.flow-connector__line--red {
+  background: var(--red);
+}
+
+.flow-connector__dot {
+  width: 20px;
+  height: 18px;
+  flex-shrink: 0;
+  background: var(--orange);
+  border: 2px solid var(--black);
+  border-radius: 50% 45% 55% 40% / 45% 55% 45% 55%;
+  box-shadow: 2px 2px 0 var(--black);
+}

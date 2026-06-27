@@ -1,0 +1,8 @@
+.content-page-section {
+  padding-top: var(--page-offset-top);
+  padding-bottom: 4rem;
+}
+
+.content-page-section .content-page {
+  min-height: 12rem;
+}

@@ -1,0 +1,57 @@
+/* ── Events list pages (VyPUKne / Proběhlé) ── */
+.events-list {
+  padding-top: var(--page-offset-top);
+}
+
+.events-list__intro {
+  max-width: 42rem;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.7;
+  color: var(--black);
+}
+
+.events-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 2.5rem;
+}
+
+.events-pagination__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  background: var(--white);
+  color: var(--black);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition);
+}
+
+.events-pagination__btn:hover:not(.events-pagination__btn--disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hover);
+  background: var(--orange);
+}
+
+.events-pagination__btn--disabled {
+  opacity: 0.35;
+  cursor: default;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.events-pagination__status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-width: 7rem;
+  text-align: center;
+}

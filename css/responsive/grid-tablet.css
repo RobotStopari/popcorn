@@ -1,0 +1,12 @@
+@media (min-width: 769px) and (max-width: 1024px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cards-grid .event-card:last-child {
+    grid-column: 1 / -1;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}

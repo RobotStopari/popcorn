@@ -1,0 +1,44 @@
+/* ── Hero / citation ── */
+.hero {
+  padding: calc(var(--nav-height) + 5rem) 0 4.5rem;
+  text-align: center;
+}
+
+.hero__quote {
+  position: relative;
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+
+.hero__text {
+  position: relative;
+  font-size: clamp(1.85rem, 5.5vw, 3.35rem);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.4;
+  letter-spacing: -0.015em;
+  color: var(--black);
+}
+
+.hero__mark {
+  font-style: normal;
+  font-weight: 800;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.hero__mark--open {
+  font-size: 1.45em;
+  color: var(--orange);
+  margin-right: 0.08em;
+}
+
+.hero__mark--close {
+  font-size: 1.45em;
+  color: var(--red);
+  margin-left: 0.05em;
+}
