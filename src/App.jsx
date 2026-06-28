@@ -5,6 +5,7 @@ import AdminLayout from './components/AdminLayout';
 import HomeRoute from './components/HomeRoute';
 import SlugRoute from './components/SlugRoute';
 import EventPage from './pages/EventPage';
+import EventShareEditPage from './pages/EventShareEditPage';
 import BlogPostPage from './pages/BlogPostPage';
 import AdminPage from './pages/AdminPage';
 import AdminUsersPage from './pages/AdminUsersPage';
@@ -20,6 +21,11 @@ import { SiteMenuProvider } from './contexts/SiteMenuContext';
 import { PagesProvider } from './contexts/PagesContext';
 import { usePageTransition } from './hooks/usePageTransition';
 import { useScrollRestore } from './hooks/useScrollRestore';
+import { useAppBoot } from './hooks/useAppBoot';
+
+function isStandaloneRoute(pathname) {
+  return pathname.startsWith('/share/') || pathname.startsWith('/admin');
+}
 
 function EventLegacyRedirect() {
   const [searchParams] = useSearchParams();
@@ -43,9 +49,11 @@ function AppRoutes() {
   const location = useLocation();
   useScrollRestore();
   usePageTransition(location);
+  useAppBoot({ minDelay: isStandaloneRoute(location.pathname) ? 0 : 900 });
 
   return (
     <Routes location={location}>
+      <Route path="share/event/:shareId" element={<EventShareEditPage />} />
       <Route element={<Layout />}>
         <Route index element={<HomeRoute />} />
         {LEGACY_REDIRECTS.map(({ from, to }) => (

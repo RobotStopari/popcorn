@@ -11,31 +11,19 @@ function EditIcon() {
   );
 }
 
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" />
-    </svg>
-  );
-}
-
 export default function BlogCommentItem({
   comment,
-  canManage = false,
+  canEdit = false,
   onEdit,
-  onDelete,
 }) {
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(comment.body);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setBody(comment.body);
     setEditing(false);
-    setConfirmDelete(false);
     setError('');
   }, [comment.id, comment.body]);
 
@@ -46,14 +34,6 @@ export default function BlogCommentItem({
     setSaving(false);
     if (ok) setEditing(false);
     else setError('Uložení se nezdařilo.');
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    setError('');
-    const ok = await onDelete(comment.id);
-    setDeleting(false);
-    if (!ok) setError('Smazání se nezdařilo.');
   };
 
   return (
@@ -74,38 +54,16 @@ export default function BlogCommentItem({
             {comment.isEdited && ' · upraveno'}
           </time>
 
-          {canManage && !editing && (
+          {canEdit && !editing && (
             <div className="blog-comment__actions">
-              {!confirmDelete ? (
-                <>
-                  <button
-                    type="button"
-                    className="blog-comment__action"
-                    aria-label="Upravit komentář"
-                    onClick={() => setEditing(true)}
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className="blog-comment__action blog-comment__action--danger"
-                    aria-label="Smazat komentář"
-                    onClick={() => setConfirmDelete(true)}
-                  >
-                    <TrashIcon />
-                  </button>
-                </>
-              ) : (
-                <div className="blog-comment__confirm">
-                  <span>Smazat?</span>
-                  <button type="button" className="blog-comment__confirm-btn" onClick={() => setConfirmDelete(false)} disabled={deleting}>
-                    Ne
-                  </button>
-                  <button type="button" className="blog-comment__confirm-btn blog-comment__confirm-btn--danger" onClick={handleDelete} disabled={deleting}>
-                    {deleting ? '…' : 'Ano'}
-                  </button>
-                </div>
-              )}
+              <button
+                type="button"
+                className="blog-comment__action"
+                aria-label="Upravit komentář"
+                onClick={() => setEditing(true)}
+              >
+                <EditIcon />
+              </button>
             </div>
           )}
         </div>

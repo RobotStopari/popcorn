@@ -129,11 +129,18 @@
 }
 
 .blog-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.25rem;
   max-width: 980px;
   margin-inline: auto;
+}
+
+.blog-grid > .blog-card-wrap {
+  flex: 1 1 calc((100% - 1.25rem) / 2);
+  max-width: calc((980px - 1.25rem) / 2);
+  min-width: min(100%, 280px);
 }
 
 /* ── Blog card ── */
@@ -199,9 +206,19 @@
 
 .blog-card__cover {
   width: 100%;
-  height: 3.25rem;
+  height: 9.5rem;
   flex-shrink: 0;
   border-bottom: var(--border);
+  border-top-left-radius: calc(var(--radius) - 3px);
+  border-top-right-radius: calc(var(--radius) - 3px);
+  background-size: cover;
+  background-position: center;
+}
+
+.blog-card__cover--photo {
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-color: var(--off-white);
 }
 
 .blog-card__content {
@@ -374,12 +391,19 @@
 
 .blog-detail__cover {
   width: 100%;
-  height: 4.5rem;
+  height: 13rem;
   border: var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
   margin-bottom: 1.35rem;
   overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.blog-detail__cover--photo {
+  background-repeat: no-repeat;
+  background-color: var(--off-white);
 }
 
 .blog-detail__title {
@@ -436,24 +460,132 @@
 }
 
 .blog-detail__body a {
-  color: inherit;
+  color: var(--red);
+  font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--orange) 70%, var(--black));
-  text-underline-offset: 0.15em;
+  text-decoration-color: color-mix(in srgb, var(--red) 85%, var(--black));
+  text-underline-offset: 2px;
+}
+
+.blog-detail__body a:hover {
+  color: color-mix(in srgb, var(--red) 88%, var(--black));
 }
 
 .blog-detail__body p + p {
   margin-top: 1rem;
 }
 
+.blog-detail__body p + ul,
+.blog-detail__body p + ol,
+.blog-detail__body h2 + ul,
+.blog-detail__body h2 + ol {
+  margin-top: 0.65rem;
+}
+
+.blog-detail__body ul + p,
+.blog-detail__body ol + p,
+.blog-detail__body ul + h2,
+.blog-detail__body ol + h2 {
+  margin-top: 1rem;
+}
+
 .blog-detail__body ul,
 .blog-detail__body ol {
-  margin: 1rem 0;
+  margin: 0.85rem 0;
   padding-left: 1.35rem;
+  line-height: 1.55;
+}
+
+.blog-detail__body ul ul,
+.blog-detail__body ol ol,
+.blog-detail__body ul ol,
+.blog-detail__body ol ul {
+  margin: 0.2rem 0 0.35rem;
+  padding-left: 1.25rem;
+}
+
+.blog-detail__body li {
+  line-height: 1.55;
 }
 
 .blog-detail__body li + li {
-  margin-top: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.blog-detail__body li > ul,
+.blog-detail__body li > ol {
+  margin-top: 0.15rem;
+  margin-bottom: 0.1rem;
+}
+
+.blog-detail__body h2 {
+  margin: 1.75rem 0 0.65rem;
+  font-size: clamp(1.55rem, 3.2vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.blog-detail__body h2:first-child {
+  margin-top: 0;
+}
+
+.blog-detail__body ul {
+  list-style: disc;
+}
+
+.blog-detail__body ul ul {
+  list-style: circle;
+}
+
+.blog-detail__body ul ul ul {
+  list-style: square;
+}
+
+.blog-detail__body ol {
+  list-style: decimal;
+}
+
+.blog-detail__body ol ol {
+  list-style: lower-alpha;
+}
+
+.blog-detail__body ol ol ol {
+  list-style: lower-roman;
+}
+
+.blog-detail__body .rich-text__youtube {
+  margin: 1.5rem 0;
+}
+
+.blog-detail__body .rich-text__youtube-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.blog-detail__body .rich-text__youtube-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.blog-detail__body .rich-text__divider {
+  max-width: 100%;
+  padding: 1.75rem 0;
+}
+
+.blog-detail .event-detail__gallery-section {
+  margin-top: 2.5rem;
+}
+
+.blog-detail__gallery-grid {
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {
@@ -718,14 +850,14 @@
 
 .blog-comment {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   gap: 0.65rem 0.75rem;
   padding: 0.85rem 0;
 }
 
 .blog-comment__avatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   margin-top: 0.1rem;
 }
 

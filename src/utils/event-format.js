@@ -2,7 +2,13 @@ import {
   formatEventDateLabel,
   formatSchedulePart,
   isEventPast,
+  validateDateRange,
 } from './event-dates';
+import {
+  normalizeEventImageList,
+  getUpcomingGalleryImages,
+  getPastGalleryImages,
+} from '../data/event-images';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -28,6 +34,22 @@ function normalizeSocialUrl(value, type) {
   if (type === 'instagram') return `https://instagram.com/${handle}`;
   if (type === 'facebook') return `https://facebook.com/${handle}`;
   return trimmed;
+}
+
+export function isEventPublic(event) {
+  return event?.published !== false;
+}
+
+export function isEventPublishable(form) {
+  if (!form.title?.trim()) return false;
+  if (form.title.trim().length > 200) return false;
+  return !validateDateRange(form);
+}
+
+export function getAdminEventTitle(event) {
+  if (event.title?.trim()) return event.title.trim();
+  if (event.isDraft) return 'Prázdný koncept';
+  return 'Bez názvu';
 }
 
 export function normalizeEvent(raw) {
@@ -61,14 +83,22 @@ export function normalizeEvent(raw) {
     registrationLink: raw.registrationLink?.trim() || '',
     report: raw.report || '',
     galleryLink: raw.galleryLink?.trim() || '',
+    coverImage: raw.coverImage?.trim() || '',
+    coverPublicId: raw.coverPublicId?.trim() || '',
+    promoImages: normalizeEventImageList(raw.promoImages, 10),
+    galleryPicks: normalizeEventImageList(raw.galleryPicks, 10),
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
 
+  const published = raw.published !== false;
+  const isDraft = raw.published === false;
   const past = isEventPast(event);
 
   return {
     ...event,
+    published,
+    isDraft,
     name: event.title,
     dateLabel: formatEventDateLabel(event),
     past,
@@ -99,6 +129,10 @@ export function normalizeEvent(raw) {
     hasParticipants: participants.length > 0,
     hasRegistration: Boolean(event.registrationLink),
     hasGalleryLink: Boolean(event.galleryLink),
+    hasPromoImages: event.promoImages.length > 0,
+    hasGalleryPicks: event.galleryPicks.length > 0,
+    upcomingGalleryImages: getUpcomingGalleryImages(event),
+    pastGalleryImages: getPastGalleryImages(event),
   };
 }
 
@@ -154,6 +188,10 @@ export function eventToFormState(event) {
       registrationLink: '',
       report: '',
       galleryLink: '',
+      coverImage: '',
+      coverPublicId: '',
+      promoImages: [],
+      galleryPicks: [],
     };
   }
 
@@ -171,6 +209,10 @@ export function eventToFormState(event) {
     registrationLink: event.registrationLink || '',
     report: event.report || '',
     galleryLink: event.galleryLink || '',
+    coverImage: event.coverImage || '',
+    coverPublicId: event.coverPublicId || '',
+    promoImages: event.promoImages || [],
+    galleryPicks: event.galleryPicks || [],
   };
 }
 
@@ -200,5 +242,9 @@ export function formStateToPayload(form) {
     registrationLink: form.registrationLink.trim(),
     report: form.report,
     galleryLink: form.galleryLink.trim(),
+    coverImage: form.coverImage?.trim() || '',
+    coverPublicId: form.coverPublicId?.trim() || '',
+    promoImages: form.promoImages,
+    galleryPicks: form.galleryPicks,
   };
 }

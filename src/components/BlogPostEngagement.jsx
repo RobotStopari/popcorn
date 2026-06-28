@@ -20,7 +20,6 @@ export default function BlogPostEngagement({ post }) {
     toggleLike,
     addComment,
     editComment,
-    removeComment,
     signInWithGoogle,
     user,
     profileComplete,
@@ -90,9 +89,8 @@ export default function BlogPostEngagement({ post }) {
               <li key={comment.id}>
                 <BlogCommentItem
                   comment={comment}
-                  canManage={Boolean(user?.uid && comment.author.uid === user.uid)}
+                  canEdit={Boolean(user?.uid && comment.author.uid === user.uid)}
                   onEdit={editComment}
-                  onDelete={removeComment}
                 />
               </li>
             ))}

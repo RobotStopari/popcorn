@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { BLOG_GALLERY_MAX, BLOG_GALLERY_UPLOAD_HINT } from '../data/blog-images';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import {
   blogPostToFormState,
@@ -9,7 +10,10 @@ import {
   validateBlogForm,
 } from '../utils/blog-post-format';
 import AdminBlogPostCommentsSection from './AdminBlogPostCommentsSection';
+import AdminModalPanel from './AdminModalPanel';
 import BlogAuthor from './BlogAuthor';
+import BlogCoverUpload from './BlogCoverUpload';
+import EventImageUploadList from './EventImageUploadList';
 import RichTextEditor from './RichTextEditor';
 import UserCombobox from './UserCombobox';
 
@@ -73,7 +77,7 @@ export default function AdminBlogPostFormModal({
     setSlugTouched(Boolean(post?.slug));
     setError('');
     setSaving(false);
-  }, [open, post, defaultAuthorUid]);
+  }, [open, post?.id, defaultAuthorUid]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -139,7 +143,7 @@ export default function AdminBlogPostFormModal({
       aria-labelledby="admin-blog-post-form-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel admin-modal__panel--wide">
+      <AdminModalPanel className="admin-modal__panel--wide">
         <header className="admin-event-modal__header">
           <div>
             <p className="admin-event-modal__eyebrow">{post ? 'Úprava příspěvku' : 'Nový příspěvek'}</p>
@@ -178,6 +182,22 @@ export default function AdminBlogPostFormModal({
                 }}
                 placeholder="jak-jsme-prozili-letni-setkani"
                 required
+              />
+            </FieldGroup>
+
+            <FieldGroup label="Titulní fotka">
+              <BlogCoverUpload
+                coverImage={form.coverImage}
+                coverPublicId={form.coverPublicId}
+                previewSeed={post?.id || form.slug || form.title || 'blog-post-draft'}
+                disabled={saving}
+                onChange={({ coverImage, coverPublicId }) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    coverImage,
+                    coverPublicId,
+                  }));
+                }}
               />
             </FieldGroup>
 
@@ -220,9 +240,23 @@ export default function AdminBlogPostFormModal({
                 </FieldGroup>
               )
             )}
+
+            <FieldGroup label="Galerie fotek">
+              <EventImageUploadList
+                images={form.galleryImages}
+                maxCount={BLOG_GALLERY_MAX}
+                uploadLabel="Nahrát fotky do galerie"
+                hint={BLOG_GALLERY_UPLOAD_HINT}
+                presetType="postGallery"
+                disabled={saving}
+                onChange={(galleryImages) => {
+                  setForm((prev) => ({ ...prev, galleryImages }));
+                }}
+              />
+            </FieldGroup>
           </div>
 
-          {post && (
+          {post && allowAuthorPick && (
             <AdminBlogPostCommentsSection post={post} />
           )}
 
@@ -237,7 +271,7 @@ export default function AdminBlogPostFormModal({
             </button>
           </div>
         </form>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

@@ -21,15 +21,25 @@ function TrashIcon() {
 }
 
 function BlogPostCover({ post }) {
-  const style = useMemo(
+  const patternStyle = useMemo(
     () => getEventCoverStyle(post.id || post.slug),
     [post.id, post.slug],
   );
 
+  if (post.coverImage) {
+    return (
+      <div
+        className="blog-card__cover blog-card__cover--photo shine-hover"
+        style={{ backgroundImage: `url(${post.coverImage})` }}
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
     <div
       className="blog-card__cover shine-hover"
-      style={style}
+      style={patternStyle}
       aria-hidden="true"
     />
   );
@@ -38,14 +48,16 @@ function BlogPostCover({ post }) {
 export default function BlogPostCard({
   post,
   index,
+  initiallyVisible = false,
   canManage = false,
   onEdit,
   onDelete,
 }) {
   const delayClass = ` reveal--delay-${(index % 4) + 1}`;
+  const visibleClass = initiallyVisible ? ' reveal--visible' : '';
 
   return (
-    <article className={`blog-card-wrap${delayClass} reveal`}>
+    <article className={`blog-card-wrap${delayClass} reveal${visibleClass}`}>
       {canManage && (
         <div className="blog-card__toolbar">
           <button

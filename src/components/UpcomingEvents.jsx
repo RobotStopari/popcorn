@@ -19,7 +19,7 @@ export default function UpcomingEvents() {
         {loading ? (
           <p className="section__empty">Načítám akce…</p>
         ) : (
-          <div className={`cards-grid reveal-stagger${upcomingTop.length > 0 && upcomingTop.length < 3 ? ` cards-grid--${upcomingTop.length}` : ''}`}>
+          <div className="cards-grid reveal-stagger">
             {upcomingTop.map((event, index) => (
               <EventCard key={event.id} event={event} index={index} />
             ))}

@@ -21,7 +21,7 @@ export default function PastEvents() {
         {loading ? (
           <p className="section__empty">Načítám akce…</p>
         ) : (
-          <div className={`cards-grid reveal-stagger${pastTop.length > 0 && pastTop.length < 3 ? ` cards-grid--${pastTop.length}` : ''}`}>
+          <div className="cards-grid reveal-stagger">
             {pastTop.map((event, index) => (
               <EventCard key={event.id} event={event} index={index} past />
             ))}

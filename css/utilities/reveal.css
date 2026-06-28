@@ -123,3 +123,8 @@
     transform: none;
   }
 }
+
+/* Keep clipped image frames when combined with scroll reveal */
+.event-detail__figure.reveal {
+  overflow: hidden;
+}

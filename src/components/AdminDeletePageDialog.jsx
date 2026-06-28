@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pagePath } from '../data/pages';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import AdminModalPanel from './AdminModalPanel';
 
 export default function AdminDeletePageDialog({ open, page, onClose, onConfirm }) {
   const [deleting, setDeleting] = useState(false);
@@ -55,7 +56,7 @@ export default function AdminDeletePageDialog({ open, page, onClose, onConfirm }
       aria-labelledby="admin-delete-page-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel">
+      <AdminModalPanel>
         <h2 id="admin-delete-page-title" className="admin-modal__title">Smazat stránku?</h2>
         <p className="admin-modal__text">
           Opravdu chcete smazat stránku <strong>{page.title}</strong>
@@ -72,7 +73,7 @@ export default function AdminDeletePageDialog({ open, page, onClose, onConfirm }
             {deleting ? 'Mažu…' : 'Smazat'}
           </button>
         </div>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

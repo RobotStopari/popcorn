@@ -3,9 +3,10 @@ import { Navigate } from 'react-router-dom';
 import AdminDeleteEventDialog from '../components/AdminDeleteEventDialog';
 import AdminEventFormModal from '../components/AdminEventFormModal';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { createEvent, deleteEvent, updateEvent } from '../services/events';
+import { createDraftEvent, createEvent, deleteEvent, fetchEventById, updateEvent } from '../services/events';
 import { useEvents } from '../contexts/EventsContext';
-import { formatEventDateLabel, isEventPast, sortByStart } from '../utils/event-dates';
+import { formatEventDateLabel, isEventPast, sortAdminEventList } from '../utils/event-dates';
+import { getAdminEventTitle } from '../utils/event-format';
 
 function TrashIcon() {
   return (
@@ -56,17 +57,18 @@ export default function AdminEventsPage() {
     }
 
     if (query) {
-      list = list.filter((event) => (
-        event.title.toLowerCase().includes(query)
+      list = list.filter((event) => {
+        const title = getAdminEventTitle(event).toLowerCase();
+        return title.includes(query)
           || event.place.toLowerCase().includes(query)
           || event.organisers.some((organiser) => (
             organiser.name.toLowerCase().includes(query)
               || organiser.email.toLowerCase().includes(query)
-          ))
-      ));
+          ));
+      });
     }
 
-    return sortByStart(list, sortDescending);
+    return sortAdminEventList(list, sortDescending);
   }, [events, search, statusFilter, sortDescending]);
 
   if (loading) {
@@ -91,19 +93,29 @@ export default function AdminEventsPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, { published = true } = {}) => {
     setSaveError('');
     try {
+      const fullPayload = { ...payload, published };
       if (editingEvent) {
-        await updateEvent(editingEvent.id, payload);
+        await updateEvent(editingEvent.id, fullPayload);
       } else {
-        await createEvent(payload);
+        await createEvent(fullPayload);
       }
       return true;
     } catch (err) {
       setSaveError(err.message || 'Uložení akce se nezdařilo.');
       return false;
     }
+  };
+
+  const handleEnsureDraft = async (payload) => {
+    if (editingEvent?.id) return editingEvent.id;
+
+    const eventId = await createDraftEvent(payload);
+    const draft = await fetchEventById(eventId);
+    setEditingEvent(draft);
+    return eventId;
   };
 
   const handleConfirmDelete = async (eventId) => {
@@ -175,20 +187,25 @@ export default function AdminEventsPage() {
           <ul className="admin-events__list">
             {filteredEvents.map((event) => {
               const past = isEventPast(event);
+              const displayTitle = getAdminEventTitle(event);
               return (
-                <li key={event.id} className="admin-events__row">
-                  <div className="admin-events__title">{event.title}</div>
+                <li key={event.id} className={`admin-events__row${event.isDraft ? ' admin-events__row--draft' : ''}`}>
+                  <div className="admin-events__title">{displayTitle}</div>
                   <div className="admin-events__date">{formatEventDateLabel(event)}</div>
                   <div className="admin-events__status">
-                    <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
-                      {past ? 'Proběhlá' : 'Nadcházející'}
-                    </span>
+                    {event.isDraft ? (
+                      <span className="admin-events__badge admin-events__badge--draft">Koncept</span>
+                    ) : (
+                      <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
+                        {past ? 'Proběhlá' : 'Nadcházející'}
+                      </span>
+                    )}
                   </div>
                   <div className="admin-events__actions">
                     <button
                       type="button"
                       className="admin-events__action"
-                      aria-label={`Upravit akci ${event.title}`}
+                      aria-label={`Upravit akci ${displayTitle}`}
                       onClick={() => handleEdit(event)}
                     >
                       <EditIcon />
@@ -196,7 +213,7 @@ export default function AdminEventsPage() {
                     <button
                       type="button"
                       className="admin-events__action admin-events__action--danger"
-                      aria-label={`Smazat akci ${event.title}`}
+                      aria-label={`Smazat akci ${displayTitle}`}
                       onClick={() => setEventToDelete(event)}
                     >
                       <TrashIcon />
@@ -226,6 +243,7 @@ export default function AdminEventsPage() {
         event={editingEvent}
         onClose={() => setFormOpen(false)}
         onSave={handleSave}
+        onEnsureDraft={handleEnsureDraft}
       />
 
       <AdminDeleteEventDialog

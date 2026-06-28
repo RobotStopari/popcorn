@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { eventUrl } from '../data/events';
 import {
   createEmptyOrganiser,
   createEmptyParticipant,
   eventToFormState,
   formStateToPayload,
+  isEventPublishable,
 } from '../utils/event-format';
 import { suggestEndDate, validateDateRange } from '../utils/event-dates';
 import {
@@ -20,6 +23,16 @@ import {
 } from '../services/organiser-presets';
 import RichTextEditor from './RichTextEditor';
 import SortableParticipantList from './SortableParticipantList';
+import AdminEventSharingTab from './AdminEventSharingTab';
+import AdminModalPanel from './AdminModalPanel';
+import EventCoverUpload from './EventCoverUpload';
+import EventImageUploadList from './EventImageUploadList';
+import {
+  EVENT_PROMO_MAX,
+  EVENT_PROMO_UPLOAD_HINT,
+  EVENT_GALLERY_PICKS_MAX,
+  EVENT_GALLERY_PICKS_UPLOAD_HINT,
+} from '../data/event-images';
 
 const MAX_ORGANISERS = 10;
 
@@ -65,6 +78,7 @@ const TABS = [
   { id: 'organisers', label: 'Organizátoři' },
   { id: 'registration', label: 'Přihlašování' },
   { id: 'past', label: 'Po akci' },
+  { id: 'sharing', label: 'Sdílení' },
 ];
 
 function organiserHasContent(item) {
@@ -115,10 +129,10 @@ function buildIncompleteTabsMessage(tabIds) {
   return 'Opravdu chcete akci uložit?';
 }
 
-function EventFormTabs({ activeTab, onChange, attentionTabs = new Set() }) {
+function EventFormTabs({ activeTab, onChange, attentionTabs = new Set(), tabs = TABS }) {
   return (
     <div className="admin-event-tabs" role="tablist" aria-label="Sekce formuláře akce">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
@@ -151,7 +165,16 @@ function TabPanel({ id, activeTab, children }) {
   );
 }
 
-export default function AdminEventFormModal({ open, event, onClose, onSave }) {
+export default function AdminEventFormModal({
+  open,
+  event,
+  onClose,
+  onSave,
+  onEnsureDraft,
+  shareMode = false,
+  fullPage = false,
+  shareId = null,
+}) {
   const [form, setForm] = useState(eventToFormState());
   const [activeTab, setActiveTab] = useState('basic');
   const [saving, setSaving] = useState(false);
@@ -165,11 +188,28 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [pendingIncompleteTabs, setPendingIncompleteTabs] = useState([]);
   const [attentionTabs, setAttentionTabs] = useState(() => new Set());
+  const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
   const panelRef = useRef(null);
+  const skipFormResetRef = useRef(false);
+  const navigate = useNavigate();
   const { mounted, visible } = useAnimatedPresence(open, 240);
+  const eventId = event?.id ?? null;
+
+  const visibleTabs = shareMode
+    ? TABS.filter((tab) => tab.id !== 'sharing')
+    : TABS;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setSaveSuccessOpen(false);
+      return;
+    }
+
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+
     setForm(eventToFormState(event));
     setActiveTab('basic');
     setError('');
@@ -179,10 +219,11 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
     setSaveConfirmOpen(false);
     setPendingIncompleteTabs([]);
     setAttentionTabs(new Set());
-  }, [open, event]);
+    setSaveSuccessOpen(false);
+  }, [open, eventId]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || shareMode) return undefined;
 
     const unsubscribe = subscribeOrganiserPresets(
       setOrganiserPresets,
@@ -190,10 +231,10 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
     );
 
     return unsubscribe;
-  }, [open]);
+  }, [open, shareMode]);
 
   useEffect(() => {
-    if (!mounted) return undefined;
+    if (!open || fullPage) return undefined;
 
     const onKeydown = (keyEvent) => {
       if (keyEvent.key !== 'Escape') return;
@@ -211,9 +252,29 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
       document.body.classList.remove('admin-modal-open');
       document.removeEventListener('keydown', onKeydown);
     };
-  }, [mounted, onClose, saveConfirmOpen]);
+  }, [mounted, onClose, open, fullPage, saveConfirmOpen]);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    if (!fullPage || !open) return undefined;
+
+    const onKeydown = (keyEvent) => {
+      if (keyEvent.key !== 'Escape' || !saveConfirmOpen) return;
+      setSaveConfirmOpen(false);
+    };
+
+    document.addEventListener('keydown', onKeydown);
+    return () => document.removeEventListener('keydown', onKeydown);
+  }, [fullPage, open, saveConfirmOpen]);
+
+  useEffect(() => {
+    if (!fullPage || (!saveConfirmOpen && !saveSuccessOpen)) return undefined;
+
+    document.body.classList.add('admin-modal-open');
+    return () => document.body.classList.remove('admin-modal-open');
+  }, [fullPage, saveConfirmOpen, saveSuccessOpen]);
+
+  if (!fullPage && !mounted) return null;
+  if (!open) return null;
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -231,7 +292,7 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
     setForm((prev) => ({
       ...prev,
       timeStart: value,
-      ...(event ? {} : { timeEnd: value }),
+      ...(!prev.timeEnd?.trim() ? { timeEnd: value } : {}),
     }));
   };
 
@@ -371,11 +432,30 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
     setSaving(true);
     setError('');
 
-    const ok = await onSave(formStateToPayload(form));
+    const published = isEventPublishable(form);
+    const ok = await onSave(formStateToPayload(form), { published });
     setSaving(false);
 
-    if (ok) onClose();
-    else setError('Uložení akce se nezdařilo.');
+    if (ok) {
+      if (fullPage) {
+        setSaveSuccessOpen(true);
+        setError('');
+      } else {
+        onClose();
+      }
+    } else {
+      setError('Uložení akce se nezdařilo.');
+    }
+  };
+
+  const handleEnsureEventId = async () => {
+    if (event?.id) return event.id;
+    if (!onEnsureDraft) {
+      throw new Error('Akci se nepodařilo připravit ke sdílení.');
+    }
+
+    skipFormResetRef.current = true;
+    return onEnsureDraft(formStateToPayload(form));
   };
 
   const handleAddInfoFromConfirm = () => {
@@ -395,18 +475,35 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
   };
 
   const validateForm = () => {
-    if (!form.title.trim()) {
-      return { message: 'Název akce je povinný.', tab: 'basic' };
-    }
-    if (form.title.trim().length > 200) {
-      return { message: 'Název může mít maximálně 200 znaků.', tab: 'basic' };
-    }
-    if (form.place.trim().length > 200) {
-      return { message: 'Místo může mít maximálně 200 znaků.', tab: 'basic' };
-    }
+    const publishing = isEventPublishable(form);
 
-    const rangeError = validateDateRange(form);
-    if (rangeError) return { message: rangeError, tab: 'basic' };
+    if (!publishing) {
+      if (form.title.trim().length > 200) {
+        return { message: 'Název může mít maximálně 200 znaků.', tab: 'basic' };
+      }
+      if (form.place.trim().length > 200) {
+        return { message: 'Místo může mít maximálně 200 znaků.', tab: 'basic' };
+      }
+
+      const hasAnyDate = form.dateStart || form.timeStart || form.dateEnd || form.timeEnd;
+      if (hasAnyDate) {
+        const rangeError = validateDateRange(form);
+        if (rangeError) return { message: rangeError, tab: 'basic' };
+      }
+    } else {
+      if (!form.title.trim()) {
+        return { message: 'Název akce je povinný.', tab: 'basic' };
+      }
+      if (form.title.trim().length > 200) {
+        return { message: 'Název může mít maximálně 200 znaků.', tab: 'basic' };
+      }
+      if (form.place.trim().length > 200) {
+        return { message: 'Místo může mít maximálně 200 znaků.', tab: 'basic' };
+      }
+
+      const rangeError = validateDateRange(form);
+      if (rangeError) return { message: rangeError, tab: 'basic' };
+    }
 
     if (form.organisers.length > MAX_ORGANISERS) {
       return {
@@ -447,31 +544,35 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
       return;
     }
 
-    const incompleteTabs = getUnvisitedEmptyTabs(visitedTabs, form);
-    if (incompleteTabs.length > 0) {
-      setPendingIncompleteTabs(incompleteTabs);
-      setSaveConfirmOpen(true);
-      return;
+    const publishing = isEventPublishable(form);
+    if (publishing) {
+      const incompleteTabs = getUnvisitedEmptyTabs(visitedTabs, form);
+      if (incompleteTabs.length > 0) {
+        setPendingIncompleteTabs(incompleteTabs);
+        setSaveConfirmOpen(true);
+        return;
+      }
     }
 
     await performSave();
   };
 
-  return createPortal(
-    <div
-      className={`admin-modal admin-modal--wide${visible ? ' admin-modal--visible' : ''}`}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="admin-event-form-title"
-    >
-      <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div ref={panelRef} className="admin-modal__panel admin-modal__panel--wide">
+  const formBody = (
+    <>
+      <AdminModalPanel ref={panelRef} className="admin-modal__panel--wide" bare={fullPage}>
         <header className="admin-event-modal__header">
           <div>
-            <p className="admin-event-modal__eyebrow">{event ? 'Úprava akce' : 'Vytvoření akce'}</p>
+            <p className="admin-event-modal__eyebrow">
+              {shareMode ? 'Sdílený odkaz' : event ? 'Úprava akce' : 'Vytvoření akce'}
+            </p>
             <h2 id="admin-event-form-title" className="admin-modal__title admin-event-modal__title">
-              {event ? 'Upravit akci' : 'Nová akce'}
+              {shareMode ? 'Upravit akci' : event ? 'Upravit akci' : 'Nová akce'}
             </h2>
+            {shareMode && (
+              <p className="admin-event-modal__share-note">
+                Upravujete akci přes zabezpečený odkaz. Změny se uloží přímo na web.
+              </p>
+            )}
           </div>
         </header>
 
@@ -480,6 +581,7 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
             activeTab={activeTab}
             onChange={handleTabChange}
             attentionTabs={attentionTabs}
+            tabs={visibleTabs}
           />
 
           <div className="admin-event-tabs__panels">
@@ -574,6 +676,36 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
                     tone="content"
                   />
                 </TabBlock>
+
+                <TabBlock title="Titulní fotka" hint="Zobrazí se na kartě akce. Bez fotky se použije automatická textura.">
+                  <EventCoverUpload
+                    coverImage={form.coverImage}
+                    coverPublicId={form.coverPublicId}
+                    previewSeed={event?.id || form.title || 'event-draft'}
+                    onChange={({ coverImage, coverPublicId }) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        coverImage,
+                        coverPublicId,
+                      }));
+                    }}
+                    disabled={saving}
+                  />
+                </TabBlock>
+
+                <TabBlock title="Propagační materiály" hint="Obrázky pro nadcházející akci — zobrazí se v galerii na stránce akce vedle titulní fotky.">
+                  <EventImageUploadList
+                    images={form.promoImages}
+                    maxCount={EVENT_PROMO_MAX}
+                    uploadLabel="Nahrát propagační materiály"
+                    hint={EVENT_PROMO_UPLOAD_HINT}
+                    presetType="promo"
+                    disabled={saving}
+                    onChange={(promoImages) => {
+                      setForm((prev) => ({ ...prev, promoImages }));
+                    }}
+                  />
+                </TabBlock>
               </div>
             </TabPanel>
 
@@ -583,7 +715,7 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
                   Volitelně přidejte organizátory (0–{MAX_ORGANISERS}). U vyplněného záznamu jsou jméno a e-mail povinné.
                 </p>
 
-                {organiserPresets.length > 0 && (
+                {!shareMode && organiserPresets.length > 0 && (
                   <div className="admin-form__presets">
                     {presetPendingDelete ? (
                       <div className="admin-form__preset-delete-confirm">
@@ -640,7 +772,7 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
                   </div>
                 )}
 
-                {presetMessage && (
+                {!shareMode && presetMessage && (
                   <p className="admin-form__preset-message" role="status">{presetMessage}</p>
                 )}
 
@@ -725,7 +857,7 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
                         </FieldGroup>
                       </div>
                       <div className="admin-form__organiser-actions">
-                        {isCompleteOrganiser(organiser) && (
+                        {!shareMode && isCompleteOrganiser(organiser) && (
                           <button
                             type="button"
                             className="admin-form__save-preset"
@@ -812,7 +944,7 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
                   />
                 </TabBlock>
 
-                <TabBlock title="Galerie" hint="Odkaz na složku s fotografiemi z akce.">
+                <TabBlock title="Galerie" hint="Odkaz na složku s fotografiemi z akce a výběr nejlepších fotek pro stránku proběhlé akce.">
                   <FieldGroup label="Odkaz na galerii">
                     <input
                       type="url"
@@ -822,60 +954,153 @@ export default function AdminEventFormModal({ open, event, onClose, onSave }) {
                       placeholder="https://drive.google.com/..."
                     />
                   </FieldGroup>
+
+                  <FieldGroup label="Výběr z galerie">
+                    <EventImageUploadList
+                      images={form.galleryPicks}
+                      maxCount={EVENT_GALLERY_PICKS_MAX}
+                      uploadLabel="Nahrát fotky z galerie"
+                      hint={EVENT_GALLERY_PICKS_UPLOAD_HINT}
+                      presetType="gallery"
+                      disabled={saving}
+                      onChange={(galleryPicks) => {
+                        setForm((prev) => ({ ...prev, galleryPicks }));
+                      }}
+                    />
+                  </FieldGroup>
                 </TabBlock>
               </div>
             </TabPanel>
+
+            {!shareMode && (
+              <TabPanel id="sharing" activeTab={activeTab}>
+                <AdminEventSharingTab
+                  eventId={event?.id}
+                  isDraft={event?.isDraft}
+                  onEnsureEventId={handleEnsureEventId}
+                />
+              </TabPanel>
+            )}
           </div>
 
           {error && <p className="admin-error admin-form__error">{error}</p>}
 
           <div className="admin-modal__actions admin-event-modal__actions">
-            <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
-              Zrušit
-            </button>
+            {!fullPage && (
+              <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
+                Zrušit
+              </button>
+            )}
             <button type="submit" className="btn btn--primary" disabled={saving}>
               {saving ? 'Ukládám…' : 'Uložit akci'}
             </button>
           </div>
         </form>
-      </div>
+      </AdminModalPanel>
+    </>
+  );
 
-      {saveConfirmOpen && (
-        <div
-          className="admin-modal admin-modal--confirm admin-modal--visible"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="admin-event-save-confirm-title"
-        >
-          <div className="admin-modal__backdrop" aria-hidden="true" />
-          <div className="admin-modal__panel admin-modal__panel--compact">
-            <h2 id="admin-event-save-confirm-title" className="admin-modal__title">
-              Uložit neúplnou akci?
-            </h2>
-            <p className="admin-modal__text">
-              {buildIncompleteTabsMessage(pendingIncompleteTabs)}
-            </p>
-            <div className="admin-modal__actions">
-              <button
-                type="button"
-                className="btn btn--outline"
-                onClick={handleConfirmSaveAnyway}
-                disabled={saving}
-              >
-                {saving ? 'Ukládám…' : 'Ano, uložit'}
-              </button>
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={handleAddInfoFromConfirm}
-                disabled={saving}
-              >
-                Ne, doplnit údaje
-              </button>
-            </div>
-          </div>
+  const saveConfirmDialog = saveConfirmOpen ? (
+    <div
+      className="admin-modal admin-modal--confirm admin-modal--visible"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admin-event-save-confirm-title"
+    >
+      <div className="admin-modal__backdrop" aria-hidden="true" />
+      <AdminModalPanel className="admin-modal__panel--compact">
+        <h2 id="admin-event-save-confirm-title" className="admin-modal__title">
+          Uložit neúplnou akci?
+        </h2>
+        <p className="admin-modal__text">
+          {buildIncompleteTabsMessage(pendingIncompleteTabs)}
+        </p>
+        <div className="admin-modal__actions">
+          <button
+            type="button"
+            className="btn btn--outline"
+            onClick={handleConfirmSaveAnyway}
+            disabled={saving}
+          >
+            {saving ? 'Ukládám…' : 'Ano, uložit'}
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={handleAddInfoFromConfirm}
+            disabled={saving}
+          >
+            Ne, doplnit údaje
+          </button>
         </div>
-      )}
+      </AdminModalPanel>
+    </div>
+  ) : null;
+
+  const saveSuccessDialog = saveSuccessOpen ? (
+    <div
+      className="admin-modal admin-modal--confirm admin-modal--visible"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admin-event-save-success-title"
+    >
+      <div
+        className="admin-modal__backdrop"
+        onClick={() => setSaveSuccessOpen(false)}
+        aria-hidden="true"
+      />
+      <AdminModalPanel className="admin-save-success-dialog">
+        <div className="admin-save-success-dialog__icon" aria-hidden="true">
+          ✓
+        </div>
+        <h2 id="admin-event-save-success-title" className="admin-modal__title">
+          Změny uloženy
+        </h2>
+        <p className="admin-modal__text">
+          Vaše úpravy akce byly úspěšně uloženy.
+        </p>
+        <div className="admin-save-success-dialog__actions">
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => {
+              if (event?.id) navigate(eventUrl(event.id));
+            }}
+          >
+            Zobrazit akci na webu
+          </button>
+          <button
+            type="button"
+            className="btn btn--outline"
+            onClick={() => setSaveSuccessOpen(false)}
+          >
+            Pokračovat v úpravách
+          </button>
+        </div>
+      </AdminModalPanel>
+    </div>
+  ) : null;
+
+  if (fullPage) {
+    return (
+      <>
+        <div className="event-share-form">{formBody}</div>
+        {saveConfirmDialog && createPortal(saveConfirmDialog, document.body)}
+        {saveSuccessDialog && createPortal(saveSuccessDialog, document.body)}
+      </>
+    );
+  }
+
+  return createPortal(
+    <div
+      className={`admin-modal admin-modal--wide${visible ? ' admin-modal--visible' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admin-event-form-title"
+    >
+      <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
+      {formBody}
+      {saveConfirmDialog}
     </div>,
     document.body,
   );

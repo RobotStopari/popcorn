@@ -41,10 +41,12 @@ body.lightbox-open {
   align-items: center;
   justify-content: center;
   line-height: 0;
+  overflow: hidden;
   border-radius: var(--radius);
+  background: transparent;
 }
 
-.lightbox__stage.img-frame > .lightbox__img {
+.lightbox__stage > .lightbox__img {
   display: block;
   width: auto;
   height: auto;

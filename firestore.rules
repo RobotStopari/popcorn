@@ -43,7 +43,82 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || guestShareEventUpdate(eventId);
+    }
+
+    function shareLinkDoc(shareId) {
+      return get(/databases/$(database)/documents/eventShareLinks/$(shareId));
+    }
+
+    function shareLinkEditable(shareId) {
+      let link = shareLinkDoc(shareId).data;
+      return link.active == true
+        && (link.expiresAt == null || link.expiresAt > request.time);
+    }
+
+    function guestShareEventUpdate(eventId) {
+      let shareId = request.resource.data._shareEditId;
+      return shareId is string
+        && shareId.size() >= 32
+        && exists(/databases/$(database)/documents/eventShareLinks/$(shareId))
+        && shareLinkDoc(shareId).data.eventId == eventId
+        && shareLinkEditable(shareId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title',
+          'dateStart',
+          'timeStart',
+          'dateEnd',
+          'timeEnd',
+          'place',
+          'price',
+          'description',
+          'organisers',
+          'participants',
+          'registrationLink',
+          'report',
+          'galleryLink',
+          'coverImage',
+          'coverPublicId',
+          'promoImages',
+          'galleryPicks',
+          'published',
+          'updatedAt',
+          '_shareEditId',
+        ]);
+    }
+
+    match /eventShareLinks/{shareId} {
+      allow read: if true;
+      allow list: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'eventId',
+          'expiresAt',
+          'maxUses',
+          'openCount',
+          'active',
+          'label',
+          'createdAt',
+          'createdBy',
+        ])
+        && request.resource.data.eventId is string
+        && request.resource.data.openCount == 0
+        && request.resource.data.active == true;
+      allow delete: if isAdmin();
+      allow update: if isAdmin()
+        || guestShareLinkOpenUpdate();
+    }
+
+    function guestShareLinkOpenUpdate() {
+      let link = resource.data;
+      let next = request.resource.data;
+      let currentOpens = link.get('openCount', 0);
+      return next.diff(link).affectedKeys().hasOnly(['openCount', 'lastOpenedAt'])
+        && next.openCount == currentOpens + 1
+        && link.get('active', false) == true
+        && (link.get('expiresAt', null) == null || link.get('expiresAt', null) > request.time)
+        && (link.get('maxUses', null) == null || currentOpens < link.get('maxUses', null));
     }
 
     function hasCompleteProfile() {

@@ -1,27 +1,38 @@
 import { useEffect, useState } from 'react';
+import { useAppBoot } from './useAppBoot';
 
 export function useLoader() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => document.body.classList.contains('is-loading'));
+
+  useAppBoot();
 
   useEffect(() => {
+    if (!document.body.classList.contains('is-loading')) {
+      setLoading(false);
+      return undefined;
+    }
+
     const started = Date.now();
     const minMs = 900;
+    let hideTimer;
 
     const hide = () => {
       const delay = Math.max(0, minMs - (Date.now() - started));
-      const timer = setTimeout(() => {
-        setLoading(false);
-        document.body.classList.remove('is-loading');
-      }, delay);
-      return () => clearTimeout(timer);
+      hideTimer = window.setTimeout(() => setLoading(false), delay);
     };
 
-    if (document.readyState === 'complete') return hide();
-    window.addEventListener('load', hide);
-    const fallback = setTimeout(hide, 5000);
+    if (document.readyState === 'complete') {
+      hide();
+    } else {
+      window.addEventListener('load', hide);
+    }
+
+    const fallback = window.setTimeout(hide, 5000);
+
     return () => {
       window.removeEventListener('load', hide);
-      clearTimeout(fallback);
+      window.clearTimeout(fallback);
+      window.clearTimeout(hideTimer);
     };
   }, []);
 

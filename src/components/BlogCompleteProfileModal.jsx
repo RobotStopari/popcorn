@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import AdminAvatar from './AdminAvatar';
+import AdminModalPanel from './AdminModalPanel';
 
 export default function BlogCompleteProfileModal({ open, onClose }) {
   const {
@@ -65,7 +66,7 @@ export default function BlogCompleteProfileModal({ open, onClose }) {
       aria-labelledby="blog-complete-profile-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel">
+      <AdminModalPanel>
         <AdminAvatar photoURL={photoURL} name={name} email={user.email} />
         <h2 id="blog-complete-profile-title" className="admin-modal__title">Dokončete profil</h2>
         <p className="admin-modal__text">
@@ -110,7 +111,7 @@ export default function BlogCompleteProfileModal({ open, onClose }) {
             </button>
           </div>
         </form>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

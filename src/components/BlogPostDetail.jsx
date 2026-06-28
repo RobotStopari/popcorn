@@ -2,11 +2,14 @@ import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
+import { getBlogGalleryImages } from '../utils/blog-post-format';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
 import AdminDeleteBlogPostDialog from './AdminDeleteBlogPostDialog';
 import BlogAuthor from './BlogAuthor';
 import BlogPostEngagement from './BlogPostEngagement';
+import EventGallery from './EventGallery';
 
 function EditIcon() {
   return (
@@ -25,25 +28,36 @@ function TrashIcon() {
 }
 
 function RichTextBlock({ html }) {
-  if (!html) return null;
+  const displayHtml = useMemo(() => transformRichTextForDisplay(html), [html]);
+  if (!displayHtml) return null;
 
   return (
     <div className="blog-detail__body reveal">
-      <div dangerouslySetInnerHTML={{ __html: html }} />
+      <div dangerouslySetInnerHTML={{ __html: displayHtml }} />
     </div>
   );
 }
 
 function BlogPostCover({ post }) {
-  const style = useMemo(
+  const patternStyle = useMemo(
     () => getEventCoverStyle(post.id || post.slug),
     [post.id, post.slug],
   );
 
+  if (post.coverImage) {
+    return (
+      <div
+        className="blog-detail__cover blog-detail__cover--photo"
+        style={{ backgroundImage: `url(${post.coverImage})` }}
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
     <div
       className="blog-detail__cover"
-      style={style}
+      style={patternStyle}
       aria-hidden="true"
     />
   );
@@ -156,6 +170,13 @@ export default function BlogPostDetail({ slug }) {
         </header>
 
         <RichTextBlock html={post.body} />
+
+        {post.galleryImages?.length > 0 && (
+          <EventGallery
+            images={getBlogGalleryImages(post)}
+            className="event-detail__media blog-detail__gallery-grid"
+          />
+        )}
 
         <BlogPostEngagement post={post} />
       </div>

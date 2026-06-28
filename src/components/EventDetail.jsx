@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useEvents } from '../contexts/EventsContext';
 import { ICONS } from '../data/icons';
 import { buildGoogleCalendarUrl } from '../utils/google-calendar';
+import EventGallery from './EventGallery';
 
 const CONTACT_ICONS = {
   email: ICONS.email,
@@ -318,6 +319,10 @@ function UpcomingDetail({ event }) {
           </a>
         </div>
       )}
+
+      {event.upcomingGalleryImages.length > 0 && (
+        <EventGallery images={event.upcomingGalleryImages} />
+      )}
     </>
   );
 }
@@ -335,10 +340,17 @@ function PastDetail({ event }) {
         </section>
       )}
 
+      {event.pastGalleryImages.length > 0 && (
+        <EventGallery
+          images={event.pastGalleryImages}
+          intro="Výběr nejlepších fotek z galerie akce."
+        />
+      )}
+
       {event.hasGalleryLink && (
         <div className="event-detail__gallery-link reveal">
           <a href={event.galleryDriveHref} className="btn btn--outline" target="_blank" rel="noopener noreferrer">
-            Otevřít galerii
+            Všechny fotky z akce
           </a>
         </div>
       )}

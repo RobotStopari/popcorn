@@ -1,5 +1,8 @@
 import { MONTHS_GENITIVE, parseIsoDate, toIsoDate } from './event-dates';
 import { slugifyTitle } from '../data/pages';
+import { normalizeEventImageList } from '../data/event-images';
+import { BLOG_GALLERY_MAX } from '../data/blog-images';
+import { stripRichTextEmbedsForPreview } from './rich-text-embeds';
 
 export const MAX_BLOG_KEYWORDS = 15;
 
@@ -23,6 +26,10 @@ function stripHtml(html) {
   if (!html) return '';
   const withoutTags = html.replace(/<[^>]*>/g, ' ');
   return decodeHtmlEntities(withoutTags).replace(/\s+/g, ' ').trim();
+}
+
+function bodyToPreviewPlain(html) {
+  return stripHtml(stripRichTextEmbedsForPreview(html));
 }
 
 export function getBlogPublishedDateTime(post) {
@@ -126,10 +133,17 @@ export function resolveAuthorForDisplay(author, { usersByUid = {}, profile, user
 }
 
 export function getBlogExcerpt(post, maxLength = 100) {
-  const text = post.bodyPlain || stripHtml(post.body);
+  const text = bodyToPreviewPlain(post.body || '');
   if (!text) return '';
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength).trim()}…`;
+}
+
+export function getBlogGalleryImages(post) {
+  return (post.galleryImages || []).map((item, index) => ({
+    src: item.url,
+    alt: item.alt || `Fotografie ${index + 1}`,
+  }));
 }
 
 export function normalizeBlogPost(raw) {
@@ -145,6 +159,9 @@ export function normalizeBlogPost(raw) {
     publishedTime: raw.publishedTime || '',
     author,
     keywords,
+    coverImage: raw.coverImage?.trim() || '',
+    coverPublicId: raw.coverPublicId?.trim() || '',
+    galleryImages: normalizeEventImageList(raw.galleryImages, BLOG_GALLERY_MAX),
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -156,7 +173,8 @@ export function normalizeBlogPost(raw) {
     dateTimeLabel: formatBlogDateTimeLabel(post),
     bodyPlain: stripHtml(post.body),
     authorLabel: formatAuthorDisplayName(author),
-    excerpt: getBlogExcerpt({ bodyPlain: stripHtml(post.body) }),
+    excerpt: getBlogExcerpt({ body: post.body }),
+    hasCoverImage: Boolean(post.coverImage),
   };
 
   return normalized;
@@ -247,6 +265,9 @@ export function blogPostToFormState(post) {
       slug: '',
       body: '',
       keywordsInput: '',
+      coverImage: '',
+      coverPublicId: '',
+      galleryImages: [],
     };
   }
 
@@ -255,6 +276,9 @@ export function blogPostToFormState(post) {
     slug: post.slug || '',
     body: post.body || '',
     keywordsInput: keywordsToInput(post.keywords),
+    coverImage: post.coverImage || '',
+    coverPublicId: post.coverPublicId || '',
+    galleryImages: post.galleryImages || [],
   };
 }
 
@@ -266,6 +290,9 @@ export function formStateToBlogPayload(form, { author = null } = {}) {
     slug: form.slug.trim(),
     body: form.body,
     keywords,
+    coverImage: form.coverImage?.trim() || '',
+    coverPublicId: form.coverPublicId?.trim() || '',
+    galleryImages: normalizeEventImageList(form.galleryImages, BLOG_GALLERY_MAX),
   };
 
   if (author) {

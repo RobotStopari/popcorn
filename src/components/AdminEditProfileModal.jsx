@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import AdminModalPanel from './AdminModalPanel';
 
 export default function AdminEditProfileModal({ open, onClose, allowDelete = true }) {
   const { profile, saveProfile, deleteProfile, error: authError } = useAdminAuth();
@@ -76,7 +77,7 @@ export default function AdminEditProfileModal({ open, onClose, allowDelete = tru
       aria-labelledby="admin-edit-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel">
+      <AdminModalPanel>
         {confirmDelete ? (
           <>
             <h2 id="admin-edit-title" className="admin-modal__title">Smazat profil?</h2>
@@ -164,7 +165,7 @@ export default function AdminEditProfileModal({ open, onClose, allowDelete = tru
             )}
           </>
         )}
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

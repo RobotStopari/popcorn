@@ -32,6 +32,15 @@ export function BlogPostsProvider({ children }) {
     return unsubscribe;
   }, []);
 
+  const prependPost = useCallback((post) => {
+    if (!post?.id) return;
+
+    setPosts((current) => {
+      if (current.some((item) => item.id === post.id)) return current;
+      return [post, ...current];
+    });
+  }, []);
+
   const sortedPosts = useMemo(() => sortPostsByPublished(posts), [posts]);
 
   const getPostBySlug = useCallback((slug) => (
@@ -43,7 +52,8 @@ export function BlogPostsProvider({ children }) {
     loading,
     error,
     getPostBySlug,
-  }), [sortedPosts, loading, error, getPostBySlug]);
+    prependPost,
+  }), [sortedPosts, loading, error, getPostBySlug, prependPost]);
 
   return (
     <BlogPostsContext.Provider value={value}>

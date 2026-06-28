@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import AdminModalPanel from './AdminModalPanel';
 
 function normalizeHref(value) {
   const trimmed = value.trim();
@@ -79,8 +80,8 @@ export default function RichTextLinkDialog({
       aria-labelledby="rich-text-link-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div
-        className="admin-modal__panel admin-modal__panel--compact rich-text-link-dialog"
+      <AdminModalPanel
+        className="admin-modal__panel--compact rich-text-link-dialog"
         onClick={stopBubble}
         onMouseDown={stopBubble}
       >
@@ -145,7 +146,7 @@ export default function RichTextLinkDialog({
             </button>
           </div>
         </form>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

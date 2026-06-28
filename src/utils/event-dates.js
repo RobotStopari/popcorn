@@ -26,7 +26,10 @@ export function getEventEndDateTime(event) {
 }
 
 export function isEventPast(event, now = new Date()) {
-  return getEventEndDateTime(event) <= now;
+  if (!event.dateEnd || !event.timeEnd) return false;
+  const end = getEventEndDateTime(event);
+  if (Number.isNaN(end.getTime())) return false;
+  return end <= now;
 }
 
 export function suggestEndDate(dateStart) {
@@ -107,14 +110,43 @@ export function getTopPast(events, limit = 3) {
   return getAllPast(events, now).slice(0, limit);
 }
 
+function isPublicListedEvent(event) {
+  return event.published !== false;
+}
+
 export function getAllUpcoming(events, now = new Date()) {
   return events
-    .filter((event) => getEventEndDateTime(event) > now)
+    .filter((event) => {
+      if (!isPublicListedEvent(event)) return false;
+      if (!event.dateEnd || !event.timeEnd) return false;
+      const end = getEventEndDateTime(event);
+      if (Number.isNaN(end.getTime())) return false;
+      return end > now;
+    })
     .sort((a, b) => getEventStartDateTime(a) - getEventStartDateTime(b));
 }
 
 export function getAllPast(events, now = new Date()) {
   return events
-    .filter((event) => getEventEndDateTime(event) <= now)
+    .filter((event) => {
+      if (!isPublicListedEvent(event)) return false;
+      if (!event.dateEnd || !event.timeEnd) return false;
+      const end = getEventEndDateTime(event);
+      if (Number.isNaN(end.getTime())) return false;
+      return end <= now;
+    })
     .sort((a, b) => getEventEndDateTime(b) - getEventEndDateTime(a));
+}
+
+export function sortAdminEventList(events, descending = true) {
+  const drafts = events.filter((event) => event.isDraft);
+  const rest = events.filter((event) => !event.isDraft);
+
+  const sortDrafts = [...drafts].sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
+
+  return [...sortDrafts, ...sortByStart(rest, descending)];
 }

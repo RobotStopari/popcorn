@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   serverTimestamp,
@@ -37,6 +38,32 @@ export async function fetchAllEvents() {
   return snapshot.docs.map((item) => normalizeEvent({ id: item.id, ...item.data() }));
 }
 
+export async function fetchEventById(eventId) {
+  const snapshot = await getDoc(doc(db, 'events', eventId));
+  if (!snapshot.exists()) return null;
+  return normalizeEvent({ id: snapshot.id, ...snapshot.data() });
+}
+
+const EMPTY_EVENT_FIELDS = {
+  title: '',
+  dateStart: '',
+  timeStart: '',
+  dateEnd: '',
+  timeEnd: '',
+  place: '',
+  price: '',
+  description: '',
+  organisers: [],
+  participants: [],
+  registrationLink: '',
+  report: '',
+  galleryLink: '',
+  coverImage: '',
+  coverPublicId: '',
+  promoImages: [],
+  galleryPicks: [],
+};
+
 export async function createEvent(payload) {
   const docRef = await addDoc(eventsRef, {
     ...payload,
@@ -44,6 +71,14 @@ export async function createEvent(payload) {
     updatedAt: serverTimestamp(),
   });
   return docRef.id;
+}
+
+export async function createDraftEvent(formPayload = {}) {
+  return createEvent({
+    ...EMPTY_EVENT_FIELDS,
+    ...formPayload,
+    published: false,
+  });
 }
 
 export async function updateEvent(eventId, payload) {

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { bindFrameImage } from '../hooks/useImageFrames';
 
 export default function Lightbox({ images, openIndex, onClose }) {
   const [index, setIndex] = useState(openIndex ?? 0);
@@ -37,12 +36,6 @@ export default function Lightbox({ images, openIndex, onClose }) {
     };
   }, [openIndex, onClose, step]);
 
-  useEffect(() => {
-    if (openIndex === null) return;
-    const img = document.querySelector('.lightbox__img');
-    if (img) bindFrameImage(img);
-  }, [openIndex, index]);
-
   if (openIndex === null || !images.length) return null;
 
   const item = images[index];
@@ -70,10 +63,9 @@ export default function Lightbox({ images, openIndex, onClose }) {
         </button>
       )}
       <figure className="lightbox__figure">
-        <div className="lightbox__stage img-frame">
-          <img className="lightbox__img" src={item.src} alt={item.alt} />
+        <div className="lightbox__stage">
+          <img className="lightbox__img" src={item.src} alt={item.alt || ''} />
         </div>
-        {item.alt && <figcaption className="lightbox__caption">{item.alt}</figcaption>}
       </figure>
       {showNav && (
         <button

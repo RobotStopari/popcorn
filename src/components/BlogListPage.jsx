@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { pagePath } from '../data/pages';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
@@ -19,6 +19,7 @@ export default function BlogListPage({ page }) {
   const { posts, loading } = useBlogPosts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  const knownPostIdsRef = useRef(new Set());
   const basePath = page ? pagePath(page) : '/blog';
 
   const {
@@ -53,6 +54,12 @@ export default function BlogListPage({ page }) {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredPosts.slice(start, start + PAGE_SIZE);
   }, [filteredPosts, currentPage]);
+
+  useEffect(() => {
+    posts.forEach((post) => {
+      if (post?.id) knownPostIdsRef.current.add(post.id);
+    });
+  }, [posts]);
 
   useEffect(() => {
     if (!page?.title) return;
@@ -118,6 +125,7 @@ export default function BlogListPage({ page }) {
                 key={post.id}
                 post={post}
                 index={index}
+                initiallyVisible={knownPostIdsRef.current.has(post.id)}
                 canManage={canManagePost(post)}
                 onEdit={openEdit}
                 onDelete={openDelete}

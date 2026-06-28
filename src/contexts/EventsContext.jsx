@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { subscribeEvents } from '../services/events';
 import { getTopPast, getTopUpcoming } from '../utils/event-dates';
-import { toCalendarEvent } from '../utils/event-format';
+import { isEventPublic, toCalendarEvent } from '../utils/event-format';
 
 const EventsContext = createContext(null);
 
@@ -33,15 +33,20 @@ export function EventsProvider({ children }) {
     return unsubscribe;
   }, []);
 
+  const publicEvents = useMemo(
+    () => events.filter(isEventPublic),
+    [events],
+  );
+
   const getEventById = useCallback((id) => {
-    const event = events.find((item) => item.id === id);
+    const event = publicEvents.find((item) => item.id === id);
     if (!event) return null;
     return { event, past: event.past };
-  }, [events]);
+  }, [publicEvents]);
 
-  const upcomingTop = useMemo(() => getTopUpcoming(events, 3), [events]);
-  const pastTop = useMemo(() => getTopPast(events, 3), [events]);
-  const calendarEvents = useMemo(() => events.map(toCalendarEvent), [events]);
+  const upcomingTop = useMemo(() => getTopUpcoming(publicEvents, 3), [publicEvents]);
+  const pastTop = useMemo(() => getTopPast(publicEvents, 3), [publicEvents]);
+  const calendarEvents = useMemo(() => publicEvents.map(toCalendarEvent), [publicEvents]);
 
   const value = useMemo(() => ({
     events,

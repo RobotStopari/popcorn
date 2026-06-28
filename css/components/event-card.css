@@ -1,23 +1,15 @@
 /* ── Event cards ── */
 .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.5rem;
 }
 
-.cards-grid--1,
-.cards-grid--2 {
-  width: fit-content;
-  max-width: 100%;
-  margin-inline: auto;
-}
-
-.cards-grid--1 {
-  grid-template-columns: min(100%, 420px);
-}
-
-.cards-grid--2 {
-  grid-template-columns: repeat(2, minmax(0, min(420px, calc((100% - 1.5rem) / 2))));
+.cards-grid > .event-card {
+  flex: 1 1 calc((100% - 3rem) / 3);
+  max-width: 420px;
+  min-width: min(100%, 280px);
 }
 
 .event-card {
@@ -35,6 +27,8 @@
   position: relative;
   overflow: hidden;
   border-bottom: var(--border);
+  border-top-left-radius: calc(var(--radius) - 3px);
+  border-top-right-radius: calc(var(--radius) - 3px);
   aspect-ratio: 3 / 2;
 }
 
@@ -47,9 +41,12 @@
   overflow: hidden;
   aspect-ratio: 3 / 2;
   border-bottom: var(--border);
+  border-top-left-radius: calc(var(--radius) - 3px);
+  border-top-right-radius: calc(var(--radius) - 3px);
 }
 
-.event-card__placeholder--past {
+.event-card__placeholder--past,
+.event-card--past .event-card__image-wrap {
   filter: saturate(0.72);
 }
 

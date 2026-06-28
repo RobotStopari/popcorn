@@ -22,8 +22,9 @@
     font-size: 0.95rem;
   }
 
-  .blog-grid {
-    grid-template-columns: 1fr;
+  .blog-grid > .blog-card-wrap {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 
   .events-pagination {

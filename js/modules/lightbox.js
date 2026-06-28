@@ -1,5 +1,3 @@
-import { bindFrameImage } from './image-loader.js';
-
 let lightboxEl = null;
 let images = [];
 let currentIndex = 0;
@@ -23,10 +21,9 @@ function ensureLightbox() {
       <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
     </button>
     <figure class="lightbox__figure">
-      <div class="lightbox__stage img-frame">
+      <div class="lightbox__stage">
         <img class="lightbox__img" src="" alt="">
       </div>
-      <figcaption class="lightbox__caption"></figcaption>
     </figure>
     <button type="button" class="lightbox__nav lightbox__nav--next" data-lightbox-next aria-label="Další obrázek">
       <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -58,18 +55,12 @@ function updateLightbox() {
   if (!lightboxEl || !images.length) return;
 
   const item = images[currentIndex];
-  const stage = lightboxEl.querySelector('.lightbox__stage');
   const img = lightboxEl.querySelector('.lightbox__img');
-  const caption = lightboxEl.querySelector('.lightbox__caption');
   const prev = lightboxEl.querySelector('[data-lightbox-prev]');
   const next = lightboxEl.querySelector('[data-lightbox-next]');
 
-  stage?.classList.remove('is-loaded');
   img.src = item.src;
   img.alt = item.alt;
-  bindFrameImage(img);
-  caption.textContent = item.alt || '';
-  caption.hidden = !item.alt;
 
   const showNav = images.length > 1;
   prev.hidden = !showNav;

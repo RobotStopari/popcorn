@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import AdminModalPanel from './AdminModalPanel';
 
 export default function AdminDeleteBlogPostDialog({ open, post, onClose, onConfirm }) {
   const [deleting, setDeleting] = useState(false);
@@ -49,7 +50,7 @@ export default function AdminDeleteBlogPostDialog({ open, post, onClose, onConfi
       aria-labelledby="admin-delete-blog-post-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel">
+      <AdminModalPanel>
         <h2 id="admin-delete-blog-post-title" className="admin-modal__title">Smazat příspěvek?</h2>
         <p className="admin-modal__text">
           Opravdu chcete smazat blogový příspěvek <strong>{post.title}</strong>? Tuto akci nelze vrátit zpět.
@@ -65,7 +66,7 @@ export default function AdminDeleteBlogPostDialog({ open, post, onClose, onConfi
             {deleting ? 'Mažu…' : 'Smazat'}
           </button>
         </div>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

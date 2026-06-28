@@ -6,6 +6,7 @@ import {
   slugifyTitle,
 } from '../data/pages';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import AdminModalPanel from './AdminModalPanel';
 
 const EMPTY_FORM = {
   title: '',
@@ -101,7 +102,7 @@ export default function AdminPageFormModal({
       aria-labelledby="admin-page-form-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel admin-modal__panel--page">
+      <AdminModalPanel className="admin-modal__panel--page">
         <h2 id="admin-page-form-title" className="admin-modal__title">
           {isCreate ? 'Nová stránka' : 'Upravit stránku'}
         </h2>
@@ -171,7 +172,7 @@ export default function AdminPageFormModal({
             </button>
           </div>
         </form>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );

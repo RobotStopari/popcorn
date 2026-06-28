@@ -4,6 +4,7 @@ import { useBlogPosts } from '../contexts/BlogPostsContext';
 import {
   buildAuthorSnapshot,
   getPublishTimestamp,
+  normalizeBlogPost,
   resolveAuthorForDisplay,
 } from '../utils/blog-post-format';
 import {
@@ -16,7 +17,7 @@ import {
 
 export function useBlogAuthoring() {
   const { user, profile, profileComplete } = useAdminAuth();
-  const { posts } = useBlogPosts();
+  const { posts, prependPost } = useBlogPosts();
   const [formOpen, setFormOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -85,11 +86,25 @@ export function useBlogAuthoring() {
           author,
         });
       } else {
-        await createBlogPost({
+        const publishMeta = getPublishTimestamp();
+        const author = buildAuthorSnapshot(profile, user);
+        const id = await createBlogPost({
           ...payload,
-          ...getPublishTimestamp(),
-          author: buildAuthorSnapshot(profile, user),
+          ...publishMeta,
+          author,
         });
+
+        prependPost(normalizeBlogPost({
+          id,
+          ...payload,
+          ...publishMeta,
+          author,
+          likeCount: 0,
+          commentCount: 0,
+          coverImage: payload.coverImage || '',
+          coverPublicId: payload.coverPublicId || '',
+          galleryImages: payload.galleryImages || [],
+        }));
       }
 
       return true;
@@ -104,6 +119,7 @@ export function useBlogAuthoring() {
     posts,
     profile,
     user,
+    prependPost,
   ]);
 
   const handleConfirmDelete = useCallback(async (postId) => {

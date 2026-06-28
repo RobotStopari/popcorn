@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAdminAuth } from '../contexts/AdminAuthContext';
 import AdminAvatar from './AdminAvatar';
 import BlogPostStats from './BlogPostStats';
 import { formatAuthorDisplayName } from '../utils/blog-post-format';
@@ -14,6 +15,7 @@ function TrashIcon() {
 }
 
 export default function AdminBlogPostCommentsSection({ post }) {
+  const { canAccessAdmin } = useAdminAuth();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -92,36 +94,38 @@ export default function AdminBlogPostCommentsSection({ post }) {
                     <span className="blog-comment__author">{formatAuthorDisplayName(comment.author)}</span>
                     <time className="blog-comment__date">{formatCommentDateTime(comment)}</time>
                     <div className="blog-comment__actions">
-                      {confirmDeleteId === comment.id ? (
-                        <div className="blog-comment__confirm">
-                          <span>Smazat?</span>
+                      {canAccessAdmin && (
+                        confirmDeleteId === comment.id ? (
+                          <div className="blog-comment__confirm">
+                            <span>Smazat?</span>
+                            <button
+                              type="button"
+                              className="blog-comment__confirm-btn"
+                              onClick={() => setConfirmDeleteId('')}
+                              disabled={deletingId === comment.id}
+                            >
+                              Ne
+                            </button>
+                            <button
+                              type="button"
+                              className="blog-comment__confirm-btn blog-comment__confirm-btn--danger"
+                              onClick={() => handleDelete(comment.id)}
+                              disabled={deletingId === comment.id}
+                            >
+                              {deletingId === comment.id ? '…' : 'Ano'}
+                            </button>
+                          </div>
+                        ) : (
                           <button
                             type="button"
-                            className="blog-comment__confirm-btn"
-                            onClick={() => setConfirmDeleteId('')}
-                            disabled={deletingId === comment.id}
+                            className="blog-comment__action blog-comment__action--danger admin-blog-form__comment-delete"
+                            aria-label="Smazat komentář"
+                            disabled={Boolean(deletingId)}
+                            onClick={() => setConfirmDeleteId(comment.id)}
                           >
-                            Ne
+                            <TrashIcon />
                           </button>
-                          <button
-                            type="button"
-                            className="blog-comment__confirm-btn blog-comment__confirm-btn--danger"
-                            onClick={() => handleDelete(comment.id)}
-                            disabled={deletingId === comment.id}
-                          >
-                            {deletingId === comment.id ? '…' : 'Ano'}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="blog-comment__action blog-comment__action--danger admin-blog-form__comment-delete"
-                          aria-label="Smazat komentář"
-                          disabled={Boolean(deletingId)}
-                          onClick={() => setConfirmDeleteId(comment.id)}
-                        >
-                          <TrashIcon />
-                        </button>
+                        )
                       )}
                     </div>
                   </div>

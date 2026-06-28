@@ -11,6 +11,7 @@ import { pagePath } from '../data/pages';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import PageCombobox from './PageCombobox';
 import SortableList from './SortableList';
+import AdminModalPanel from './AdminModalPanel';
 
 function Toggle({ id, checked, onChange, label }) {
   return (
@@ -111,7 +112,7 @@ export default function AdminMenuLinkFormModal({
       aria-labelledby="admin-menu-link-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="admin-modal__panel admin-modal__panel--page">
+      <AdminModalPanel className="admin-modal__panel--page">
         <h2 id="admin-menu-link-title" className="admin-modal__title">
           {link ? 'Upravit položku' : 'Nová položka menu'}
         </h2>
@@ -205,7 +206,7 @@ export default function AdminMenuLinkFormModal({
             </button>
           </div>
         </form>
-      </div>
+      </AdminModalPanel>
     </div>,
     document.body,
   );
@@ -312,7 +313,7 @@ export function AdminMenuDropdownFormModal({
         aria-labelledby="admin-menu-dropdown-title"
       >
         <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-        <div className="admin-modal__panel admin-modal__panel--wide">
+        <AdminModalPanel className="admin-modal__panel--wide">
           <h2 id="admin-menu-dropdown-title" className="admin-modal__title">
             {dropdown ? 'Upravit dropdown' : 'Nový dropdown'}
           </h2>
@@ -409,7 +410,7 @@ export function AdminMenuDropdownFormModal({
               </button>
             </div>
           </form>
-        </div>
+        </AdminModalPanel>
       </div>
 
       <AdminMenuLinkFormModal

@@ -24,6 +24,7 @@ import {
 import { auth, db, googleProvider } from '../firebase';
 import { refreshPostAuthorsForUser } from '../services/blog-posts';
 import { syncProfileFromAuth } from '../utils/sync-user-profile';
+import { isUploadBusy } from '../utils/upload-busy';
 
 const AdminAuthContext = createContext(null);
 
@@ -90,6 +91,8 @@ export function AdminAuthProvider({ children }) {
     let cancelled = false;
 
     const refreshAuthProfile = async () => {
+      if (isUploadBusy()) return;
+
       try {
         await auth.currentUser?.reload();
         if (cancelled || !auth.currentUser) return;
@@ -110,12 +113,10 @@ export function AdminAuthProvider({ children }) {
       }
     };
 
-    window.addEventListener('focus', refreshAuthProfile);
     const interval = setInterval(refreshAuthProfile, PHOTO_SYNC_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      window.removeEventListener('focus', refreshAuthProfile);
       clearInterval(interval);
     };
   }, [user?.uid]);
