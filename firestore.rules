@@ -82,6 +82,10 @@ service cloud.firestore {
           'coverPublicId',
           'promoImages',
           'galleryPicks',
+          'category',
+          'externalPageEnabled',
+          'externalPageUrl',
+          'calendarOnly',
           'published',
           'updatedAt',
           '_shareEditId',
@@ -263,11 +267,29 @@ service cloud.firestore {
 
     function validSiteTextsData() {
       let data = request.resource.data;
-      return data.keys().hasOnly(['heroQuote', 'upcomingIntro', 'pastIntro', 'blogIntro', 'updatedAt'])
+      return data.keys().hasOnly([
+          'heroQuote',
+          'upcomingIntro',
+          'pastIntro',
+          'blogIntro',
+          'eventCategoryPublicLabel',
+          'eventCategoryPublicDescription',
+          'eventCategoryPrivateLabel',
+          'eventCategoryPrivateDescription',
+          'eventCategoryExternalLabel',
+          'eventCategoryExternalDescription',
+          'updatedAt',
+        ])
         && data.heroQuote is string
         && data.upcomingIntro is string
         && data.pastIntro is string
-        && data.blogIntro is string;
+        && data.blogIntro is string
+        && data.eventCategoryPublicLabel is string
+        && data.eventCategoryPublicDescription is string
+        && data.eventCategoryPrivateLabel is string
+        && data.eventCategoryPrivateDescription is string
+        && data.eventCategoryExternalLabel is string
+        && data.eventCategoryExternalDescription is string;
     }
 
     match /siteTexts/{docId} {
@@ -335,6 +357,58 @@ service cloud.firestore {
     match /siteMenu/{docId} {
       allow read: if true;
       allow create, update: if isAdmin() && docId == 'config';
+      allow delete: if false;
+    }
+
+    function validHexColor(value) {
+      return value is string
+        && value.matches('^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$');
+    }
+
+    function validSiteColorMap(colors) {
+      return colors is map
+        && validHexColor(colors.orange)
+        && validHexColor(colors.orangeLight)
+        && validHexColor(colors.orangeDark)
+        && validHexColor(colors.orangePale)
+        && validHexColor(colors.red)
+        && validHexColor(colors.redLight)
+        && validHexColor(colors.redPale)
+        && validHexColor(colors.blue)
+        && validHexColor(colors.blueLight)
+        && validHexColor(colors.bluePale)
+        && validHexColor(colors.green)
+        && validHexColor(colors.greenLight)
+        && validHexColor(colors.greenPale)
+        && validHexColor(colors.teal)
+        && validHexColor(colors.tealLight)
+        && validHexColor(colors.tealPale)
+        && validHexColor(colors.yellow)
+        && validHexColor(colors.yellowPale)
+        && validHexColor(colors.black)
+        && validHexColor(colors.white)
+        && validHexColor(colors.offWhite)
+        && validHexColor(colors.gray)
+        && validHexColor(colors.grayMuted);
+    }
+
+    function validSiteColorsData() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['colors', 'updatedAt'])
+        && validSiteColorMap(data.colors);
+    }
+
+    match /siteColors/{docId} {
+      allow read: if true;
+
+      allow create: if isAdmin()
+        && docId == 'config'
+        && validSiteColorsData();
+
+      allow update: if isAdmin()
+        && docId == 'config'
+        && validSiteColorsData();
+
       allow delete: if false;
     }
   }

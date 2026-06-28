@@ -1,6 +1,6 @@
-/** Brand color palette — single source of truth for all site colors */
+/** Brand color palette — defaults for static pages (live React app uses Firestore) */
 
-export const COLORS = {
+export const DEFAULT_COLORS = {
   orange: '#faa908',
   orangeLight: '#ffb82e',
   orangeDark: '#e89400',
@@ -26,6 +26,8 @@ export const COLORS = {
   grayMuted: '#bbb',
 };
 
+export const COLORS = DEFAULT_COLORS;
+
 function hexToRgb(hex) {
   const value = hex.replace('#', '');
   const normalized = value.length === 3
@@ -44,11 +46,15 @@ function withAlpha(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export const GRADIENTS = {
-  band: `linear-gradient(135deg, ${COLORS.orangePale} 0%, ${COLORS.orange} 48%, ${COLORS.orangeDark} 100%)`,
-  loaderBar: `linear-gradient(90deg, ${COLORS.orange}, ${COLORS.red})`,
-  parallaxOverlay: `linear-gradient(135deg, ${withAlpha(COLORS.orange, 0.75)} 0%, ${withAlpha(COLORS.red, 0.65)} 100%)`,
-};
+export function buildGradients(colors) {
+  return {
+    band: `linear-gradient(135deg, ${colors.orangePale} 0%, ${colors.orange} 48%, ${colors.orangeDark} 100%)`,
+    loaderBar: `linear-gradient(90deg, ${colors.orange}, ${colors.red})`,
+    parallaxOverlay: `linear-gradient(135deg, ${withAlpha(colors.orange, 0.75)} 0%, ${withAlpha(colors.red, 0.65)} 100%)`,
+  };
+}
+
+export const GRADIENTS = buildGradients(COLORS);
 
 const COLOR_CSS_VARS = {
   orange: '--orange',

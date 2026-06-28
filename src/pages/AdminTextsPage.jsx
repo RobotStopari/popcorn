@@ -1,19 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { SITE_TEXT_FIELDS } from '../data/site-texts';
+import {
+  DEFAULT_SITE_TEXTS,
+  SITE_TEXT_FIELDS,
+  SITE_TEXT_FIELD_IDS,
+  SITE_TEXT_SECTIONS,
+} from '../data/site-texts';
 import { subscribeSiteTexts, updateSiteTexts } from '../services/site-texts';
 
 const FORM_ID = 'admin-texts-form';
 
+function createEmptyTexts() {
+  return SITE_TEXT_FIELD_IDS.reduce((acc, fieldId) => {
+    acc[fieldId] = '';
+    return acc;
+  }, {});
+}
+
 export default function AdminTextsPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
-  const [texts, setTexts] = useState({
-    heroQuote: '',
-    upcomingIntro: '',
-    pastIntro: '',
-    blogIntro: '',
-  });
+  const [texts, setTexts] = useState(createEmptyTexts);
   const [listLoading, setListLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -32,6 +39,7 @@ export default function AdminTextsPage() {
         setListLoading(false);
       },
       () => {
+        setTexts(DEFAULT_SITE_TEXTS);
         setListLoading(false);
       },
     );
@@ -60,14 +68,13 @@ export default function AdminTextsPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const trimmed = {
-      heroQuote: texts.heroQuote.trim(),
-      upcomingIntro: texts.upcomingIntro.trim(),
-      pastIntro: texts.pastIntro.trim(),
-      blogIntro: texts.blogIntro.trim(),
-    };
+    const trimmed = SITE_TEXT_FIELD_IDS.reduce((acc, fieldId) => {
+      acc[fieldId] = texts[fieldId].trim();
+      return acc;
+    }, {});
 
-    if (!trimmed.heroQuote || !trimmed.upcomingIntro || !trimmed.pastIntro || !trimmed.blogIntro) {
+    const missingField = SITE_TEXT_FIELD_IDS.find((fieldId) => !trimmed[fieldId]);
+    if (missingField) {
       setSaveError('Všechna pole musí být vyplněná.');
       return;
     }
@@ -119,24 +126,46 @@ export default function AdminTextsPage() {
         <p className="admin-loading">Načítám texty…</p>
       ) : (
         <form id={FORM_ID} className="admin-texts-panel" onSubmit={handleSubmit}>
-          {SITE_TEXT_FIELDS.map((field) => (
-            <div key={field.id} className="admin-texts-row">
-              <div className="admin-texts-row__head">
-                <label className="admin-texts-row__label" htmlFor={field.id}>
-                  {field.label}
-                </label>
-                <p className="admin-texts-row__hint">{field.hint}</p>
-              </div>
-              <textarea
-                id={field.id}
-                className="admin-form__input admin-texts-row__input"
-                rows={field.minRows || 2}
-                value={texts[field.id]}
-                onChange={(e) => handleChange(field.id, e.target.value)}
-                required
-              />
-            </div>
-          ))}
+          {SITE_TEXT_SECTIONS.map((section) => {
+            const sectionFields = SITE_TEXT_FIELDS.filter((field) => field.section === section.id);
+
+            return (
+              <section key={section.id} className="admin-texts-section">
+                <h2 className="admin-texts-section__title">{section.title}</h2>
+                <div className="admin-texts-section__fields">
+                  {sectionFields.map((field) => (
+                    <div key={field.id} className="admin-texts-row">
+                      <div className="admin-texts-row__head">
+                        <label className="admin-texts-row__label" htmlFor={field.id}>
+                          {field.label}
+                        </label>
+                        <p className="admin-texts-row__hint">{field.hint}</p>
+                      </div>
+                      {field.inputType === 'text' ? (
+                        <input
+                          id={field.id}
+                          type="text"
+                          className="admin-form__input admin-texts-row__input admin-texts-row__input--text"
+                          value={texts[field.id]}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          required
+                        />
+                      ) : (
+                        <textarea
+                          id={field.id}
+                          className="admin-form__input admin-texts-row__input"
+                          rows={field.minRows || 2}
+                          value={texts[field.id]}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          required
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </form>
       )}
     </div>

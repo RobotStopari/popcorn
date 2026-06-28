@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { CALENDAR_LOCALE, eventUrl } from '../data/events';
+import { EVENT_CATEGORY_ICONS } from '../data/icons';
+import { useEventCategories } from '../hooks/useEventCategories';
 import { useEvents } from '../contexts/EventsContext';
+import { formatEventDateLabel } from '../utils/event-dates';
 
 const { months: MONTHS, weekdays: WEEKDAYS } = CALENDAR_LOCALE;
 
@@ -131,10 +134,72 @@ function DayCell({ dayInfo, colIndex }) {
   );
 }
 
+function eventOverlapsMonth(event, year, month) {
+  const start = parseDate(event.start);
+  const end = parseDate(event.end);
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0);
+  return start <= monthEnd && end >= monthStart;
+}
+
+function MonthAgenda({ events, year, month }) {
+  const monthEvents = useMemo(() => (
+    events
+      .filter((event) => eventOverlapsMonth(event, year, month))
+      .sort((a, b) => parseDate(a.start) - parseDate(b.start))
+  ), [events, year, month]);
+
+  if (!monthEvents.length) return null;
+
+  return (
+    <div className="cal__agenda" aria-label="Akce v tomto měsíci">
+      <ul className="cal__agenda-list">
+        {monthEvents.map((event) => {
+          const category = event.category || 'public';
+          const timing = event.past ? 'past' : 'upcoming';
+          const opensExternally = event.calendarOnly && event.externalPageUrl;
+          const categoryIcon = EVENT_CATEGORY_ICONS[category] || EVENT_CATEGORY_ICONS.public;
+          const dateLabel = formatEventDateLabel({
+            dateStart: event.start,
+            dateEnd: event.end,
+          });
+
+          return (
+            <li key={event.id}>
+              <a
+                href={opensExternally ? event.externalPageUrl : eventUrl(event.id)}
+                className={`cal__agenda-item cal__agenda-item--${category} cal__agenda-item--${timing}`}
+                {...(opensExternally ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                <span
+                  className="cal__agenda-icon"
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: categoryIcon }}
+                />
+                <span className="cal__agenda-copy">
+                  <span className="cal__agenda-name">{event.name}</span>
+                  <span className="cal__agenda-date">{dateLabel}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function EventBar({ seg }) {
   const { event, colStart, span, isStart, isEnd, lane } = seg;
-  const type = event.past ? 'past' : 'upcoming';
-  const classes = ['cal__event', `cal__event--${type}`];
+  const timing = event.past ? 'past' : 'upcoming';
+  const category = event.category || 'public';
+  const opensExternally = event.calendarOnly && event.externalPageUrl;
+  const categoryIcon = EVENT_CATEGORY_ICONS[category] || EVENT_CATEGORY_ICONS.public;
+  const classes = [
+    'cal__event',
+    `cal__event--${category}`,
+    `cal__event--${timing}`,
+  ];
   if (isStart) classes.push('cal__event--segment-start');
   if (isEnd) classes.push('cal__event--segment-end');
   if (!isStart) classes.push('cal__event--segment-continue');
@@ -142,12 +207,21 @@ function EventBar({ seg }) {
 
   return (
     <a
-      href={eventUrl(event.id)}
+      href={opensExternally ? event.externalPageUrl : eventUrl(event.id)}
       className={classes.join(' ')}
       style={{ gridColumn: `${colStart + 1} / span ${span}`, gridRow: lane + 2 }}
       title={event.name}
+      aria-label={event.name}
+      {...(opensExternally ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
-      {event.name}
+      {isStart && (
+        <span
+          className="cal__event-icon"
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: categoryIcon }}
+        />
+      )}
+      <span className="cal__event-label">{event.name}</span>
     </a>
   );
 }
@@ -176,6 +250,7 @@ function Week({ weekDays, eventLanes, events }) {
 
 export default function Calendar() {
   const { calendarEvents } = useEvents();
+  const { categories, categoryIds } = useEventCategories();
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -263,6 +338,19 @@ export default function Calendar() {
                 eventLanes={eventLanesRef.current}
                 events={calendarEvents}
               />
+            ))}
+          </div>
+          <MonthAgenda events={calendarEvents} year={viewYear} month={viewMonth} />
+          <div className="cal__legend" aria-label="Legenda kategorií akcí">
+            {categoryIds.map((categoryId) => (
+              <div key={categoryId} className="cal__legend-item">
+                <span
+                  className={`cal__legend-swatch cal__legend-swatch--${categoryId}`}
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: EVENT_CATEGORY_ICONS[categoryId] }}
+                />
+                <span className="cal__legend-label">{categories[categoryId].label}</span>
+              </div>
             ))}
           </div>
         </div>

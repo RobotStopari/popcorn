@@ -15,6 +15,7 @@ const NAV_GROUPS = [
     { to: '/admin/menu', label: 'Menu' },
     { to: '/admin/texts', label: 'Texty' },
   ],
+  [{ to: '/admin/colors', label: 'Barvy' }],
 ];
 
 export default function AdminSidebar() {

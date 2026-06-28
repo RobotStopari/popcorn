@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { DEFAULT_EVENT_CATEGORY } from '../data/event-categories';
 import { normalizeEvent } from '../utils/event-format';
 
 const eventsRef = collection(db, 'events');
@@ -62,6 +63,10 @@ const EMPTY_EVENT_FIELDS = {
   coverPublicId: '',
   promoImages: [],
   galleryPicks: [],
+  category: DEFAULT_EVENT_CATEGORY,
+  externalPageEnabled: false,
+  externalPageUrl: '',
+  calendarOnly: false,
 };
 
 export async function createEvent(payload) {

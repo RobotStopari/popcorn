@@ -5,7 +5,7 @@ export const SOCIALS = [
   {
     id: 'instagram',
     label: 'Instagram',
-    href: '#',
+    href: 'https://www.instagram.com/popcorn_puk/',
     icon: ICONS.instagram,
     showInBand: true,
     showInFooter: true,

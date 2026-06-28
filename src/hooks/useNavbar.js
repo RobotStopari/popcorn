@@ -1,6 +1,26 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+export function closeMobileNav() {
+  const navMenu = document.getElementById('navMenu');
+  const navToggle = document.getElementById('navToggle');
+
+  navMenu?.classList.remove('navbar__nav--open');
+  navToggle?.setAttribute('aria-expanded', 'false');
+
+  document.querySelectorAll('.nav-dropdown--open').forEach((dropdown) => {
+    dropdown.classList.remove('nav-dropdown--open');
+    dropdown.querySelector('.nav-btn--dropdown')?.setAttribute('aria-expanded', 'false');
+  });
+}
 
 export function useNavbar() {
+  const location = useLocation();
+
+  useEffect(() => {
+    closeMobileNav();
+  }, [location.pathname]);
+
   useEffect(() => {
     const navbar = document.getElementById('navbar');
     const navToggle = document.getElementById('navToggle');

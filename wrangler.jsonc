@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "komunita-popcorn",
+  "main": "worker/index.js",
   "compatibility_date": "2026-06-28",
   "assets": {
     "directory": "./dist",

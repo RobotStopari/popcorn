@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useEvents } from '../contexts/EventsContext';
 import { ICONS } from '../data/icons';
 import { buildGoogleCalendarUrl } from '../utils/google-calendar';
+import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
+import EventCategoryLabel from './EventCategoryLabel';
 import EventGallery from './EventGallery';
 
 const CONTACT_ICONS = {
@@ -275,12 +277,15 @@ function Participants({ participants }) {
 }
 
 function RichTextBlock({ title, html }) {
+  const displayHtml = useMemo(() => transformRichTextForDisplay(html), [html]);
+  if (!displayHtml) return null;
+
   return (
     <div className="event-detail__rich-text reveal">
       {title && <h2 className="event-detail__section-label">{title}</h2>}
       <div
         className="event-detail__description event-detail__description--rich"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: displayHtml }}
       />
     </div>
   );
@@ -303,6 +308,12 @@ function UpcomingDetail({ event }) {
 
         <aside className="event-detail__sidebar reveal">
           <div className="event-detail__fields">
+            <EventCategoryLabel
+              category={event.category}
+              past={false}
+              className="event-detail__sidebar-category"
+              showDescription
+            />
             <ScheduleRow event={event} />
             {event.hasPlace && <InfoField label="Místo" value={event.misto} />}
             {event.hasPrice && <InfoField label="Cena" value={event.cena} />}
@@ -328,14 +339,19 @@ function UpcomingDetail({ event }) {
 }
 
 function PastDetail({ event }) {
+  const reportHtml = useMemo(
+    () => transformRichTextForDisplay(event.report),
+    [event.report],
+  );
+
   return (
     <>
-      {event.hasReport && (
+      {event.hasReport && reportHtml && (
         <section className="event-detail__report reveal">
           <h2 className="event-detail__report-title">Zápis z akce</h2>
           <div
             className="event-detail__report-body event-detail__description--rich"
-            dangerouslySetInnerHTML={{ __html: event.report }}
+            dangerouslySetInnerHTML={{ __html: reportHtml }}
           />
         </section>
       )}
@@ -402,7 +418,27 @@ export default function EventDetail({ id }) {
       <header className="event-detail__header reveal reveal--scale">
         <h1 className="event-detail__title">{event.name}</h1>
         <time className={dateClass} dateTime={event.dateStart}>{event.dateLabel}</time>
+        {past && (
+          <EventCategoryLabel
+            category={event.category}
+            past
+            className="event-detail__category"
+          />
+        )}
       </header>
+
+      {event.hasExternalPage && (
+        <div className="event-detail__external-page reveal">
+          <a
+            href={event.externalPageUrl}
+            className={`btn btn--external btn--large${past ? ' btn--external--past' : ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Webová stránka akce
+          </a>
+        </div>
+      )}
 
       {past
         ? <PastDetail event={event} />

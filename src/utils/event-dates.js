@@ -111,7 +111,7 @@ export function getTopPast(events, limit = 3) {
 }
 
 function isPublicListedEvent(event) {
-  return event.published !== false;
+  return event.published !== false && !event.calendarOnly;
 }
 
 export function getAllUpcoming(events, now = new Date()) {
@@ -138,15 +138,53 @@ export function getAllPast(events, now = new Date()) {
     .sort((a, b) => getEventEndDateTime(b) - getEventEndDateTime(a));
 }
 
-export function sortAdminEventList(events, descending = true) {
-  const drafts = events.filter((event) => event.isDraft);
-  const rest = events.filter((event) => !event.isDraft);
+export function sortUpcomingEvents(events, descending = false) {
+  return [...events].sort((a, b) => {
+    const aStart = getEventStartDateTime(a);
+    const bStart = getEventStartDateTime(b);
+    const aValid = !Number.isNaN(aStart.getTime());
+    const bValid = !Number.isNaN(bStart.getTime());
+    if (!aValid && !bValid) return 0;
+    if (!aValid) return 1;
+    if (!bValid) return -1;
+    const diff = aStart - bStart;
+    return descending ? -diff : diff;
+  });
+}
 
-  const sortDrafts = [...drafts].sort((a, b) => {
+export function sortPastEvents(events, descending = false) {
+  return [...events].sort((a, b) => {
+    const aEnd = getEventEndDateTime(a);
+    const bEnd = getEventEndDateTime(b);
+    const aValid = !Number.isNaN(aEnd.getTime());
+    const bValid = !Number.isNaN(bEnd.getTime());
+    if (!aValid && !bValid) return 0;
+    if (!aValid) return 1;
+    if (!bValid) return -1;
+    const diff = aEnd - bEnd;
+    return descending ? diff : -diff;
+  });
+}
+
+function sortDraftEvents(events) {
+  return [...events].sort((a, b) => {
     const aTime = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || 0;
     const bTime = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || 0;
     return bTime - aTime;
   });
+}
 
-  return [...sortDrafts, ...sortByStart(rest, descending)];
+/** Admin list: drafts, then upcoming (soonest first), then past (most recent first). */
+export function partitionAdminEventList(events, descending = false, now = new Date()) {
+  const drafts = sortDraftEvents(events.filter((event) => event.isDraft));
+  const rest = events.filter((event) => !event.isDraft);
+  const upcoming = sortUpcomingEvents(rest.filter((event) => !isEventPast(event, now)), descending);
+  const past = sortPastEvents(rest.filter((event) => isEventPast(event, now)), descending);
+
+  return { drafts, upcoming, past };
+}
+
+export function sortAdminEventList(events, descending = false, now = new Date()) {
+  const { drafts, upcoming, past } = partitionAdminEventList(events, descending, now);
+  return [...drafts, ...upcoming, ...past];
 }

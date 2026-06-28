@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Calendar from '../components/Calendar';
 import FlowConnector from '../components/FlowConnector';
 import Hero from '../components/Hero';
+import InstagramFeed from '../components/InstagramFeed';
 import ParallaxSection from '../components/ParallaxSection';
 import PastEvents from '../components/PastEvents';
 import UpcomingEvents from '../components/UpcomingEvents';
@@ -24,10 +25,12 @@ export default function HomePage({ page }) {
     <>
       <Hero />
       <UpcomingEvents />
-      <ParallaxSection />
-      <PastEvents />
       <FlowConnector />
       <Calendar />
+      <ParallaxSection />
+      <PastEvents />
+      <FlowConnector compact />
+      <InstagramFeed />
     </>
   );
 }

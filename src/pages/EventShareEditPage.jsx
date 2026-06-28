@@ -7,7 +7,7 @@ import {
   updateEventViaShareLink,
 } from '../services/event-share-links';
 import { fetchEventById } from '../services/events';
-import { isEventPublishable } from '../utils/event-format';
+import { isEventPublishable, normalizeEvent } from '../utils/event-format';
 import { getShareLinkStatus } from '../utils/event-share-link-format';
 
 export default function EventShareEditPage() {
@@ -89,11 +89,11 @@ export default function EventShareEditPage() {
         ...payload,
         published: resolvedPublished,
       });
-      setEvent((current) => ({
+      setEvent((current) => normalizeEvent({
         ...current,
         ...payload,
+        id: current.id,
         published: resolvedPublished,
-        title: payload.title,
       }));
       if (payload.title?.trim()) {
         document.title = `Úprava akce — ${payload.title.trim()}`;

@@ -41,14 +41,31 @@
   font-size: clamp(2rem, 5vw, 3.25rem);
   font-weight: 800;
   line-height: 1.28;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.3rem;
   padding-top: 0.1rem;
+}
+
+.event-detail__header .event-detail__category {
+  margin-top: 0.45rem;
+  margin-bottom: 0;
+  font-size: clamp(0.82rem, 1.8vw, 0.95rem);
+}
+
+.event-detail__sidebar-category.event-category-detail {
+  align-items: stretch;
+}
+
+.event-detail__sidebar-category .event-category-detail__callout {
+  width: 100%;
+  max-width: none;
 }
 
 .event-detail__date {
   font-size: clamp(0.95rem, 2vw, 1.1rem);
   font-weight: 500;
   color: var(--red);
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .event-detail__date--past {
@@ -428,10 +445,15 @@
 }
 
 /* Register button */
-.event-detail__register {
+.event-detail__register,
+.event-detail__external-page {
   display: flex;
   justify-content: center;
   margin-bottom: 3rem;
+}
+
+.event-detail__external-page {
+  margin-top: -1.5rem;
 }
 
 .btn--large {
@@ -579,6 +601,95 @@
 
 .event-detail__description--rich strong {
   font-weight: 800;
+}
+
+.event-detail__description--rich p + ul,
+.event-detail__description--rich p + ol,
+.event-detail__description--rich h2 + ul,
+.event-detail__description--rich h2 + ol {
+  margin-top: 0.65rem;
+}
+
+.event-detail__description--rich ul + p,
+.event-detail__description--rich ol + p,
+.event-detail__description--rich ul + h2,
+.event-detail__description--rich ol + h2 {
+  margin-top: 1rem;
+}
+
+.event-detail__description--rich ul,
+.event-detail__description--rich ol {
+  margin: 0.85rem 0;
+  padding-left: 1.35rem;
+  line-height: 1.55;
+}
+
+.event-detail__description--rich ul ul,
+.event-detail__description--rich ol ol,
+.event-detail__description--rich ul ol,
+.event-detail__description--rich ol ul {
+  margin: 0.2rem 0 0.35rem;
+  padding-left: 1.25rem;
+}
+
+.event-detail__description--rich li {
+  line-height: 1.55;
+}
+
+.event-detail__description--rich li + li {
+  margin-top: 0.2rem;
+}
+
+.event-detail__description--rich li > ul,
+.event-detail__description--rich li > ol {
+  margin-top: 0.15rem;
+  margin-bottom: 0.1rem;
+}
+
+.event-detail__description--rich ul {
+  list-style: disc;
+}
+
+.event-detail__description--rich ul ul {
+  list-style: circle;
+}
+
+.event-detail__description--rich ul ul ul {
+  list-style: square;
+}
+
+.event-detail__description--rich ol {
+  list-style: decimal;
+}
+
+.event-detail__description--rich ol ol {
+  list-style: lower-alpha;
+}
+
+.event-detail__description--rich ol ol ol {
+  list-style: lower-roman;
+}
+
+.event-detail__description--rich .rich-text__youtube {
+  margin: 1.5rem 0;
+}
+
+.event-detail__description--rich .rich-text__youtube-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.event-detail__description--rich .rich-text__youtube-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .event-detail__contact-nick {

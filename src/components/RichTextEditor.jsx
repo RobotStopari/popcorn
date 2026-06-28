@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   exitYoutubeMarkerOnEnter,
   indentList,
@@ -7,6 +7,7 @@ import {
   toggleHeading,
 } from '../utils/rich-text-editor-commands';
 import { buildDividerEditorHtml, buildYoutubePlaceholderHtml } from '../utils/rich-text-embeds';
+import { resolveRichTextFeatures } from '../utils/rich-text-features';
 import RichTextLinkDialog from './RichTextLinkDialog';
 import RichTextYoutubeDialog from './RichTextYoutubeDialog';
 
@@ -131,7 +132,20 @@ function preserveToolbarSelection(event) {
   event.preventDefault();
 }
 
-export default function RichTextEditor({ id, label, value, onChange, maxLength, tone = 'content' }) {
+function ToolbarSeparator() {
+  return <span className="rich-text__sep" aria-hidden="true" />;
+}
+
+export default function RichTextEditor({
+  id,
+  label,
+  value,
+  onChange,
+  maxLength,
+  tone = 'content',
+  features = 'full',
+}) {
+  const enabled = useMemo(() => resolveRichTextFeatures(features), [features]);
   const editorRef = useRef(null);
   const savedRangeRef = useRef(null);
   const insertRangeRef = useRef(null);
@@ -215,7 +229,7 @@ export default function RichTextEditor({ id, label, value, onChange, maxLength, 
     const editor = editorRef.current;
     if (!editor) return;
 
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (enabled.youtube && event.key === 'Enter' && !event.shiftKey) {
       if (exitYoutubeMarkerOnEnter(editor)) {
         event.preventDefault();
         emitChange();
@@ -223,7 +237,7 @@ export default function RichTextEditor({ id, label, value, onChange, maxLength, 
       }
     }
 
-    if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+    if (!enabled.youtube || (event.key !== 'Backspace' && event.key !== 'Delete')) return;
 
     if (removeAdjacentYoutubeMarker(editor, event.key)) {
       event.preventDefault();
@@ -348,63 +362,85 @@ export default function RichTextEditor({ id, label, value, onChange, maxLength, 
           </label>
         )}
         <div className="rich-text__toolbar" role="toolbar" aria-label={label ? `Formátování: ${label}` : 'Formátování textu'}>
-          <button type="button" className="rich-text__btn rich-text__btn--bold" onClick={() => runCommand('bold')} aria-label="Tučně">
-            <strong>B</strong>
-          </button>
-          <button type="button" className="rich-text__btn rich-text__btn--italic" onClick={() => runCommand('italic')} aria-label="Kurzíva">
-            <em>I</em>
-          </button>
-          <button type="button" className="rich-text__btn rich-text__btn--underline" onClick={() => runCommand('underline')} aria-label="Podtržení">
-            <span className="rich-text__underline">U</span>
-          </button>
-          <span className="rich-text__sep" aria-hidden="true" />
-          <button type="button" className="rich-text__btn rich-text__btn--heading" onClick={handleToggleHeading} aria-label="Nadpis">
-            H
-          </button>
-          <span className="rich-text__sep" aria-hidden="true" />
-          <button type="button" className="rich-text__btn rich-text__btn--list" onClick={() => runCommand('insertUnorderedList')} aria-label="Odrážky">
-            •
-          </button>
-          <button type="button" className="rich-text__btn rich-text__btn--list" onClick={() => runCommand('insertOrderedList')} aria-label="Číslovaný seznam">
-            1.
-          </button>
-          <button type="button" className="rich-text__btn rich-text__btn--list" onClick={handleOutdent} aria-label="Odsadit vlevo">
-            ←
-          </button>
-          <button type="button" className="rich-text__btn rich-text__btn--list" onClick={handleIndent} aria-label="Odsadit vpravo">
-            →
-          </button>
-          <span className="rich-text__sep" aria-hidden="true" />
-          <button
-            type="button"
-            className="rich-text__btn rich-text__btn--link"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={openLinkDialog}
-            aria-label="Odkaz"
-          >
-            <span className="rich-text__btn-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LINK_ICON }} />
-            Odkaz
-          </button>
-          <button
-            type="button"
-            className="rich-text__btn rich-text__btn--youtube"
-            onMouseDown={handleInsertToolbarMouseDown}
-            onClick={openYoutubeDialog}
-            aria-label="YouTube video"
-          >
-            <span className="rich-text__btn-icon" aria-hidden="true">▶</span>
-            Video
-          </button>
-          <button
-            type="button"
-            className="rich-text__btn rich-text__btn--divider"
-            onMouseDown={handleInsertToolbarMouseDown}
-            onClick={insertDivider}
-            aria-label="Oddělovač"
-          >
-            <span className="rich-text__btn-icon" aria-hidden="true">—</span>
-            Oddělovač
-          </button>
+          {enabled.bold && (
+            <button type="button" className="rich-text__btn rich-text__btn--bold" onClick={() => runCommand('bold')} aria-label="Tučně">
+              <strong>B</strong>
+            </button>
+          )}
+          {enabled.italic && (
+            <button type="button" className="rich-text__btn rich-text__btn--italic" onClick={() => runCommand('italic')} aria-label="Kurzíva">
+              <em>I</em>
+            </button>
+          )}
+          {enabled.underline && (
+            <button type="button" className="rich-text__btn rich-text__btn--underline" onClick={() => runCommand('underline')} aria-label="Podtržení">
+              <span className="rich-text__underline">U</span>
+            </button>
+          )}
+          {enabled.heading && (
+            <>
+              <ToolbarSeparator />
+              <button type="button" className="rich-text__btn rich-text__btn--heading" onClick={handleToggleHeading} aria-label="Nadpis">
+                H
+              </button>
+            </>
+          )}
+          {enabled.lists && (
+            <>
+              <ToolbarSeparator />
+              <button type="button" className="rich-text__btn rich-text__btn--list" onClick={() => runCommand('insertUnorderedList')} aria-label="Odrážky">
+                •
+              </button>
+              <button type="button" className="rich-text__btn rich-text__btn--list" onClick={() => runCommand('insertOrderedList')} aria-label="Číslovaný seznam">
+                1.
+              </button>
+              <button type="button" className="rich-text__btn rich-text__btn--list" onClick={handleOutdent} aria-label="Odsadit vlevo">
+                ←
+              </button>
+              <button type="button" className="rich-text__btn rich-text__btn--list" onClick={handleIndent} aria-label="Odsadit vpravo">
+                →
+              </button>
+            </>
+          )}
+          {enabled.link && (
+            <>
+              <ToolbarSeparator />
+              <button
+                type="button"
+                className="rich-text__btn rich-text__btn--link"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={openLinkDialog}
+                aria-label="Odkaz"
+              >
+                <span className="rich-text__btn-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LINK_ICON }} />
+                Odkaz
+              </button>
+            </>
+          )}
+          {enabled.youtube && (
+            <button
+              type="button"
+              className="rich-text__btn rich-text__btn--youtube"
+              onMouseDown={handleInsertToolbarMouseDown}
+              onClick={openYoutubeDialog}
+              aria-label="YouTube video"
+            >
+              <span className="rich-text__btn-icon" aria-hidden="true">▶</span>
+              Video
+            </button>
+          )}
+          {enabled.divider && (
+            <button
+              type="button"
+              className="rich-text__btn rich-text__btn--divider"
+              onMouseDown={handleInsertToolbarMouseDown}
+              onClick={insertDivider}
+              aria-label="Oddělovač"
+            >
+              <span className="rich-text__btn-icon" aria-hidden="true">—</span>
+              Oddělovač
+            </button>
+          )}
         </div>
         <div
           id={id}
@@ -421,21 +457,25 @@ export default function RichTextEditor({ id, label, value, onChange, maxLength, 
         />
       </div>
 
-      <RichTextLinkDialog
-        open={linkDialogOpen}
-        initialHref={linkDialogState.href}
-        initialText={linkDialogState.text}
-        initialNewTab={linkDialogState.newTab}
-        isEdit={linkDialogState.isEdit}
-        onClose={closeLinkDialog}
-        onApply={applyLink}
-      />
+      {enabled.link && (
+        <RichTextLinkDialog
+          open={linkDialogOpen}
+          initialHref={linkDialogState.href}
+          initialText={linkDialogState.text}
+          initialNewTab={linkDialogState.newTab}
+          isEdit={linkDialogState.isEdit}
+          onClose={closeLinkDialog}
+          onApply={applyLink}
+        />
+      )}
 
-      <RichTextYoutubeDialog
-        open={youtubeDialogOpen}
-        onClose={closeYoutubeDialog}
-        onApply={applyYoutube}
-      />
+      {enabled.youtube && (
+        <RichTextYoutubeDialog
+          open={youtubeDialogOpen}
+          onClose={closeYoutubeDialog}
+          onApply={applyYoutube}
+        />
+      )}
     </>
   );
 }

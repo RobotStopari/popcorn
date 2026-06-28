@@ -7,8 +7,9 @@ import { formatJoinDate } from '../utils/format-date';
 
 function TrashIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" />
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }
@@ -133,39 +134,43 @@ export default function AdminUsersPage() {
                     <span className="admin-users__name">{item.name || item.email || '—'}</span>
                   </div>
 
-                  <div className="admin-users__nick">{item.nick || '—'}</div>
-                  <div className="admin-users__date">{formatJoinDate(item.createdAt)}</div>
-
-                  <div className="admin-users__toggle">
-                    <label className={`admin-toggle${isSelf ? ' admin-toggle--disabled' : ''}`}>
-                      <input
-                        type="checkbox"
-                        checked={isAdminUser}
-                        disabled={isSelf || togglingId === item.id}
-                        onChange={() => handleToggleAdmin(item.id, isAdminUser)}
-                      />
-                      <span className="admin-toggle__track" aria-hidden="true">
-                        <span className="admin-toggle__thumb" />
-                      </span>
-                      <span className="admin-toggle__label">
-                        {isSelf ? 'Vy' : isAdminUser ? 'Ano' : 'Ne'}
-                      </span>
-                    </label>
+                  <div className="admin-users__meta">
+                    <div className="admin-users__nick">{item.nick || '—'}</div>
+                    <div className="admin-users__date">{formatJoinDate(item.createdAt)}</div>
                   </div>
 
-                  <div className="admin-users__actions">
-                    {deletable ? (
-                      <button
-                        type="button"
-                        className="admin-users__delete"
-                        aria-label={`Smazat uživatele ${item.name || item.email}`}
-                        onClick={() => setUserToDelete(item)}
-                      >
-                        <TrashIcon />
-                      </button>
-                    ) : (
-                      <span className="admin-users__no-action" aria-hidden="true">—</span>
-                    )}
+                  <div className="admin-users__footer">
+                    <div className="admin-users__toggle">
+                      <label className={`admin-toggle${isSelf ? ' admin-toggle--disabled' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={isAdminUser}
+                          disabled={isSelf || togglingId === item.id}
+                          onChange={() => handleToggleAdmin(item.id, isAdminUser)}
+                        />
+                        <span className="admin-toggle__track" aria-hidden="true">
+                          <span className="admin-toggle__thumb" />
+                        </span>
+                        <span className="admin-toggle__label">
+                          {isSelf ? 'Vy' : isAdminUser ? 'Ano' : 'Ne'}
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="admin-users__actions">
+                      {deletable ? (
+                        <button
+                          type="button"
+                          className="admin-users__delete"
+                          aria-label={`Smazat uživatele ${item.name || item.email}`}
+                          onClick={() => setUserToDelete(item)}
+                        >
+                          <TrashIcon />
+                        </button>
+                      ) : (
+                        <span className="admin-users__no-action" aria-hidden="true">—</span>
+                      )}
+                    </div>
                   </div>
                 </li>
               );

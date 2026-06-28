@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ICONS } from '../data/icons';
 import { MENU_ITEM_TYPES } from '../data/site-menu';
 import { useSiteMenu } from '../contexts/SiteMenuContext';
+import { closeMobileNav } from '../hooks/useNavbar';
 
 function NavLinkContent({ link }) {
   return (
@@ -24,7 +25,7 @@ function NavLink({ link, topLevel = false }) {
 
   if (isInternal && !link.external) {
     return (
-      <Link to={link.href} className={className}>
+      <Link to={link.href} className={className} onClick={closeMobileNav}>
         <NavLinkContent link={link} />
       </Link>
     );
@@ -36,6 +37,7 @@ function NavLink({ link, topLevel = false }) {
       className={className}
       target={link.external ? '_blank' : undefined}
       rel={link.external ? 'noopener noreferrer' : undefined}
+      onClick={closeMobileNav}
     >
       <NavLinkContent link={link} />
     </a>

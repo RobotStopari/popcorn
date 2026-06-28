@@ -9,8 +9,9 @@ import {
   eventToFormState,
   formStateToPayload,
   isEventPublishable,
+  isValidHttpsUrl,
 } from '../utils/event-format';
-import { suggestEndDate, validateDateRange } from '../utils/event-dates';
+import { isEventPast, suggestEndDate, validateDateRange } from '../utils/event-dates';
 import {
   isCompleteOrganiser,
   organiserFromPreset,
@@ -22,6 +23,8 @@ import {
   subscribeOrganiserPresets,
 } from '../services/organiser-presets';
 import RichTextEditor from './RichTextEditor';
+import EventCategorySelect from './EventCategorySelect';
+import { isExternalEventCategory } from '../data/event-categories';
 import SortableParticipantList from './SortableParticipantList';
 import AdminEventSharingTab from './AdminEventSharingTab';
 import AdminModalPanel from './AdminModalPanel';
@@ -191,9 +194,24 @@ export default function AdminEventFormModal({
   const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
   const panelRef = useRef(null);
   const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
   const navigate = useNavigate();
   const { mounted, visible } = useAnimatedPresence(open, 240);
   const eventId = event?.id ?? null;
+  const eventFormSyncKey = event
+    ? [
+      event.id,
+      event.updatedAt?.toMillis?.() ?? event.updatedAt?.seconds ?? '',
+      event.category,
+      event.externalPageEnabled,
+      event.externalPageUrl ?? '',
+      event.calendarOnly,
+    ].join(':')
+    : 'new';
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
 
   const visibleTabs = shareMode
     ? TABS.filter((tab) => tab.id !== 'sharing')
@@ -220,7 +238,13 @@ export default function AdminEventFormModal({
     setPendingIncompleteTabs([]);
     setAttentionTabs(new Set());
     setSaveSuccessOpen(false);
-  }, [open, eventId]);
+  }, [open, event, eventFormSyncKey]);
+
+  useEffect(() => {
+    if (open && form.calendarOnly) {
+      setActiveTab('basic');
+    }
+  }, [open, form.calendarOnly]);
 
   useEffect(() => {
     if (!open || shareMode) return undefined;
@@ -278,6 +302,16 @@ export default function AdminEventFormModal({
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCategoryChange = (category) => {
+    setForm((prev) => ({
+      ...prev,
+      category,
+      ...(isExternalEventCategory(category)
+        ? {}
+        : { externalPageEnabled: false, externalPageUrl: '', calendarOnly: false }),
+    }));
   };
 
   const handleStartDateChange = (value) => {
@@ -432,8 +466,12 @@ export default function AdminEventFormModal({
     setSaving(true);
     setError('');
 
-    const published = isEventPublishable(form);
-    const ok = await onSave(formStateToPayload(form), { published });
+    const currentForm = formRef.current;
+    const published = isEventPublishable(currentForm);
+    const ok = await onSave(formStateToPayload(currentForm), {
+      published,
+      eventId: event?.id ?? null,
+    });
     setSaving(false);
 
     if (ok) {
@@ -455,7 +493,7 @@ export default function AdminEventFormModal({
     }
 
     skipFormResetRef.current = true;
-    return onEnsureDraft(formStateToPayload(form));
+    return onEnsureDraft(formStateToPayload(formRef.current));
   };
 
   const handleAddInfoFromConfirm = () => {
@@ -475,6 +513,7 @@ export default function AdminEventFormModal({
   };
 
   const validateForm = () => {
+    const calendarOnlyMode = form.calendarOnly === true;
     const publishing = isEventPublishable(form);
 
     if (!publishing) {
@@ -503,6 +542,28 @@ export default function AdminEventFormModal({
 
       const rangeError = validateDateRange(form);
       if (rangeError) return { message: rangeError, tab: 'basic' };
+    }
+
+    if (
+      isExternalEventCategory(form.category)
+      && form.externalPageEnabled
+      && !isValidHttpsUrl(form.externalPageUrl)
+    ) {
+      return {
+        message: 'Vyplňte platný odkaz na web akce (https://…), nebo vypněte přepínač externí stránky.',
+        tab: 'basic',
+      };
+    }
+
+    if (calendarOnlyMode && !isValidHttpsUrl(form.externalPageUrl)) {
+      return {
+        message: 'Pro režim pouze kalendář je povinný platný externí odkaz (https://…).',
+        tab: 'basic',
+      };
+    }
+
+    if (calendarOnlyMode) {
+      return null;
     }
 
     if (form.organisers.length > MAX_ORGANISERS) {
@@ -545,7 +606,8 @@ export default function AdminEventFormModal({
     }
 
     const publishing = isEventPublishable(form);
-    if (publishing) {
+    const eventIsPast = isEventPast(form);
+    if (publishing && !eventIsPast && !form.calendarOnly) {
       const incompleteTabs = getUnvisitedEmptyTabs(visitedTabs, form);
       if (incompleteTabs.length > 0) {
         setPendingIncompleteTabs(incompleteTabs);
@@ -576,16 +638,18 @@ export default function AdminEventFormModal({
           </div>
         </header>
 
-        <form className="admin-form admin-form--event" onSubmit={handleSubmit}>
-          <EventFormTabs
-            activeTab={activeTab}
-            onChange={handleTabChange}
-            attentionTabs={attentionTabs}
-            tabs={visibleTabs}
-          />
+        <form className={`admin-form admin-form--event${form.calendarOnly ? ' admin-form--event-calendar-only' : ''}`} onSubmit={handleSubmit}>
+          {!form.calendarOnly && (
+            <EventFormTabs
+              activeTab={activeTab}
+              onChange={handleTabChange}
+              attentionTabs={attentionTabs}
+              tabs={visibleTabs}
+            />
+          )}
 
           <div className="admin-event-tabs__panels">
-            <TabPanel id="basic" activeTab={activeTab}>
+            <TabPanel id="basic" activeTab={form.calendarOnly ? 'basic' : activeTab}>
               <div className="admin-event-tab">
                 <TabBlock>
                   <FieldGroup label="Název akce" required>
@@ -599,6 +663,83 @@ export default function AdminEventFormModal({
                       required
                     />
                   </FieldGroup>
+                  <FieldGroup label="Kategorie akce">
+                    <EventCategorySelect
+                      id="event-category"
+                      value={form.category}
+                      onChange={handleCategoryChange}
+                      disabled={saving}
+                    />
+                  </FieldGroup>
+
+                  {isExternalEventCategory(form.category) && (
+                    <div className="admin-event-external-page">
+                      <FieldGroup label="Externí web akce">
+                        <label className="admin-toggle admin-event-external-page__toggle">
+                          <input
+                            type="checkbox"
+                            checked={form.externalPageEnabled}
+                            disabled={saving}
+                            onChange={(event) => {
+                              const enabled = event.target.checked;
+                              setForm((prev) => ({
+                                ...prev,
+                                externalPageEnabled: enabled,
+                                ...(enabled ? {} : { externalPageUrl: '', calendarOnly: false }),
+                              }));
+                            }}
+                          />
+                          <span className="admin-toggle__track" aria-hidden="true">
+                            <span className="admin-toggle__thumb" />
+                          </span>
+                          <span className="admin-toggle__label">Akce vede na externí stránku</span>
+                        </label>
+                      </FieldGroup>
+
+                      {form.externalPageEnabled && (
+                        <>
+                          <FieldGroup
+                            label="Odkaz na web akce"
+                            required
+                            hint="Odkaz se zobrazí na stránce akce jako tlačítko."
+                          >
+                            <input
+                              type="url"
+                              className="admin-form__input"
+                              value={form.externalPageUrl}
+                              onChange={(e) => updateField('externalPageUrl', e.target.value)}
+                              placeholder="https://example.com/akce"
+                              inputMode="url"
+                              required
+                            />
+                          </FieldGroup>
+
+                          <FieldGroup label="Viditelnost">
+                            <label className="admin-toggle admin-event-external-page__toggle">
+                              <input
+                                type="checkbox"
+                                checked={form.calendarOnly}
+                                disabled={saving}
+                                onChange={(event) => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    calendarOnly: event.target.checked,
+                                  }));
+                                }}
+                              />
+                              <span className="admin-toggle__track" aria-hidden="true">
+                                <span className="admin-toggle__thumb" />
+                              </span>
+                              <span className="admin-toggle__label">Zobrazovat pouze v kalendáři</span>
+                            </label>
+                            <p className="admin-form__hint">
+                              Akce se zobrazí pouze v kalendáři. Po kliknutí na ni přesměruje uživatele na externí odkaz.
+                            </p>
+                          </FieldGroup>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </TabBlock>
 
                 <TabBlock title="Termín">
@@ -642,6 +783,8 @@ export default function AdminEventFormModal({
                   </div>
                 </TabBlock>
 
+                {!form.calendarOnly && (
+                  <>
                 <TabBlock title="Místo a cena">
                   <div className="admin-form__row">
                     <FieldGroup label="Místo">
@@ -668,12 +811,13 @@ export default function AdminEventFormModal({
                   </div>
                 </TabBlock>
 
-                <TabBlock title="Popis" hint="Text pro nadcházející akce — podporuje formátování a odkazy.">
+                <TabBlock title="Popis" hint="Text pro nadcházející akce — formátování, odkazy a seznamy včetně vnořených úrovní.">
                   <RichTextEditor
                     id="event-description"
                     value={form.description}
                     onChange={(value) => updateField('description', value)}
                     tone="content"
+                    features="eventDescription"
                   />
                 </TabBlock>
 
@@ -706,9 +850,13 @@ export default function AdminEventFormModal({
                     }}
                   />
                 </TabBlock>
+                  </>
+                )}
               </div>
             </TabPanel>
 
+            {!form.calendarOnly && (
+            <>
             <TabPanel id="organisers" activeTab={activeTab}>
               <div className="admin-event-tab">
                 <p className="admin-event-tab__intro">
@@ -935,12 +1083,13 @@ export default function AdminEventFormModal({
 
             <TabPanel id="past" activeTab={activeTab}>
               <div className="admin-event-tab">
-                <TabBlock title="Zápis z akce" hint="Obsah pro proběhlé akce — text se zobrazí po skončení akce.">
+                <TabBlock title="Zápis z akce" hint="Obsah pro proběhlé akce — formátování, seznamy, odkazy a YouTube videa.">
                   <RichTextEditor
                     id="event-report"
                     value={form.report}
                     onChange={(value) => updateField('report', value)}
                     tone="past"
+                    features="eventReport"
                   />
                 </TabBlock>
 
@@ -980,6 +1129,8 @@ export default function AdminEventFormModal({
                   onEnsureEventId={handleEnsureEventId}
                 />
               </TabPanel>
+            )}
+            </>
             )}
           </div>
 

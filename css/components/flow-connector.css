@@ -35,3 +35,8 @@
   border-radius: 50% 45% 55% 40% / 45% 55% 45% 55%;
   box-shadow: 2px 2px 0 var(--black);
 }
+
+.flow-connector--compact {
+  padding-top: 0.75rem;
+  padding-bottom: 2rem;
+}

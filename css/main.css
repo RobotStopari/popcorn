@@ -14,11 +14,13 @@
 @import url('components/admin.css');
 @import url('components/flow-connector.css');
 @import url('components/event-card.css');
+@import url('components/event-category.css');
 @import url('sections/content-page.css');
 @import url('sections/events-list.css');
 @import url('sections/blog.css');
 @import url('sections/event-detail.css');
 @import url('sections/calendar.css');
+@import url('sections/instagram-feed.css');
 @import url('sections/parallax.css');
 @import url('components/social.css');
 @import url('components/footer.css');

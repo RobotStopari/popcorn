@@ -124,7 +124,15 @@
   }
 }
 
-/* Keep clipped image frames when combined with scroll reveal */
-.event-detail__figure.reveal {
+/* Keep clipped frames when combined with scroll reveal */
+.event-detail__figure.reveal,
+.cal.reveal,
+.shine-hover.reveal {
   overflow: hidden;
+}
+
+/* Restore interactive hovers after scroll reveal completes */
+.social-btn.reveal.reveal--visible:hover {
+  transform: translate(-3px, -3px) scale(1.03);
+  box-shadow: var(--shadow-hover);
 }

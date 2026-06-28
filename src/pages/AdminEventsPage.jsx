@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminDeleteEventDialog from '../components/AdminDeleteEventDialog';
 import AdminEventFormModal from '../components/AdminEventFormModal';
+import EventCategoryBadge from '../components/EventCategoryBadge';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { createDraftEvent, createEvent, deleteEvent, fetchEventById, updateEvent } from '../services/events';
 import { useEvents } from '../contexts/EventsContext';
-import { formatEventDateLabel, isEventPast, sortAdminEventList } from '../utils/event-dates';
-import { getAdminEventTitle } from '../utils/event-format';
+import { formatEventDateLabel, isEventPast, partitionAdminEventList, sortPastEvents, sortUpcomingEvents } from '../utils/event-dates';
+import { getAdminEventTitle, normalizeEvent } from '../utils/event-format';
 
 function TrashIcon() {
   return (
@@ -35,7 +36,7 @@ export default function AdminEventsPage() {
   const { events, loading: eventsLoading, error: eventsError } = useEvents();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortDescending, setSortDescending] = useState(true);
+  const [sortDescending, setSortDescending] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventToDelete, setEventToDelete] = useState(null);
@@ -68,8 +69,33 @@ export default function AdminEventsPage() {
       });
     }
 
-    return sortAdminEventList(list, sortDescending);
+    if (statusFilter === 'upcoming') {
+      return sortUpcomingEvents(list, sortDescending);
+    }
+
+    if (statusFilter === 'past') {
+      return sortPastEvents(list, sortDescending);
+    }
+
+    const { drafts, upcoming, past } = partitionAdminEventList(list, sortDescending);
+    const hasFutureSection = drafts.length > 0 || upcoming.length > 0;
+    return {
+      drafts,
+      upcoming,
+      past,
+      showPastDivider: hasFutureSection && past.length > 0,
+    };
   }, [events, search, statusFilter, sortDescending]);
+
+  const flatEvents = Array.isArray(filteredEvents) ? filteredEvents : [
+    ...filteredEvents.drafts,
+    ...filteredEvents.upcoming,
+    ...filteredEvents.past,
+  ];
+  const showPastDivider = !Array.isArray(filteredEvents) && filteredEvents.showPastDivider;
+  const pastSectionStartId = !Array.isArray(filteredEvents)
+    ? filteredEvents.past[0]?.id
+    : null;
 
   if (loading) {
     return (
@@ -88,17 +114,29 @@ export default function AdminEventsPage() {
     setFormOpen(true);
   };
 
-  const handleEdit = (event) => {
-    setEditingEvent(event);
+  const handleEdit = async (event) => {
+    try {
+      const fresh = await fetchEventById(event.id);
+      setEditingEvent(fresh || event);
+    } catch {
+      setEditingEvent(event);
+    }
     setFormOpen(true);
   };
 
-  const handleSave = async (payload, { published = true } = {}) => {
+  const handleSave = async (payload, { published = true, eventId = null } = {}) => {
     setSaveError('');
     try {
       const fullPayload = { ...payload, published };
-      if (editingEvent) {
-        await updateEvent(editingEvent.id, fullPayload);
+      const targetId = eventId ?? editingEvent?.id;
+
+      if (targetId) {
+        await updateEvent(targetId, fullPayload);
+        setEditingEvent((current) => (
+          current?.id === targetId
+            ? normalizeEvent({ ...current, ...fullPayload, id: targetId })
+            : current
+        ));
       } else {
         await createEvent(fullPayload);
       }
@@ -165,7 +203,7 @@ export default function AdminEventsPage() {
           className="btn btn--outline btn--small"
           onClick={() => setSortDescending((value) => !value)}
         >
-          {sortDescending ? 'Nejnovější nahoře' : 'Nejstarší nahoře'}
+          {sortDescending ? 'Obráceně' : 'Nejbližší nahoře'}
         </button>
       </div>
 
@@ -180,26 +218,40 @@ export default function AdminEventsPage() {
           <div className="admin-events__head" aria-hidden="true">
             <span>Název</span>
             <span>Termín</span>
+            <span>Kategorie</span>
             <span>Stav</span>
             <span>Akce</span>
           </div>
 
-          <ul className="admin-events__list">
-            {filteredEvents.map((event) => {
+          <ul className={`admin-events__list${showPastDivider ? ' admin-events__list--with-past-divider' : ''}`}>
+            {flatEvents.map((event) => {
               const past = isEventPast(event);
               const displayTitle = getAdminEventTitle(event);
+              const isPastSectionStart = showPastDivider && event.id === pastSectionStartId;
               return (
-                <li key={event.id} className={`admin-events__row${event.isDraft ? ' admin-events__row--draft' : ''}`}>
+                <li
+                  key={event.id}
+                  className={[
+                    'admin-events__row',
+                    event.isDraft ? 'admin-events__row--draft' : '',
+                    isPastSectionStart ? 'admin-events__row--past-divider' : '',
+                  ].filter(Boolean).join(' ')}
+                >
                   <div className="admin-events__title">{displayTitle}</div>
-                  <div className="admin-events__date">{formatEventDateLabel(event)}</div>
-                  <div className="admin-events__status">
-                    {event.isDraft ? (
-                      <span className="admin-events__badge admin-events__badge--draft">Koncept</span>
-                    ) : (
-                      <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
-                        {past ? 'Proběhlá' : 'Nadcházející'}
-                      </span>
-                    )}
+                  <div className="admin-events__meta">
+                    <div className="admin-events__date">{formatEventDateLabel(event)}</div>
+                    <div className="admin-events__category">
+                      <EventCategoryBadge category={event.category} />
+                    </div>
+                    <div className="admin-events__status">
+                      {event.isDraft ? (
+                        <span className="admin-events__badge admin-events__badge--draft">Koncept</span>
+                      ) : (
+                        <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
+                          {past ? 'Proběhlá' : 'Nadcházející'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="admin-events__actions">
                     <button
@@ -224,7 +276,7 @@ export default function AdminEventsPage() {
             })}
           </ul>
 
-          {!filteredEvents.length && (
+          {!flatEvents.length && (
             <p className="admin-loading">
               {search.trim()
                 ? 'Žádné akce neodpovídají hledání.'

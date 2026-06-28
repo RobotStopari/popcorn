@@ -1,39 +1,36 @@
-import { COLORS } from '../data/colors';
-
-/** Bump to regenerate all cover patterns site-wide. */
+import { COLOR_CSS_VARS, DEFAULT_COLORS } from '../data/colors';
 const PATTERN_VERSION = 2;
 
-const COVER_PALETTE = [
-  COLORS.orange,
-  COLORS.orangeLight,
-  COLORS.orangeDark,
-  COLORS.orangePale,
-  COLORS.red,
-  COLORS.redLight,
-  COLORS.redPale,
-  COLORS.blue,
-  COLORS.blueLight,
-  COLORS.bluePale,
-  COLORS.green,
-  COLORS.greenLight,
-  COLORS.greenPale,
-  COLORS.teal,
-  COLORS.tealLight,
-  COLORS.tealPale,
-  COLORS.yellow,
-  COLORS.yellowPale,
+const COVER_VAR_KEYS = [
+  'orange', 'orangeLight', 'orangeDark', 'orangePale',
+  'red', 'redLight', 'redPale',
+  'blue', 'blueLight', 'bluePale',
+  'green', 'greenLight', 'greenPale',
+  'teal', 'tealLight', 'tealPale',
+  'yellow', 'yellowPale',
 ];
 
-const PAST_PALETTE = [
-  COLORS.offWhite,
-  COLORS.redPale,
-  COLORS.bluePale,
-  COLORS.greenPale,
-  COLORS.tealPale,
-  COLORS.yellowPale,
-  COLORS.orangePale,
-  COLORS.grayMuted,
+const PAST_VAR_KEYS = [
+  'offWhite', 'redPale', 'bluePale', 'greenPale', 'tealPale', 'yellowPale', 'orangePale', 'grayMuted',
 ];
+
+function readCssColor(cssVar, fallback) {
+  if (typeof document === 'undefined') return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+  return value || fallback;
+}
+
+function buildPaletteFromCss(keys) {
+  return keys.map((key) => readCssColor(COLOR_CSS_VARS[key], DEFAULT_COLORS[key]));
+}
+
+function getCoverPalette() {
+  return buildPaletteFromCss(COVER_VAR_KEYS);
+}
+
+function getPastPalette() {
+  return buildPaletteFromCss(PAST_VAR_KEYS);
+}
 
 function hashSeed(value) {
   const text = `${PATTERN_VERSION}:${String(value || 'popcorn')}`;
@@ -295,7 +292,7 @@ function buildOverlay(rng, palette, past) {
  */
 export function getEventCoverStyle(seedKey, { past = false } = {}) {
   const rng = createRng(hashSeed(seedKey));
-  const palette = past ? PAST_PALETTE : COVER_PALETTE;
+  const palette = past ? getPastPalette() : getCoverPalette();
   const { layer: base, fill } = buildBase(rng, palette);
   const overlays = buildOverlay(rng, palette, past);
   const accents = buildAccentBlobs(rng, palette, past);

@@ -14,10 +14,12 @@ import AdminBlogPostsPage from './pages/AdminBlogPostsPage';
 import AdminTextsPage from './pages/AdminTextsPage';
 import AdminPagesPage from './pages/AdminPagesPage';
 import AdminMenuPage from './pages/AdminMenuPage';
+import AdminColorsPage from './pages/AdminColorsPage';
 import { EventsProvider } from './contexts/EventsContext';
 import { BlogPostsProvider } from './contexts/BlogPostsContext';
 import { SiteTextsProvider } from './contexts/SiteTextsContext';
 import { SiteMenuProvider } from './contexts/SiteMenuContext';
+import { SiteColorsProvider } from './contexts/SiteColorsContext';
 import { PagesProvider } from './contexts/PagesContext';
 import { usePageTransition } from './hooks/usePageTransition';
 import { useScrollRestore } from './hooks/useScrollRestore';
@@ -72,6 +74,7 @@ function AppRoutes() {
         <Route path="texts" element={<AdminTextsPage />} />
         <Route path="pages" element={<AdminPagesPage />} />
         <Route path="menu" element={<AdminMenuPage />} />
+        <Route path="colors" element={<AdminColorsPage />} />
       </Route>
     </Routes>
   );
@@ -80,17 +83,19 @@ function AppRoutes() {
 export default function App() {
   return (
     <AdminAuthProvider>
-      <SiteTextsProvider>
-        <PagesProvider>
-          <SiteMenuProvider>
-            <EventsProvider>
-              <BlogPostsProvider>
-                <AppRoutes />
-              </BlogPostsProvider>
-            </EventsProvider>
-          </SiteMenuProvider>
-        </PagesProvider>
-      </SiteTextsProvider>
+      <SiteColorsProvider>
+        <SiteTextsProvider>
+          <PagesProvider>
+            <SiteMenuProvider>
+              <EventsProvider>
+                <BlogPostsProvider>
+                  <AppRoutes />
+                </BlogPostsProvider>
+              </EventsProvider>
+            </SiteMenuProvider>
+          </PagesProvider>
+        </SiteTextsProvider>
+      </SiteColorsProvider>
     </AdminAuthProvider>
   );
 }

@@ -1,6 +1,6 @@
-/** Brand color palette — single source of truth for all site colors */
+/** Brand color palette — defaults; live values come from Firestore via SiteColorsProvider */
 
-export const COLORS = {
+export const DEFAULT_COLORS = {
   orange: '#faa908',
   orangeLight: '#ffb82e',
   orangeDark: '#e89400',
@@ -26,7 +26,36 @@ export const COLORS = {
   grayMuted: '#bbb',
 };
 
-function hexToRgb(hex) {
+export const COLOR_KEYS = Object.keys(DEFAULT_COLORS);
+export const SITE_COLORS_DOC_ID = 'config';
+
+export const COLOR_CATEGORIES = [
+  {
+    id: 'main',
+    heading: 'Hlavní barvy',
+    keys: ['white', 'black', 'orange', 'red', 'blue'],
+  },
+  {
+    id: 'accent',
+    heading: 'Akcentové barvy',
+    keys: ['orangeLight', 'orangeDark', 'orangePale', 'redLight', 'redPale', 'blueLight', 'bluePale'],
+  },
+  {
+    id: 'texture',
+    heading: 'Texturové barvy',
+    keys: [
+      'offWhite', 'gray', 'grayMuted',
+      'green', 'greenLight', 'greenPale',
+      'teal', 'tealLight', 'tealPale',
+      'yellow', 'yellowPale',
+    ],
+  },
+];
+
+/** @deprecated Use DEFAULT_COLORS or useSiteColors() */
+export const COLORS = DEFAULT_COLORS;
+
+export function hexToRgb(hex) {
   const value = hex.replace('#', '');
   const normalized = value.length === 3
     ? value.split('').map((char) => char + char).join('')
@@ -39,18 +68,25 @@ function hexToRgb(hex) {
   };
 }
 
-function withAlpha(hex, alpha) {
+export function rgbString(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+export function withAlpha(hex, alpha) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export const GRADIENTS = {
-  band: `linear-gradient(135deg, ${COLORS.orangePale} 0%, ${COLORS.orange} 48%, ${COLORS.orangeDark} 100%)`,
-  loaderBar: `linear-gradient(90deg, ${COLORS.orange}, ${COLORS.red})`,
-  parallaxOverlay: `linear-gradient(135deg, ${withAlpha(COLORS.orange, 0.75)} 0%, ${withAlpha(COLORS.red, 0.65)} 100%)`,
-};
+export function buildGradients(colors) {
+  return {
+    band: `linear-gradient(135deg, ${colors.orangePale} 0%, ${colors.orange} 48%, ${colors.orangeDark} 100%)`,
+    loaderBar: `linear-gradient(90deg, ${colors.orange}, ${colors.red})`,
+    parallaxOverlay: `linear-gradient(135deg, ${withAlpha(colors.orange, 0.75)} 0%, ${withAlpha(colors.red, 0.65)} 100%)`,
+  };
+}
 
-const COLOR_CSS_VARS = {
+export const COLOR_CSS_VARS = {
   orange: '--orange',
   orangeLight: '--orange-light',
   orangeDark: '--orange-dark',
@@ -76,19 +112,57 @@ const COLOR_CSS_VARS = {
   grayMuted: '--gray-muted',
 };
 
-const GRADIENT_CSS_VARS = {
+export const GRADIENT_CSS_VARS = {
   band: '--gradient-band',
   loaderBar: '--gradient-loader-bar',
   parallaxOverlay: '--gradient-parallax-overlay',
 };
 
+/** @deprecated Use buildGradients() */
+export const GRADIENTS = buildGradients(DEFAULT_COLORS);
+
+export function isValidHexColor(value) {
+  return typeof value === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim());
+}
+
+export function normalizeHexColor(value) {
+  const trimmed = value.trim();
+  if (trimmed.length === 4) {
+    return `#${trimmed.slice(1).split('').map((char) => char + char).join('')}`;
+  }
+  return trimmed.toLowerCase();
+}
+
+export function normalizeSiteColors(data = {}) {
+  const colors = {};
+
+  for (const key of COLOR_KEYS) {
+    const raw = data.colors?.[key];
+    colors[key] = isValidHexColor(raw)
+      ? normalizeHexColor(raw)
+      : DEFAULT_COLORS[key];
+  }
+
+  return {
+    colors,
+    gradients: buildGradients(colors),
+  };
+}
+
+export function cloneColorMap(colors) {
+  return Object.fromEntries(COLOR_KEYS.map((key) => [key, colors[key]]));
+}
+
 /** Apply palette colors as CSS custom properties on :root */
-export function applyColorTokens(root = document.documentElement) {
+export function applyColorTokens(palette, root = document.documentElement) {
+  const colors = palette?.colors ?? DEFAULT_COLORS;
+  const gradients = palette?.gradients ?? buildGradients(colors);
+
   for (const [key, cssVar] of Object.entries(COLOR_CSS_VARS)) {
-    root.style.setProperty(cssVar, COLORS[key]);
+    root.style.setProperty(cssVar, colors[key]);
   }
 
   for (const [key, cssVar] of Object.entries(GRADIENT_CSS_VARS)) {
-    root.style.setProperty(cssVar, GRADIENTS[key]);
+    root.style.setProperty(cssVar, gradients[key]);
   }
 }

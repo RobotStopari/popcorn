@@ -9,6 +9,11 @@ import {
   getUpcomingGalleryImages,
   getPastGalleryImages,
 } from '../data/event-images';
+import {
+  DEFAULT_EVENT_CATEGORY,
+  getEventCategoryLabel,
+  normalizeEventCategory,
+} from '../data/event-categories';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -36,8 +41,46 @@ function normalizeSocialUrl(value, type) {
   return trimmed;
 }
 
+export function isValidHttpsUrl(value) {
+  const trimmed = value?.trim();
+  if (!trimmed) return false;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === 'https:' && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function normalizeExternalPageFields(category, raw = {}) {
+  const external = normalizeEventCategory(category) === 'external';
+  const enabled = external && raw.externalPageEnabled === true;
+  const url = enabled ? (raw.externalPageUrl?.trim() || '') : '';
+
+  return {
+    externalPageEnabled: enabled,
+    externalPageUrl: url,
+    hasExternalPage: enabled && isValidHttpsUrl(url),
+  };
+}
+
+export function normalizeCalendarOnlyFields(category, raw = {}, externalPage = {}) {
+  const external = normalizeEventCategory(category) === 'external';
+  const calendarOnly = external
+    && externalPage.externalPageEnabled === true
+    && externalPage.hasExternalPage === true
+    && raw.calendarOnly === true;
+
+  return { calendarOnly };
+}
+
 export function isEventPublic(event) {
   return event?.published !== false;
+}
+
+export function isEventListedPublicly(event) {
+  return isEventPublic(event) && !event?.calendarOnly;
 }
 
 export function isEventPublishable(form) {
@@ -87,6 +130,14 @@ export function normalizeEvent(raw) {
     coverPublicId: raw.coverPublicId?.trim() || '',
     promoImages: normalizeEventImageList(raw.promoImages, 10),
     galleryPicks: normalizeEventImageList(raw.galleryPicks, 10),
+    category: normalizeEventCategory(raw.category),
+    ...(function normalizeCategoryFields() {
+      const externalPage = normalizeExternalPageFields(raw.category, raw);
+      return {
+        ...externalPage,
+        ...normalizeCalendarOnlyFields(raw.category, raw, externalPage),
+      };
+    }()),
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -102,6 +153,7 @@ export function normalizeEvent(raw) {
     name: event.title,
     dateLabel: formatEventDateLabel(event),
     past,
+    categoryLabel: getEventCategoryLabel(normalizeEventCategory(raw.category)),
     sraz: formatSchedulePart(event.dateStart, event.timeStart),
     navrat: formatSchedulePart(event.dateEnd, event.timeEnd),
     misto: event.place,
@@ -143,6 +195,9 @@ export function toCalendarEvent(event) {
     start: event.dateStart,
     end: event.dateEnd,
     past: isEventPast(event),
+    category: event.category,
+    calendarOnly: event.calendarOnly === true,
+    externalPageUrl: event.externalPageUrl || '',
   };
 }
 
@@ -192,6 +247,10 @@ export function eventToFormState(event) {
       coverPublicId: '',
       promoImages: [],
       galleryPicks: [],
+      category: DEFAULT_EVENT_CATEGORY,
+      externalPageEnabled: false,
+      externalPageUrl: '',
+      calendarOnly: false,
     };
   }
 
@@ -213,10 +272,23 @@ export function eventToFormState(event) {
     coverPublicId: event.coverPublicId || '',
     promoImages: event.promoImages || [],
     galleryPicks: event.galleryPicks || [],
+    category: normalizeEventCategory(event.category),
+    externalPageEnabled: event.externalPageEnabled === true,
+    externalPageUrl: event.externalPageUrl || '',
+    calendarOnly: event.calendarOnly === true,
   };
 }
 
 export function formStateToPayload(form) {
+  const category = normalizeEventCategory(form.category);
+  const external = category === 'external';
+  const externalPageEnabled = external && form.externalPageEnabled === true;
+  const externalPageUrl = externalPageEnabled ? form.externalPageUrl.trim() : '';
+  const calendarOnly = external
+    && externalPageEnabled
+    && isValidHttpsUrl(externalPageUrl)
+    && form.calendarOnly === true;
+
   return {
     title: form.title.trim(),
     dateStart: form.dateStart,
@@ -246,5 +318,9 @@ export function formStateToPayload(form) {
     coverPublicId: form.coverPublicId?.trim() || '',
     promoImages: form.promoImages,
     galleryPicks: form.galleryPicks,
+    category,
+    externalPageEnabled,
+    externalPageUrl,
+    calendarOnly,
   };
 }

@@ -46,6 +46,24 @@
   background-color: var(--red-light);
 }
 
+.btn--external {
+  background-color: var(--blue);
+  color: var(--white);
+}
+
+.btn--external:hover:not(:disabled) {
+  background-color: var(--blue-light);
+}
+
+.btn--external--past {
+  background-color: var(--blue-pale);
+  color: var(--black);
+}
+
+.btn--external--past:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--blue-pale) 70%, var(--blue-light));
+}
+
 .btn--outline {
   background-color: var(--white);
   color: var(--black);
