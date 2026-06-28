@@ -181,7 +181,7 @@ git push -u origin main
 4. **Environment variables** (Production and Preview) — add all `VITE_FIREBASE_*` variables from `.env.example` with your Firebase values, plus `VITE_CLOUDINARY_*` if you use event cover uploads.
 5. Save and deploy.
 
-SPA routing: `public/_redirects` for Pages; `wrangler.jsonc` sets `not_found_handling: single-page-application` for Workers deploy.
+SPA routing is handled by `wrangler.jsonc` (`not_found_handling: single-page-application`). Do **not** add a `public/_redirects` file — it conflicts with Workers deploy and causes an infinite-loop error.
 
 #### If deploy fails with `registerHooks` / `@cloudflare/vite-plugin`
 
