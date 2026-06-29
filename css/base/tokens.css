@@ -7,7 +7,9 @@
   --radius-sm: 10px;
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --font: 'Poppins', sans-serif;
+  --font-quotes: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --container: 1200px;
+  --page-block-content: 50rem;
   --nav-height: 80px;
   --page-offset-top: calc(var(--nav-height) + 2rem);
 }

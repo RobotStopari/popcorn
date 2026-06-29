@@ -118,6 +118,45 @@ export function pagePath(page) {
   return page?.slug ? `/${page.slug}` : '/';
 }
 
+export const PAGE_INTRO_DEFAULTS = {
+  vypukne: 'Těšíme se na setkání s vámi na těchto akcích. Vyberte si tu svou a přijďte zažít společné chvíle s komunitou Popcorn.',
+  probehle: 'Za námi už je spousta skvělých setkání a zážitků. Prohlédněte si, co všechno jsme společně prožili.',
+  blog: 'Inspirace, zkušenosti a příběhy z komunity Popcorn. Prohlédněte si naše blogové příspěvky.',
+};
+
+export const PAGE_INTRO_FIELD_COPY = {
+  home: {
+    label: 'Úvodní citát',
+    hint: 'Velký citát na hlavní stránce',
+  },
+  vypukne: {
+    label: 'Úvodní text VyPUKne',
+    hint: 'Zobrazí se pod nadpisem stránky',
+  },
+  probehle: {
+    label: 'Úvodní text Proběhlé',
+    hint: 'Zobrazí se pod nadpisem stránky',
+  },
+  blog: {
+    label: 'Úvodní text Blog',
+    hint: 'Zobrazí se pod nadpisem stránky',
+  },
+};
+
+export function pageHasIntroField(page) {
+  return Boolean(page?.id && PAGE_INTRO_FIELD_COPY[page.id]);
+}
+
+export function getPageIntro(page) {
+  const custom = page?.intro?.trim();
+  if (custom) return custom;
+  return PAGE_INTRO_DEFAULTS[page?.id] || '';
+}
+
+export function getPageIntroFieldCopy(page) {
+  return PAGE_INTRO_FIELD_COPY[page?.id] || null;
+}
+
 export function canDeletePage(page) {
   return !getSystemFlags(page.id).noDelete;
 }

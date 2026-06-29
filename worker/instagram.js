@@ -3,11 +3,32 @@ const DEFAULT_USERNAME = 'popcorn_puk';
 const CACHE_TTL_SECONDS = 3600;
 const INSTAGRAM_HEADERS = {
   'X-IG-App-ID': INSTAGRAM_APP_ID,
+  'X-ASBD-ID': '129477',
+  'X-IG-WWW-Claim': '0',
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   Accept: '*/*',
   'Accept-Language': 'cs-CZ,cs;q=0.9,en;q=0.8',
   Referer: 'https://www.instagram.com/',
+  'Sec-Fetch-Site': 'same-origin',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Dest': 'empty',
 };
+
+export function sanitizeInstagramUsername(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim().replace(/^@/, '');
+  return /^[a-zA-Z0-9._]{1,30}$/.test(trimmed) ? trimmed : '';
+}
+
+export function resolveInstagramUsername(request, env = {}) {
+  const fromQuery = sanitizeInstagramUsername(new URL(request.url).searchParams.get('username'));
+  if (fromQuery) return fromQuery;
+
+  const fromEnv = sanitizeInstagramUsername(env.INSTAGRAM_USERNAME);
+  if (fromEnv) return fromEnv;
+
+  return DEFAULT_USERNAME;
+}
 
 function isAllowedInstagramImageUrl(value) {
   try {
@@ -125,7 +146,7 @@ export async function handleInstagramImageRequest(request) {
 
 export async function handleInstagramPostsRequest(request, env) {
   const url = new URL(request.url);
-  const username = env.INSTAGRAM_USERNAME || DEFAULT_USERNAME;
+  const username = resolveInstagramUsername(request, env);
   const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get('limit') || '4', 10) || 4, 1), 12);
 
   const cache = caches.default;
@@ -142,7 +163,7 @@ export async function handleInstagramPostsRequest(request, env) {
   } catch (error) {
     return jsonResponse(
       { posts: [], username, error: error.message || 'Failed to load Instagram posts.' },
-      { status: 502, cacheSeconds: 300 },
+      { status: 200, cacheSeconds: 120 },
     );
   }
 }

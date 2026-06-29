@@ -1,18 +1,20 @@
-const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/popcorn_puk/';
+export async function fetchInstagramPosts(limit = 4, username = '') {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const normalizedUsername = typeof username === 'string' ? username.trim().replace(/^@/, '') : '';
+  if (normalizedUsername) {
+    params.set('username', normalizedUsername);
+  }
 
-export { INSTAGRAM_PROFILE_URL };
-
-export async function fetchInstagramPosts(limit = 4) {
-  const response = await fetch(`/api/instagram/posts?limit=${limit}`);
+  const response = await fetch(`/api/instagram/posts?${params}`);
   const payload = await response.json().catch(() => ({}));
+  const posts = Array.isArray(payload.posts) ? payload.posts : [];
 
-  if (Array.isArray(payload.posts) && payload.posts.length > 0) {
-    return payload.posts;
-  }
-
-  if (!response.ok) {
-    throw new Error(payload.error || 'Nepodařilo se načíst příspěvky z Instagramu.');
-  }
-
-  return [];
+  return {
+    posts,
+    error: typeof payload.error === 'string' && payload.error
+      ? payload.error
+      : (!response.ok && !posts.length
+        ? 'Nepodařilo se načíst příspěvky z Instagramu.'
+        : ''),
+  };
 }

@@ -1,0 +1,136 @@
+body.coming-soon-active {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page-main--coming-soon {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.coming-soon {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--nav-height) + 2.5rem) 0 3rem;
+}
+
+.coming-soon__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+
+.coming-soon .section__label {
+  align-self: stretch;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.coming-soon__hero {
+  padding: 0 0 2rem;
+  max-width: 54rem;
+}
+
+.coming-soon__hero .hero__quote {
+  padding: 0 0.5rem;
+}
+
+.coming-soon__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(100%, 28rem);
+  margin: 0 0 2rem;
+  padding: 1.5rem 1.35rem 1.35rem;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.coming-soon__logo {
+  height: 5.5rem;
+  width: auto;
+  max-width: 7rem;
+  object-fit: contain;
+}
+
+.coming-soon__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--black);
+}
+
+.coming-soon__brand span:last-child {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.coming-soon__text {
+  margin: 0;
+  max-width: 24rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--gray);
+}
+
+.coming-soon__socials {
+  margin: 0 0 2rem;
+  max-width: 42rem;
+}
+
+.coming-soon__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.coming-soon__contact-label {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+@media (max-width: 640px) {
+  .coming-soon {
+    padding-top: calc(var(--nav-height) + 1.5rem);
+    padding-bottom: 3rem;
+  }
+
+  .coming-soon__hero {
+    padding-bottom: 1.5rem;
+  }
+
+  .coming-soon__card {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1rem;
+  }
+
+  .coming-soon__socials {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 0.85rem;
+    justify-content: center;
+  }
+
+  .coming-soon__socials .social-btn {
+    width: 9.5rem;
+    min-height: 6.5rem;
+    padding: 1rem 0.65rem;
+  }
+}

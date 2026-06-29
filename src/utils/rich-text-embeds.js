@@ -80,7 +80,7 @@ export function buildDividerEditorHtml() {
 export function buildDividerDisplayHtml() {
   return (
     '<div class="rich-text__divider flow-connector" aria-hidden="true">'
-    + '<span class="flow-connector__line flow-connector__line--orange"></span>'
+    + '<span class="flow-connector__line flow-connector__line--red"></span>'
     + '<span class="flow-connector__dot"></span>'
     + '<span class="flow-connector__line flow-connector__line--red"></span>'
     + '</div>'

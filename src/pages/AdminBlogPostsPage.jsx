@@ -18,6 +18,7 @@ import {
   isSlugTaken,
   updateBlogPost,
 } from '../services/blog-posts';
+import { adminDocumentTitle, adminText } from '../utils/admin-text';
 
 function TrashIcon() {
   return (
@@ -53,7 +54,7 @@ export default function AdminBlogPostsPage() {
   const backfillStarted = useRef(false);
 
   useEffect(() => {
-    document.title = 'Blog — Admin';
+    document.title = adminDocumentTitle(adminText('blog.list.title'));
   }, []);
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export default function AdminBlogPostsPage() {
   if (loading) {
     return (
       <div className="admin-content">
-        <p className="admin-loading">Načítání…</p>
+        <p className="admin-loading">{adminText('common.loading')}</p>
       </div>
     );
   }
@@ -136,7 +137,7 @@ export default function AdminBlogPostsPage() {
     setSaveError('');
 
     if (isSlugTaken(posts, payload.slug, editingPost?.id)) {
-      setSaveError('URL příspěvku už používá jiný příspěvek.');
+      setSaveError(adminText('blog.list.errors.slugTaken'));
       return false;
     }
 
@@ -145,7 +146,7 @@ export default function AdminBlogPostsPage() {
     try {
       const author = await fetchAuthorSnapshot(targetUid);
       if (!author) {
-        setSaveError('Autora příspěvku se nepodařilo načíst.');
+        setSaveError(adminText('blog.list.errors.authorLoad'));
         return false;
       }
 
@@ -163,7 +164,7 @@ export default function AdminBlogPostsPage() {
       }
       return true;
     } catch (err) {
-      setSaveError(err.message || 'Uložení příspěvku se nezdařilo.');
+      setSaveError(err.message || adminText('blog.list.errors.save'));
       return false;
     }
   };
@@ -181,19 +182,19 @@ export default function AdminBlogPostsPage() {
     <div className="admin-content container">
       <header className="admin-content__header admin-content__header--actions">
         <div>
-          <h1 className="admin-content__title">Blog</h1>
-          <p className="admin-content__subtitle">Správa blogových příspěvků</p>
+          <h1 className="admin-content__title">{adminText('blog.list.title')}</h1>
+          <p className="admin-content__subtitle">{adminText('blog.list.subtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary" onClick={handleCreate}>
-          Nový příspěvek
+          {adminText('blog.list.newPost')}
         </button>
       </header>
 
-      <div className="admin-events__toolbar">
+      <div className="admin-blog-posts__toolbar">
         <input
           type="search"
-          className="admin-form__input admin-events__search"
-          placeholder="Hledat podle názvu, klíčových slov, autora, data nebo textu…"
+          className="admin-form__input admin-blog-posts__search"
+          placeholder={adminText('blog.list.searchPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -204,29 +205,29 @@ export default function AdminBlogPostsPage() {
       )}
 
       {postsLoading ? (
-        <p className="admin-loading">Načítám příspěvky…</p>
+        <p className="admin-loading">{adminText('blog.list.loading')}</p>
       ) : (
-        <div className="admin-events">
-          <div className="admin-events__head" aria-hidden="true">
-            <span>Název</span>
-            <span>Autor</span>
-            <span>Publikováno</span>
-            <span>Akce</span>
+        <div className="admin-blog-posts">
+          <div className="admin-blog-posts__head" aria-hidden="true">
+            <span>{adminText('common.columns.name')}</span>
+            <span>{adminText('blog.list.columns.author')}</span>
+            <span>{adminText('blog.list.columns.published')}</span>
+            <span>{adminText('common.columns.actions')}</span>
           </div>
 
-          <ul className="admin-events__list">
+          <ul className="admin-blog-posts__list">
             {filteredPosts.map((post) => (
-              <li key={post.id} className="admin-events__row">
-                <div className="admin-events__title">{post.title}</div>
-                <div className="admin-events__author">
+              <li key={post.id} className="admin-blog-posts__row">
+                <div className="admin-blog-posts__title">{post.title}</div>
+                <div className="admin-blog-posts__author">
                   <BlogAuthor author={resolveAuthor(post.author)} size="small" />
                 </div>
-                <div className="admin-events__date">{post.dateTimeLabel}</div>
-                <div className="admin-events__actions">
+                <div className="admin-blog-posts__date">{post.dateTimeLabel}</div>
+                <div className="admin-blog-posts__actions">
                   <button
                     type="button"
                     className="admin-events__action"
-                    aria-label={`Upravit příspěvek ${post.title}`}
+                    aria-label={adminText('blog.list.editAria', { title: post.title })}
                     onClick={() => handleEdit(post)}
                   >
                     <EditIcon />
@@ -234,7 +235,7 @@ export default function AdminBlogPostsPage() {
                   <button
                     type="button"
                     className="admin-events__action admin-events__action--danger"
-                    aria-label={`Smazat příspěvek ${post.title}`}
+                    aria-label={adminText('blog.list.deleteAria', { title: post.title })}
                     onClick={() => setPostToDelete(post)}
                   >
                     <TrashIcon />
@@ -245,10 +246,10 @@ export default function AdminBlogPostsPage() {
           </ul>
 
           {!filteredPosts.length && (
-            <p className="admin-loading">
+            <p className="admin-blog-posts__empty">
               {search.trim()
-                ? 'Žádné příspěvky neodpovídají hledání.'
-                : 'Zatím žádné blogové příspěvky.'}
+                ? adminText('blog.list.emptySearch')
+                : adminText('blog.list.empty')}
             </p>
           )}
         </div>

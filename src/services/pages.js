@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   serverTimestamp,
@@ -19,8 +20,32 @@ import {
   getSystemFlags,
   isSlugValid,
 } from '../data/pages';
+import { DEFAULT_SITE_TEXTS } from '../data/site-texts';
+import {
+  canPageHaveBlocks,
+  getDefaultContentBlocks,
+  getDefaultHomeBlocks,
+  getPageBlockLimit,
+  normalizePageBlocks,
+} from '../utils/page-blocks';
 
 const pagesRef = collection(db, 'pages');
+
+function stripUndefinedDeep(value) {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedDeep);
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, entry]) => entry !== undefined)
+        .map(([key, entry]) => [key, stripUndefinedDeep(entry)]),
+    );
+  }
+
+  return value;
+}
 
 function normalizePage(raw, fallback = null) {
   const base = fallback || {};
@@ -34,11 +59,17 @@ function normalizePage(raw, fallback = null) {
     type = defaultPage.type;
   }
 
+  const title = (raw.title || base.title || '').trim();
+  const slug = typeof raw.slug === 'string' ? raw.slug : (base.slug ?? '');
+  const blocks = normalizePageBlocks(raw.blocks, { maxBlocks: getPageBlockLimit(slug) });
+
   return {
     id,
-    slug: typeof raw.slug === 'string' ? raw.slug : (base.slug ?? ''),
-    title: (raw.title || base.title || '').trim(),
+    slug,
+    title,
     type,
+    blocks,
+    intro: typeof raw.intro === 'string' ? raw.intro : '',
     noDelete: flags.noDelete || false,
     lockName: flags.lockName || false,
     lockSlug: flags.lockSlug || false,
@@ -63,6 +94,28 @@ export function mergePages(rawPages) {
   });
 }
 
+/** Apply a saved page patch to the in-memory list (keeps public site in sync before Firestore snapshot). */
+export function applyLocalPagePatch(pages, pageId, patch = {}) {
+  const next = pages.map((page) => {
+    if (page.id !== pageId) return page;
+
+    return normalizePage({
+      id: pageId,
+      type: page.type,
+      slug: patch.slug !== undefined ? patch.slug : page.slug,
+      title: patch.title !== undefined ? patch.title : page.title,
+      blocks: patch.blocks !== undefined ? patch.blocks : page.blocks,
+      intro: patch.intro !== undefined ? patch.intro : page.intro,
+    });
+  });
+
+  return next.sort((a, b) => {
+    if (a.type === PAGE_TYPES.home) return -1;
+    if (b.type === PAGE_TYPES.home) return 1;
+    return a.title.localeCompare(b.title, 'cs');
+  });
+}
+
 export function subscribePages(onData, onError) {
   return onSnapshot(
     pagesRef,
@@ -71,6 +124,21 @@ export function subscribePages(onData, onError) {
     },
     onError,
   );
+}
+
+async function ensurePageBlocks(pageId, data) {
+  if (!canPageHaveBlocks({ type: data.type })) return;
+
+  if (Array.isArray(data.blocks) && data.blocks.length > 0) return;
+
+  const blocks = pageId === 'home'
+    ? getDefaultHomeBlocks(DEFAULT_SITE_TEXTS.heroQuote)
+    : getDefaultContentBlocks(data.title || '');
+
+  await updateDoc(doc(pagesRef, pageId), {
+    blocks,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function ensureDefaultPages() {
@@ -82,19 +150,38 @@ export async function ensureDefaultPages() {
   DEFAULT_PAGES.forEach((page) => {
     if (existingIds.has(page.id)) return;
 
-    batch.set(doc(pagesRef, page.id), {
+    const payload = {
       slug: page.slug,
       title: page.title,
       type: page.type,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    };
+
+    if (canPageHaveBlocks(page)) {
+      payload.blocks = page.id === 'home'
+        ? getDefaultHomeBlocks(DEFAULT_SITE_TEXTS.heroQuote)
+        : getDefaultContentBlocks(page.title);
+    }
+
+    batch.set(doc(pagesRef, page.id), payload);
     pending += 1;
   });
 
   if (pending > 0) {
     await batch.commit();
   }
+
+  await Promise.all(
+    snapshot.docs.map(async (item) => {
+      const data = item.data();
+      try {
+        await ensurePageBlocks(item.id, data);
+      } catch {
+        // Ignore migration errors during read-only checks.
+      }
+    }),
+  );
 }
 
 function assertUniqueSlug(pages, slug, excludeId = null) {
@@ -122,6 +209,7 @@ export async function createPage(pages, { title, slug }) {
     slug: trimmedSlug,
     title: trimmedTitle,
     type: PAGE_TYPES.content,
+    blocks: getDefaultContentBlocks(trimmedTitle),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -129,7 +217,7 @@ export async function createPage(pages, { title, slug }) {
   return docRef.id;
 }
 
-export async function updatePage(pages, page, { title, slug }) {
+export async function updatePage(pages, page, { title, slug, blocks, intro }) {
   if (!canEditPageTitle(page) && title.trim() !== page.title) {
     throw new Error('Název hlavní stránky nelze měnit.');
   }
@@ -159,11 +247,29 @@ export async function updatePage(pages, page, { title, slug }) {
 
   assertUniqueSlug(pages, trimmedSlug, page.id);
 
-  await updateDoc(doc(db, 'pages', page.id), {
+  const payload = {
     title: trimmedTitle,
     slug: trimmedSlug,
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  if (blocks !== undefined && canPageHaveBlocks(page)) {
+    payload.blocks = stripUndefinedDeep(
+      normalizePageBlocks(blocks, { maxBlocks: getPageBlockLimit(trimmedSlug) }),
+    );
+  }
+
+  if (intro !== undefined) {
+    payload.intro = typeof intro === 'string' ? intro.trim() : '';
+  }
+
+  await updateDoc(doc(db, 'pages', page.id), payload);
+}
+
+export async function fetchPageById(pageId) {
+  const snapshot = await getDoc(doc(pagesRef, pageId));
+  if (!snapshot.exists()) return null;
+  return normalizePage({ id: snapshot.id, ...snapshot.data() });
 }
 
 export async function deletePage(page) {

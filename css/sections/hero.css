@@ -16,12 +16,17 @@
 
 .hero__text {
   position: relative;
+  margin: 0;
   font-size: clamp(1.85rem, 5.5vw, 3.35rem);
   font-weight: 700;
   font-style: italic;
   line-height: 1.4;
   letter-spacing: -0.015em;
   color: var(--black);
+}
+
+.hero__text--regular {
+  font-weight: 400;
 }
 
 .hero__mark {
@@ -40,5 +45,4 @@
 .hero__mark--close {
   font-size: 1.45em;
   color: var(--red);
-  margin-left: 0.05em;
 }

@@ -197,11 +197,27 @@ service cloud.firestore {
         );
     }
 
+    function siteSettingsDoc() {
+      return get(/databases/$(database)/documents/siteSettings/config);
+    }
+
+    function membersCanCreateBlogPosts() {
+      return !exists(/databases/$(database)/documents/siteSettings/config)
+        || siteSettingsDoc().data.get('membersCanCreateBlogPosts', true) == true;
+    }
+
+    function anonymousBlogLikesEnabled() {
+      return !exists(/databases/$(database)/documents/siteSettings/config)
+        || siteSettingsDoc().data.get('anonymousBlogLikesEnabled', true) == true;
+    }
+
     match /blogPosts/{postId} {
       allow read: if true;
       allow create: if isAdmin()
         && validBlogPostDataAdmin(request.resource.data)
-        || (hasCompleteProfile() && validBlogPostData(request.resource.data));
+        || (hasCompleteProfile()
+          && membersCanCreateBlogPosts()
+          && validBlogPostData(request.resource.data));
       allow update: if isAdmin()
         && validBlogPostDataAdmin(request.resource.data)
         || (hasCompleteProfile()
@@ -225,6 +241,7 @@ service cloud.firestore {
               && request.resource.data.uid == request.auth.uid
               && request.resource.data.anonymous == false)
             || (!isSignedIn()
+              && anonymousBlogLikesEnabled()
               && request.resource.data.keys().hasOnly(['uid', 'anonymous', 'createdAt'])
               && request.resource.data.anonymous == true
               && request.resource.data.uid == null
@@ -263,6 +280,50 @@ service cloud.firestore {
 
     match /organiserPresets/{presetId} {
       allow read, create, update, delete: if isAdmin();
+    }
+
+    function validNotificationColor(color) {
+      return color == 'orange'
+        || color == 'red'
+        || color == 'blue'
+        || color == 'green'
+        || color == 'teal';
+    }
+
+    function validNotificationIcon(icon) {
+      return icon == 'notification'
+        || icon == 'important'
+        || icon == 'starting'
+        || icon == 'ending'
+        || icon == 'warning'
+        || icon == 'info';
+    }
+
+    function validNotificationData(data) {
+      return data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 120
+        && data.text is string
+        && data.text.size() > 0
+        && data.text.size() <= 2000
+        && data.scheduleMode is string
+        && (data.scheduleMode == 'scheduled' || data.scheduleMode == 'manual')
+        && data.manualActive is bool
+        && data.dateStart is string
+        && data.timeStart is string
+        && data.dateEnd is string
+        && data.timeEnd is string
+        && validNotificationColor(data.color)
+        && validNotificationIcon(data.icon)
+        && data.ctaEnabled is bool
+        && data.ctaLabel is string
+        && data.ctaHref is string
+        && data.ctaOpenInNewTab is bool;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && validNotificationData(request.resource.data);
     }
 
     function validSiteTextsData() {
@@ -326,6 +387,11 @@ service cloud.firestore {
         || slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$');
     }
 
+    function validPageBlocks(blocks) {
+      return blocks is list
+        && blocks.size() <= 50;
+    }
+
     function validPageFields() {
       let data = request.resource.data;
       return data.keys().hasAll(['slug', 'title', 'type'])
@@ -336,7 +402,140 @@ service cloud.firestore {
         && validPageType(data.type)
         && validPageSlug(data.slug)
         && (data.type != 'home' || data.slug == '')
-        && (data.type == 'home' || data.slug.size() > 0);
+        && (data.type == 'home' || data.slug.size() > 0)
+        && (!data.keys().hasAny(['blocks']) || validPageBlocks(data.blocks))
+        && (!data.keys().hasAny(['intro']) || data.intro is string);
+    }
+
+    function validSiteSettingsFooterSlot(slot) {
+      return slot is map
+        && slot.keys().hasOnly(['preset', 'enabled'])
+        && slot.preset is string
+        && slot.enabled is bool;
+    }
+
+    function validSiteSettingsFooterSlots(slots) {
+      return slots is list
+        && slots.size() == 3
+        && validSiteSettingsFooterSlot(slots[0])
+        && validSiteSettingsFooterSlot(slots[1])
+        && validSiteSettingsFooterSlot(slots[2]);
+    }
+
+    function validSiteSettingsBrandLinks(links) {
+      return links is map
+        && links.keys().hasOnly(['instagram', 'facebook', 'mail', 'youtube', 'tiktok', 'linkedin'])
+        && links.instagram is string
+        && links.facebook is string
+        && links.mail is string
+        && links.youtube is string
+        && links.tiktok is string
+        && links.linkedin is string;
+    }
+
+    function validSiteSettingsPatch() {
+      let data = request.resource.data;
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly([
+          'logoUrl',
+          'logoPublicId',
+          'logoAlt',
+          'brandLine1',
+          'brandLine2',
+          'footerYear',
+          'footerContactLabel',
+          'footerContactEmail',
+          'brandLinks',
+          'footerSocialSlots',
+          'comingSoonEnabled',
+          'anonymousBlogLikesEnabled',
+          'membersCanCreateBlogPosts',
+          'eventCategoryPublicLabel',
+          'eventCategoryPublicDescription',
+          'eventCategoryPrivateLabel',
+          'eventCategoryPrivateDescription',
+          'eventCategoryExternalLabel',
+          'eventCategoryExternalDescription',
+          'updatedAt',
+        ])
+        && (!keys.hasAny(['logoUrl']) || data.logoUrl is string)
+        && (!keys.hasAny(['logoPublicId']) || data.logoPublicId is string)
+        && (!keys.hasAny(['logoAlt']) || data.logoAlt is string)
+        && (!keys.hasAny(['brandLine1']) || data.brandLine1 is string)
+        && (!keys.hasAny(['brandLine2']) || data.brandLine2 is string)
+        && (!keys.hasAny(['footerYear']) || data.footerYear is string)
+        && (!keys.hasAny(['footerContactLabel']) || data.footerContactLabel is string)
+        && (!keys.hasAny(['footerContactEmail']) || data.footerContactEmail is string)
+        && (!keys.hasAny(['brandLinks']) || validSiteSettingsBrandLinks(data.brandLinks))
+        && (!keys.hasAny(['footerSocialSlots']) || validSiteSettingsFooterSlots(data.footerSocialSlots))
+        && (!keys.hasAny(['comingSoonEnabled']) || data.comingSoonEnabled is bool)
+        && (!keys.hasAny(['anonymousBlogLikesEnabled']) || data.anonymousBlogLikesEnabled is bool)
+        && (!keys.hasAny(['membersCanCreateBlogPosts']) || data.membersCanCreateBlogPosts is bool)
+        && (!keys.hasAny(['eventCategoryPublicLabel']) || data.eventCategoryPublicLabel is string)
+        && (!keys.hasAny(['eventCategoryPublicDescription']) || data.eventCategoryPublicDescription is string)
+        && (!keys.hasAny(['eventCategoryPrivateLabel']) || data.eventCategoryPrivateLabel is string)
+        && (!keys.hasAny(['eventCategoryPrivateDescription']) || data.eventCategoryPrivateDescription is string)
+        && (!keys.hasAny(['eventCategoryExternalLabel']) || data.eventCategoryExternalLabel is string)
+        && (!keys.hasAny(['eventCategoryExternalDescription']) || data.eventCategoryExternalDescription is string);
+    }
+
+    function validSiteSettingsCreate() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'logoUrl',
+          'logoPublicId',
+          'logoAlt',
+          'brandLine1',
+          'brandLine2',
+          'footerYear',
+          'footerContactLabel',
+          'footerContactEmail',
+          'brandLinks',
+          'footerSocialSlots',
+          'comingSoonEnabled',
+          'anonymousBlogLikesEnabled',
+          'membersCanCreateBlogPosts',
+          'eventCategoryPublicLabel',
+          'eventCategoryPublicDescription',
+          'eventCategoryPrivateLabel',
+          'eventCategoryPrivateDescription',
+          'eventCategoryExternalLabel',
+          'eventCategoryExternalDescription',
+          'updatedAt',
+        ])
+        && data.logoUrl is string
+        && data.logoPublicId is string
+        && data.logoAlt is string
+        && data.brandLine1 is string
+        && data.brandLine2 is string
+        && data.footerYear is string
+        && data.footerContactLabel is string
+        && data.footerContactEmail is string
+        && validSiteSettingsBrandLinks(data.brandLinks)
+        && validSiteSettingsFooterSlots(data.footerSocialSlots)
+        && data.comingSoonEnabled is bool
+        && data.anonymousBlogLikesEnabled is bool
+        && data.membersCanCreateBlogPosts is bool
+        && data.eventCategoryPublicLabel is string
+        && data.eventCategoryPublicDescription is string
+        && data.eventCategoryPrivateLabel is string
+        && data.eventCategoryPrivateDescription is string
+        && data.eventCategoryExternalLabel is string
+        && data.eventCategoryExternalDescription is string;
+    }
+
+    match /siteSettings/{docId} {
+      allow read: if true;
+
+      allow create: if isAdmin()
+        && docId == 'config'
+        && validSiteSettingsCreate();
+
+      allow update: if isAdmin()
+        && docId == 'config'
+        && validSiteSettingsPatch();
+
+      allow delete: if false;
     }
 
     match /pages/{pageId} {

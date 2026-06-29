@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminDeleteEventDialog from '../components/AdminDeleteEventDialog';
 import AdminEventFormModal from '../components/AdminEventFormModal';
+import AdminEventSettingsModal from '../components/AdminEventSettingsModal';
 import EventCategoryBadge from '../components/EventCategoryBadge';
+import EventCategoryIcon from '../components/EventCategoryIcon';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { createDraftEvent, createEvent, deleteEvent, fetchEventById, updateEvent } from '../services/events';
 import { useEvents } from '../contexts/EventsContext';
 import { formatEventDateLabel, isEventPast, partitionAdminEventList, sortPastEvents, sortUpcomingEvents } from '../utils/event-dates';
 import { getAdminEventTitle, normalizeEvent } from '../utils/event-format';
+import { adminDocumentTitle, adminText } from '../utils/admin-text';
 
 function TrashIcon() {
   return (
@@ -26,9 +29,9 @@ function EditIcon() {
 }
 
 const FILTERS = [
-  { id: 'all', label: 'Všechny' },
-  { id: 'upcoming', label: 'Nadcházející' },
-  { id: 'past', label: 'Proběhlé' },
+  { id: 'all', labelKey: 'all' },
+  { id: 'upcoming', labelKey: 'upcoming' },
+  { id: 'past', labelKey: 'past' },
 ];
 
 export default function AdminEventsPage() {
@@ -40,10 +43,11 @@ export default function AdminEventsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventToDelete, setEventToDelete] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    document.title = 'Akce — Admin';
+    document.title = adminDocumentTitle(adminText('events.list.title'));
   }, []);
 
   const filteredEvents = useMemo(() => {
@@ -169,42 +173,51 @@ export default function AdminEventsPage() {
     <div className="admin-content container">
       <header className="admin-content__header admin-content__header--actions">
         <div>
-          <h1 className="admin-content__title">Akce</h1>
-          <p className="admin-content__subtitle">Správa nadcházejících i proběhlých akcí</p>
+          <h1 className="admin-content__title">{adminText('events.list.title')}</h1>
+          <p className="admin-content__subtitle">{adminText('events.list.subtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary" onClick={handleCreate}>
-          Nová akce
-        </button>
+        <div className="admin-content__header-actions">
+          <button type="button" className="btn btn--outline" onClick={() => setSettingsOpen(true)}>
+            {adminText('common.settings')}
+          </button>
+          <button type="button" className="btn btn--primary" onClick={handleCreate}>
+            {adminText('events.list.newEvent')}
+          </button>
+        </div>
       </header>
 
       <div className="admin-events__toolbar">
-        <div className="admin-events__filters" role="group" aria-label="Filtrovat akce">
-          {FILTERS.map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              className={`admin-events__filter${statusFilter === filter.id ? ' admin-events__filter--active' : ''}`}
-              aria-pressed={statusFilter === filter.id}
-              onClick={() => setStatusFilter(filter.id)}
-            >
-              {filter.label}
-            </button>
-          ))}
+        <div className="admin-events__toolbar-row admin-events__toolbar-row--filters">
+          <div className="admin-events__filters" role="group" aria-label={adminText('events.list.filters.aria')}>
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                className={`admin-events__filter${statusFilter === filter.id ? ' admin-events__filter--active' : ''}`}
+                aria-pressed={statusFilter === filter.id}
+                onClick={() => setStatusFilter(filter.id)}
+              >
+                {adminText(`events.list.filters.${filter.labelKey}`)}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="btn btn--outline btn--small"
+            onClick={() => setSortDescending((value) => !value)}
+          >
+            {sortDescending ? adminText('events.list.sortReversed') : adminText('events.list.sortNearest')}
+          </button>
         </div>
-        <input
-          type="search"
-          className="admin-form__input admin-events__search"
-          placeholder="Hledat podle názvu, místa nebo organizátora…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button
-          type="button"
-          className="btn btn--outline btn--small"
-          onClick={() => setSortDescending((value) => !value)}
-        >
-          {sortDescending ? 'Obráceně' : 'Nejbližší nahoře'}
-        </button>
+        <div className="admin-events__toolbar-row">
+          <input
+            type="search"
+            className="admin-form__input admin-events__search"
+            placeholder={adminText('events.list.searchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       {(eventsError || saveError) && (
@@ -212,15 +225,15 @@ export default function AdminEventsPage() {
       )}
 
       {eventsLoading ? (
-        <p className="admin-loading">Načítám akce…</p>
+        <p className="admin-loading">{adminText('events.list.loading')}</p>
       ) : (
         <div className="admin-events">
           <div className="admin-events__head" aria-hidden="true">
-            <span>Název</span>
-            <span>Termín</span>
-            <span>Kategorie</span>
-            <span>Stav</span>
-            <span>Akce</span>
+            <span>{adminText('common.columns.name')}</span>
+            <span>{adminText('events.list.columns.date')}</span>
+            <span>{adminText('events.list.columns.category')}</span>
+            <span>{adminText('events.list.columns.status')}</span>
+            <span>{adminText('common.columns.actions')}</span>
           </div>
 
           <ul className={`admin-events__list${showPastDivider ? ' admin-events__list--with-past-divider' : ''}`}>
@@ -234,10 +247,14 @@ export default function AdminEventsPage() {
                   className={[
                     'admin-events__row',
                     event.isDraft ? 'admin-events__row--draft' : '',
+                    event.calendarOnly ? 'admin-events__row--calendar-only' : '',
                     isPastSectionStart ? 'admin-events__row--past-divider' : '',
                   ].filter(Boolean).join(' ')}
                 >
-                  <div className="admin-events__title">{displayTitle}</div>
+                  <div className="admin-events__title">
+                    <EventCategoryIcon category={event.category} size="md" />
+                    <span className="admin-events__title-text">{displayTitle}</span>
+                  </div>
                   <div className="admin-events__meta">
                     <div className="admin-events__date">{formatEventDateLabel(event)}</div>
                     <div className="admin-events__category">
@@ -245,10 +262,22 @@ export default function AdminEventsPage() {
                     </div>
                     <div className="admin-events__status">
                       {event.isDraft ? (
-                        <span className="admin-events__badge admin-events__badge--draft">Koncept</span>
+                        <span className="admin-events__badge admin-events__badge--draft">
+                          {adminText('events.list.badges.draft')}
+                        </span>
                       ) : (
                         <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
-                          {past ? 'Proběhlá' : 'Nadcházející'}
+                          {past
+                            ? adminText('events.list.badges.past')
+                            : adminText('events.list.badges.upcoming')}
+                        </span>
+                      )}
+                      {event.calendarOnly && (
+                        <span
+                          className="admin-events__badge admin-events__badge--calendar-only"
+                          title={adminText('events.list.badges.calendarOnlyTitle')}
+                        >
+                          {adminText('events.list.badges.calendarOnly')}
                         </span>
                       )}
                     </div>
@@ -277,14 +306,14 @@ export default function AdminEventsPage() {
           </ul>
 
           {!flatEvents.length && (
-            <p className="admin-loading">
+            <p className="admin-events__empty">
               {search.trim()
-                ? 'Žádné akce neodpovídají hledání.'
+                ? adminText('events.list.emptySearch')
                 : statusFilter === 'upcoming'
-                  ? 'Žádné budoucí akce.'
+                  ? adminText('events.list.emptyUpcoming')
                   : statusFilter === 'past'
-                    ? 'Žádné proběhlé akce.'
-                    : 'Zatím žádné akce.'}
+                    ? adminText('events.list.emptyPast')
+                    : adminText('events.list.empty')}
             </p>
           )}
         </div>
@@ -296,6 +325,11 @@ export default function AdminEventsPage() {
         onClose={() => setFormOpen(false)}
         onSave={handleSave}
         onEnsureDraft={handleEnsureDraft}
+      />
+
+      <AdminEventSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
       />
 
       <AdminDeleteEventDialog

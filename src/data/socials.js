@@ -13,7 +13,7 @@ export const SOCIALS = [
   {
     id: 'facebook',
     label: 'Facebook',
-    href: '#',
+    href: 'https://www.facebook.com/groups/popcorn.puk',
     icon: ICONS.facebook,
     showInBand: true,
     showInFooter: true,

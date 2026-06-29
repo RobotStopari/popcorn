@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { getAnonymousLikeId } from '../utils/anonymous-like-id';
 import { validateCommentBody } from '../utils/blog-comment-format';
 import {
@@ -14,6 +15,7 @@ import {
 
 export function usePostEngagement(postId) {
   const { user, profile, profileComplete, signInWithGoogle } = useAdminAuth();
+  const { settings } = useSiteSettings();
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentsError, setCommentsError] = useState('');
@@ -68,8 +70,15 @@ export function usePostEngagement(postId) {
     };
   }, [postId, likeId, user?.uid]);
 
+  const canLike = Boolean(user?.uid || settings.anonymousBlogLikesEnabled);
+
   const toggleLike = useCallback(async () => {
-    if (!postId || likeLoading) return false;
+    if (!postId || likeLoading || !canLike) {
+      if (!canLike && !user?.uid) {
+        setLikeError('Lajkování bez přihlášení je vypnuté.');
+      }
+      return false;
+    }
 
     setLikeLoading(true);
     setLikeError('');
@@ -84,7 +93,7 @@ export function usePostEngagement(postId) {
     } finally {
       setLikeLoading(false);
     }
-  }, [anonymousId, likeLoading, postId, user]);
+  }, [anonymousId, canLike, likeLoading, postId, user]);
 
   const addComment = useCallback(async (body) => {
     if (!canComment || !postId) return false;
@@ -147,6 +156,7 @@ export function usePostEngagement(postId) {
     hasLiked,
     likeLoading,
     likeError,
+    canLike,
     actionError,
     setActionError,
     canComment,

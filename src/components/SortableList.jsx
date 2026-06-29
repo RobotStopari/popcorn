@@ -49,14 +49,28 @@ function getItemShift(index, from, over, stride) {
   return 0;
 }
 
+function waitForLayout() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
+}
+
 export default function SortableList({
   items,
   onReorder,
+  onPrepareDrag,
+  onDragEnd,
+  integratedHandle = false,
+  lockedBeforeIndex = 0,
   listClassName = '',
   itemClassName = '',
   ghostClassName = '',
   handleLabel = 'Přesunout položku',
   getItemKey = (item) => item.id,
+  getItemClassName,
+  isItemDraggable,
   renderItem,
   renderGhostItem,
 }) {
@@ -74,8 +88,20 @@ export default function SortableList({
     const drag = dragRef.current;
     if (!drag) return;
 
-    const { from, over } = drag;
+    let { from, over } = drag;
     if (from !== null && over !== null && from !== over) {
+      if (from < lockedBeforeIndex) {
+        dragRef.current = null;
+        setDragState(null);
+        document.body.classList.remove('admin-sortable-dragging');
+        onDragEnd?.();
+        return;
+      }
+
+      if (over < lockedBeforeIndex) {
+        over = lockedBeforeIndex;
+      }
+
       const next = [...itemsRef.current];
       const [moved] = next.splice(from, 1);
       next.splice(over, 0, moved);
@@ -85,6 +111,7 @@ export default function SortableList({
     dragRef.current = null;
     setDragState(null);
     document.body.classList.remove('admin-sortable-dragging');
+    onDragEnd?.();
   };
 
   useEffect(() => {
@@ -94,7 +121,10 @@ export default function SortableList({
       const drag = dragRef.current;
       if (!drag) return;
 
-      const over = getDropIndex(event.clientY, drag.baseRects, drag.from);
+      let over = getDropIndex(event.clientY, drag.baseRects, drag.from);
+      if (lockedBeforeIndex > 0 && drag.from >= lockedBeforeIndex && over < lockedBeforeIndex) {
+        over = lockedBeforeIndex;
+      }
 
       dragRef.current = {
         ...drag,
@@ -117,15 +147,11 @@ export default function SortableList({
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [Boolean(dragState)]);
+  }, [Boolean(dragState), lockedBeforeIndex]);
 
-  const handlePointerDown = (event, index) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-
+  const measureRow = (index, pointerX, pointerY) => {
     const row = rowRefs.current[index];
-    if (!row) return;
-
-    event.preventDefault();
+    if (!row) return null;
 
     const rect = row.getBoundingClientRect();
     const styles = window.getComputedStyle(row);
@@ -144,23 +170,47 @@ export default function SortableList({
       };
     });
 
-    const nextDrag = {
+    return {
       from: index,
       over: index,
-      x: event.clientX,
-      y: event.clientY,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top,
+      x: pointerX,
+      y: pointerY,
+      offsetX: pointerX - rect.left,
+      offsetY: pointerY - rect.top,
       width: rect.width,
       height: rect.height,
       stride,
       baseRects,
     };
+  };
 
-    dragRef.current = nextDrag;
-    setDragState(nextDrag);
-    document.body.classList.add('admin-sortable-dragging');
-    event.currentTarget.setPointerCapture(event.pointerId);
+  const handlePointerDown = (event, index) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (index < lockedBeforeIndex) return;
+    if (isItemDraggable && !isItemDraggable(itemsRef.current[index], index)) return;
+
+    event.preventDefault();
+
+    const handle = event.currentTarget;
+    const pointerX = event.clientX;
+    const pointerY = event.clientY;
+
+    const beginDrag = async () => {
+      if (onPrepareDrag) {
+        await onPrepareDrag();
+        await waitForLayout();
+      }
+
+      const nextDrag = measureRow(index, pointerX, pointerY);
+      if (!nextDrag) return;
+
+      dragRef.current = nextDrag;
+      setDragState(nextDrag);
+      document.body.classList.add('admin-sortable-dragging');
+      handle.setPointerCapture(event.pointerId);
+    };
+
+    beginDrag();
   };
 
   if (!items.length) return null;
@@ -172,9 +222,13 @@ export default function SortableList({
       <ul className={`admin-sortable ${listClassName}`.trim()}>
         {items.map((item, index) => {
           const isDragging = dragState?.from === index;
+          const draggable = index >= lockedBeforeIndex
+            && (!isItemDraggable || isItemDraggable(item, index));
           const shift = dragState
             ? getItemShift(index, dragState.from, dragState.over, dragState.stride)
             : 0;
+
+          const itemExtraClass = getItemClassName?.(item, index) || '';
 
           return (
             <li
@@ -182,20 +236,26 @@ export default function SortableList({
               ref={(element) => {
                 rowRefs.current[index] = element;
               }}
-              className={`${itemClassName}${isDragging ? ' admin-sortable__item--dragging' : ''}`.trim()}
+              className={`${itemClassName}${isDragging ? ' admin-sortable__item--dragging' : ''}${itemExtraClass ? ` ${itemExtraClass}` : ''}`.trim()}
               style={{
                 transform: `translateY(${shift}px)`,
               }}
             >
-              <button
-                type="button"
-                className="admin-sortable__handle"
-                aria-label={`${handleLabel} ${index + 1}`}
-                onPointerDown={(event) => handlePointerDown(event, index)}
-              >
-                <DragHandleIcon />
-              </button>
-              {renderItem(item, index)}
+              {integratedHandle ? (
+                renderItem(item, index, draggable ? (event) => handlePointerDown(event, index) : null)
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="admin-sortable__handle"
+                    aria-label={`${handleLabel} ${index + 1}`}
+                    onPointerDown={(event) => handlePointerDown(event, index)}
+                  >
+                    <DragHandleIcon />
+                  </button>
+                  {renderItem(item, index)}
+                </>
+              )}
             </li>
           );
         })}
@@ -211,12 +271,20 @@ export default function SortableList({
           }}
           aria-hidden="true"
         >
-          <span className="admin-sortable__handle admin-sortable__handle--ghost">
-            <DragHandleIcon />
-          </span>
-          {renderGhostItem
-            ? renderGhostItem(draggedItem, dragState.from)
-            : renderItem(draggedItem, dragState.from)}
+          {integratedHandle ? (
+            renderGhostItem
+              ? renderGhostItem(draggedItem, dragState.from, () => {})
+              : renderItem(draggedItem, dragState.from, () => {})
+          ) : (
+            <>
+              <span className="admin-sortable__handle admin-sortable__handle--ghost">
+                <DragHandleIcon />
+              </span>
+              {renderGhostItem
+                ? renderGhostItem(draggedItem, dragState.from)
+                : renderItem(draggedItem, dragState.from)}
+            </>
+          )}
         </div>,
         document.body,
       )}

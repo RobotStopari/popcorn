@@ -4,6 +4,7 @@ import {
   fetchInstagramPosts,
   handleInstagramImageRequest,
   jsonResponse,
+  resolveInstagramUsername,
 } from './worker/instagram.js';
 
 async function sendWebResponse(webResponse, res) {
@@ -42,17 +43,20 @@ export default defineConfig({
           if (url.pathname === '/api/instagram/posts') {
             try {
               const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get('limit') || '4', 10) || 4, 1), 12);
-              const posts = await fetchInstagramPosts('popcorn_puk', limit);
+              const username = resolveInstagramUsername(new Request(url), process.env);
+              const posts = await fetchInstagramPosts(username, limit);
               res.statusCode = 200;
               res.setHeader('Content-Type', 'application/json; charset=utf-8');
-              res.end(JSON.stringify({ posts, username: 'popcorn_puk' }));
+              res.end(JSON.stringify({ posts, username }));
             } catch (error) {
+              const username = resolveInstagramUsername(new Request(url), process.env);
               const response = jsonResponse(
-                { posts: [], username: 'popcorn_puk', error: error.message || 'Failed to load Instagram posts.' },
-                { status: 502, cacheSeconds: 0 },
+                { posts: [], username, error: error.message || 'Failed to load Instagram posts.' },
+                { status: 200, cacheSeconds: 0 },
               );
               await sendWebResponse(response, res);
             }
+            return;
           }
         });
       },

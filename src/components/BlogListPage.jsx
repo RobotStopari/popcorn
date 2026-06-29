@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { pagePath } from '../data/pages';
+import { pagePath, getPageIntro } from '../data/pages';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
 import AdminDeleteBlogPostDialog from './AdminDeleteBlogPostDialog';
 import BlogPageToolbar from './BlogPageToolbar';
@@ -8,14 +8,13 @@ import BlogPostCard from './BlogPostCard';
 import EventsPagination from './EventsPagination';
 import SectionLabel from './SectionLabel';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
-import { useSiteTexts } from '../contexts/SiteTextsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
 import { filterPostsBySearch } from '../utils/blog-post-format';
 
 const PAGE_SIZE = 20;
 
 export default function BlogListPage({ page }) {
-  const { texts } = useSiteTexts();
+  const intro = getPageIntro(page);
   const { posts, loading } = useBlogPosts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
@@ -103,7 +102,7 @@ export default function BlogListPage({ page }) {
           <BlogPageToolbar canCreate={canAuthor} onCreate={openCreate} />
         </div>
 
-        <p className="events-list__intro reveal">{texts.blogIntro}</p>
+        <p className="events-list__intro reveal">{intro}</p>
 
         <div className="blog-list__search reveal">
           <input

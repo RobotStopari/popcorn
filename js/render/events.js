@@ -24,7 +24,7 @@ function renderEventCard(event, index, past = false) {
 function renderSectionLabel(label) {
   return `
     <div class="section__label reveal reveal--scale">
-      <span class="section__label-line section__label-line--orange"></span>
+      <span class="section__label-line section__label-line--red"></span>
       <span class="section__label-text">${label}</span>
       <span class="section__label-line section__label-line--red"></span>
     </div>

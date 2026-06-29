@@ -1,22 +1,11 @@
 import { NavLink } from 'react-router-dom';
+import { ADMIN_NAV_GROUPS } from '../data/admin-texts';
+import { ADMIN_SIDEBAR_ICONS } from '../data/admin-sidebar-icons';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAdminShell } from '../contexts/AdminShellContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { adminText } from '../utils/admin-text';
 import AdminBrand from './AdminBrand';
-
-const NAV_GROUPS = [
-  [{ to: '/admin/users', label: 'Uživatelé' }],
-  [
-    { to: '/admin/events', label: 'Akce' },
-    { to: '/admin/blog', label: 'Blog' },
-  ],
-  [
-    { to: '/admin/pages', label: 'Stránky' },
-    { to: '/admin/menu', label: 'Menu' },
-    { to: '/admin/texts', label: 'Texty' },
-  ],
-  [{ to: '/admin/colors', label: 'Barvy' }],
-];
 
 export default function AdminSidebar() {
   const { canAccessAdmin } = useAdminAuth();
@@ -31,17 +20,17 @@ export default function AdminSidebar() {
         <button
           type="button"
           className={`admin-sidebar__backdrop${visible ? ' admin-sidebar__backdrop--visible' : ''}`}
-          aria-label="Zavřít menu"
+          aria-label={adminText('shell.sidebar.closeMenu')}
           onClick={closeSidebar}
         />
       )}
 
       <aside className={`admin-sidebar${sidebarOpen ? ' admin-sidebar--open' : ''}`}>
         <AdminBrand className="admin-sidebar__brand" onClick={closeSidebar} />
-        <nav className="admin-sidebar__nav" aria-label="Administrace">
-          <p className="admin-sidebar__heading">Administrace</p>
+        <nav className="admin-sidebar__nav" aria-label={adminText('shell.sidebar.navAria')}>
+          <p className="admin-sidebar__heading">{adminText('shell.sidebar.heading')}</p>
           <ul className="admin-sidebar__list">
-            {NAV_GROUPS.flatMap((group, groupIndex) => {
+            {ADMIN_NAV_GROUPS.flatMap((group, groupIndex) => {
               const items = group.map((item) => (
                 <li key={item.to}>
                   <NavLink
@@ -49,7 +38,14 @@ export default function AdminSidebar() {
                     className={({ isActive }) => `admin-sidebar__link${isActive ? ' admin-sidebar__link--active' : ''}`}
                     onClick={closeSidebar}
                   >
-                    {item.label}
+                    <span
+                      className="admin-sidebar__icon"
+                      aria-hidden="true"
+                      dangerouslySetInnerHTML={{ __html: ADMIN_SIDEBAR_ICONS[item.itemKey] || '' }}
+                    />
+                    <span className="admin-sidebar__label">
+                      {adminText(`shell.sidebar.items.${item.itemKey}`)}
+                    </span>
                   </NavLink>
                 </li>
               ));

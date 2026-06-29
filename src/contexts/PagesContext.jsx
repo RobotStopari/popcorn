@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { PAGE_TYPES, pagePath } from '../data/pages';
-import { subscribePages } from '../services/pages';
+import { subscribePages, applyLocalPagePatch } from '../services/pages';
 
 const PagesContext = createContext(null);
 
@@ -50,6 +50,10 @@ export function PagesProvider({ children }) {
     pages.find((page) => page.type === PAGE_TYPES.eventsPast) || null
   ), [pages]);
 
+  const upsertPage = useCallback((pageId, patch) => {
+    setPages((prev) => applyLocalPagePatch(prev, pageId, patch));
+  }, []);
+
   const value = useMemo(() => ({
     pages,
     loading,
@@ -60,6 +64,7 @@ export function PagesProvider({ children }) {
     getEventsUpcomingPage,
     getEventsPastPage,
     pagePath,
+    upsertPage,
   }), [
     pages,
     loading,
@@ -69,6 +74,7 @@ export function PagesProvider({ children }) {
     getHomePage,
     getEventsUpcomingPage,
     getEventsPastPage,
+    upsertPage,
   ]);
 
   return (

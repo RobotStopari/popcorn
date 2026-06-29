@@ -5,14 +5,15 @@ import {
   getEventCategoryDescription,
   getEventCategoryLabel,
 } from '../data/event-categories';
-import { useSiteTexts } from '../contexts/SiteTextsContext';
+import { getEventCategoryTexts } from '../data/site-settings';
+import { useSiteSettings } from '../contexts/SiteSettingsContext';
 
 export function useEventCategories() {
-  const { texts } = useSiteTexts();
+  const { settings } = useSiteSettings();
 
   const categories = useMemo(
-    () => buildEventCategoriesFromTexts(texts),
-    [texts],
+    () => buildEventCategoriesFromTexts(getEventCategoryTexts(settings)),
+    [settings],
   );
 
   const getLabel = useCallback(

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminDeletePageDialog from '../components/AdminDeletePageDialog';
+import AdminPageBuilder from '../components/AdminPageBuilder';
 import AdminPageFormModal from '../components/AdminPageFormModal';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { usePages } from '../contexts/PagesContext';
@@ -13,8 +14,11 @@ import {
   createPage,
   deletePage,
   ensureDefaultPages,
+  fetchPageById,
   updatePage,
 } from '../services/pages';
+import { canPageHaveBlocks } from '../utils/page-blocks';
+import { adminDocumentTitle, adminText } from '../utils/admin-text';
 
 function EditIcon() {
   return (
@@ -65,16 +69,17 @@ function PageRow({ page, onEdit, onDelete }) {
 
 export default function AdminPagesPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
-  const { pages, loading: pagesLoading, error: pagesError } = usePages();
+  const { pages, loading: pagesLoading, error: pagesError, upsertPage } = usePages();
   const [seedLoading, setSeedLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
   const [editingPage, setEditingPage] = useState(null);
   const [pageToDelete, setPageToDelete] = useState(null);
   const [saveError, setSaveError] = useState('');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    document.title = 'Stránky — Admin';
+    document.title = adminDocumentTitle(adminText('pages.list.title'));
   }, []);
 
   useEffect(() => {
@@ -122,13 +127,28 @@ export default function AdminPagesPage() {
   const handleCreate = () => {
     setEditingPage(null);
     setFormOpen(true);
+    setBuilderOpen(false);
     setSaveError('');
   };
 
-  const handleEdit = (page) => {
-    setEditingPage(page);
-    setFormOpen(true);
+  const handleEdit = async (page) => {
     setSaveError('');
+
+    try {
+      const fresh = await fetchPageById(page.id);
+      setEditingPage(fresh || page);
+    } catch {
+      setEditingPage(page);
+    }
+
+    if (canPageHaveBlocks(page)) {
+      setBuilderOpen(true);
+      setFormOpen(false);
+      return;
+    }
+
+    setFormOpen(true);
+    setBuilderOpen(false);
   };
 
   const handleSave = async (payload) => {
@@ -136,10 +156,16 @@ export default function AdminPagesPage() {
 
     if (editingPage) {
       await updatePage(pages, editingPage, payload);
+      upsertPage(editingPage.id, payload);
       return;
     }
 
     await createPage(pages, payload);
+  };
+
+  const handleBuilderSave = async (payload) => {
+    if (!editingPage) return;
+    await handleSave(payload);
   };
 
   const handleConfirmDelete = async (pageId) => {
@@ -156,11 +182,11 @@ export default function AdminPagesPage() {
     <div className="admin-content container">
       <header className="admin-content__header admin-content__header--actions">
         <div>
-          <h1 className="admin-content__title">Stránky</h1>
-          <p className="admin-content__subtitle">Správa veřejných stránek webu</p>
+          <h1 className="admin-content__title">{adminText('pages.list.title')}</h1>
+          <p className="admin-content__subtitle">{adminText('pages.list.subtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary" onClick={handleCreate}>
-          Nová stránka
+          {adminText('pages.list.newPage')}
         </button>
       </header>
 
@@ -223,8 +249,21 @@ export default function AdminPagesPage() {
       <AdminPageFormModal
         open={formOpen}
         page={editingPage}
-        onClose={() => setFormOpen(false)}
+        onClose={() => {
+          setFormOpen(false);
+          setEditingPage(null);
+        }}
         onSave={handleSave}
+      />
+
+      <AdminPageBuilder
+        open={builderOpen}
+        page={editingPage}
+        onClose={() => {
+          setBuilderOpen(false);
+          setEditingPage(null);
+        }}
+        onSave={handleBuilderSave}
       />
 
       <AdminDeletePageDialog

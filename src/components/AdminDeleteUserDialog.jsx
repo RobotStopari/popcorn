@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { adminText } from '../utils/admin-text';
 import AdminModalPanel from './AdminModalPanel';
 
 export default function AdminDeleteUserDialog({ open, user, onClose, onConfirm }) {
@@ -30,7 +31,7 @@ export default function AdminDeleteUserDialog({ open, user, onClose, onConfirm }
 
   if (!mounted || !user) return null;
 
-  const displayName = user.name || user.email || 'tento uživatel';
+  const displayName = user.name || user.email || adminText('users.deleteDialog.fallbackName');
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -41,7 +42,7 @@ export default function AdminDeleteUserDialog({ open, user, onClose, onConfirm }
     if (ok) {
       onClose();
     } else {
-      setError('Smazání uživatele se nezdařilo.');
+      setError(adminText('users.deleteDialog.failed'));
     }
   };
 
@@ -54,19 +55,23 @@ export default function AdminDeleteUserDialog({ open, user, onClose, onConfirm }
     >
       <div className="admin-modal__backdrop" onClick={deleting ? undefined : onClose} aria-hidden="true" />
       <AdminModalPanel className="admin-modal__panel--compact">
-        <h2 id="admin-delete-user-title" className="admin-modal__title">Smazat uživatele?</h2>
+        <h2 id="admin-delete-user-title" className="admin-modal__title">
+          {adminText('users.deleteDialog.title')}
+        </h2>
         <p className="admin-modal__text">
-          Opravdu chcete smazat uživatele <strong>{displayName}</strong>? Tuto akci nelze vrátit zpět.
+          {adminText('users.deleteDialog.bodyPrefix')}{' '}
+          <strong>{displayName}</strong>
+          {adminText('users.deleteDialog.bodySuffix')}
         </p>
 
         {error && <p className="admin-error">{error}</p>}
 
         <div className="admin-modal__actions">
           <button type="button" className="btn btn--outline" onClick={onClose} disabled={deleting}>
-            Zrušit
+            {adminText('common.cancel')}
           </button>
           <button type="button" className="btn btn--secondary" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'Mažu…' : 'Smazat uživatele'}
+            {deleting ? adminText('common.deleting') : adminText('users.deleteDialog.confirm')}
           </button>
         </div>
       </AdminModalPanel>

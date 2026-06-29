@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { pagePath } from '../data/pages';
+import { pagePath, getPageIntro } from '../data/pages';
 import { useEvents } from '../contexts/EventsContext';
-import { useSiteTexts } from '../contexts/SiteTextsContext';
 import { getAllPast, getAllUpcoming } from '../utils/event-dates';
 import EventCard from './EventCard';
 import EventsPagination from './EventsPagination';
@@ -17,8 +16,7 @@ const EMPTY_MESSAGES = {
 
 export default function EventsListPage({ page, variant }) {
   const past = variant === 'past';
-  const { texts } = useSiteTexts();
-  const intro = past ? texts.pastIntro : texts.upcomingIntro;
+  const intro = getPageIntro(page);
   const { events, loading } = useEvents();
   const [searchParams, setSearchParams] = useSearchParams();
   const basePath = page ? pagePath(page) : '/';

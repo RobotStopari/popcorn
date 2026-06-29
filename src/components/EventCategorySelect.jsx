@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEventCategories } from '../hooks/useEventCategories';
 import { normalizeEventCategory } from '../data/event-categories';
+import EventCategoryIcon from './EventCategoryIcon';
 
 export default function EventCategorySelect({
   id,
@@ -40,7 +41,7 @@ export default function EventCategorySelect({
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="event-category-select__swatch" aria-hidden="true" />
+        <EventCategoryIcon category={categoryId} size="sm" className="event-category-select__icon" />
         <span className="event-category-select__label">{getLabel(categoryId)}</span>
         <span className="event-category-select__chevron" aria-hidden="true">▾</span>
       </button>
@@ -56,7 +57,7 @@ export default function EventCategorySelect({
                 className={`event-category-select__option event-category-select__option--${optionId}${optionId === categoryId ? ' event-category-select__option--selected' : ''}`}
                 onClick={() => handleSelect(optionId)}
               >
-                <span className="event-category-select__swatch" aria-hidden="true" />
+                <EventCategoryIcon category={optionId} size="sm" className="event-category-select__icon" />
                 <span className="event-category-select__option-label">
                   {categories[optionId].label}
                 </span>

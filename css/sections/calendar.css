@@ -5,7 +5,7 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
-  max-width: 960px;
+  max-width: var(--page-block-content);
   margin: 0 auto;
   --cal-line: color-mix(in srgb, var(--black) 15%, transparent);
 }
@@ -194,6 +194,14 @@
 }
 
 .cal__day--today {
+  grid-row: 1 / -1;
+  align-self: stretch;
+  z-index: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+}
+
+.cal__day--other.cal__day--today {
   background: color-mix(in srgb, var(--orange) 12%, transparent);
 }
 

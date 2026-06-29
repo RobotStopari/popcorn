@@ -11,13 +11,15 @@ import AdminPage from './pages/AdminPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminEventsPage from './pages/AdminEventsPage';
 import AdminBlogPostsPage from './pages/AdminBlogPostsPage';
-import AdminTextsPage from './pages/AdminTextsPage';
+import AdminNotificationsPage from './pages/AdminNotificationsPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
 import AdminPagesPage from './pages/AdminPagesPage';
 import AdminMenuPage from './pages/AdminMenuPage';
 import AdminColorsPage from './pages/AdminColorsPage';
 import { EventsProvider } from './contexts/EventsContext';
 import { BlogPostsProvider } from './contexts/BlogPostsContext';
-import { SiteTextsProvider } from './contexts/SiteTextsContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
+import { SiteSettingsProvider } from './contexts/SiteSettingsContext';
 import { SiteMenuProvider } from './contexts/SiteMenuContext';
 import { SiteColorsProvider } from './contexts/SiteColorsContext';
 import { PagesProvider } from './contexts/PagesContext';
@@ -71,7 +73,8 @@ function AppRoutes() {
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="events" element={<AdminEventsPage />} />
         <Route path="blog" element={<AdminBlogPostsPage />} />
-        <Route path="texts" element={<AdminTextsPage />} />
+        <Route path="notifications" element={<AdminNotificationsPage />} />
+        <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="pages" element={<AdminPagesPage />} />
         <Route path="menu" element={<AdminMenuPage />} />
         <Route path="colors" element={<AdminColorsPage />} />
@@ -84,17 +87,19 @@ export default function App() {
   return (
     <AdminAuthProvider>
       <SiteColorsProvider>
-        <SiteTextsProvider>
+        <SiteSettingsProvider>
           <PagesProvider>
             <SiteMenuProvider>
               <EventsProvider>
                 <BlogPostsProvider>
-                  <AppRoutes />
+                  <NotificationsProvider>
+                    <AppRoutes />
+                  </NotificationsProvider>
                 </BlogPostsProvider>
               </EventsProvider>
             </SiteMenuProvider>
           </PagesProvider>
-        </SiteTextsProvider>
+        </SiteSettingsProvider>
       </SiteColorsProvider>
     </AdminAuthProvider>
   );

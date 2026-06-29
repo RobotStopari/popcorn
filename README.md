@@ -38,8 +38,11 @@ Used for optional cover photos and event galleries uploaded from admin:
 | `VITE_CLOUDINARY_PRESET_GALLERY` | `popcorn_event_gallery` | `popcorn/events/gallery` | Výběr z galerie (max 10) — galerie u proběhlé akce |
 | `VITE_CLOUDINARY_PRESET_POST` | `popcorn_post_cover` | `popcorn/posts/covers` | Titulní fotka blogového příspěvku — karta + stránka článku |
 | `VITE_CLOUDINARY_PRESET_POST_GALLERY` | `popcorn_post_gallery` | `popcorn/posts/gallery` | Galerie fotek (max 10) — konec příspěvku nad komentáři |
+| `VITE_CLOUDINARY_PRESET_SITE_LOGO` | `popcorn_site_logo` | `popcorn/site/logo` | Logo webu — navigace, patička, admin |
 
 Uploads are **stored on Cloudinary already optimized** (WebP, size limits in preset). Unsigned uploads cannot send transform params from the browser — set **Incoming transformation** on each preset’s **Transform** tab.
+
+**Important:** Logo preset must use `c_limit` only — never `c_fill` or fixed height — or tall logos get cropped.
 
 ### 1. Create a free account
 
@@ -112,6 +115,18 @@ For each preset: Cloudinary Console → **Settings** → **Upload** → **Upload
 
   Keeps aspect ratio, max width 1600 px, WebP (same rules as event gallery picks).
 
+**Preset 6 — site logo (`popcorn_site_logo`):**
+
+- **Preset name:** `popcorn_site_logo` (must match `VITE_CLOUDINARY_PRESET_SITE_LOGO`)
+- **Asset folder:** e.g. `popcorn/site/logo`
+- **Transform → Incoming transformation:**
+
+  ```
+  c_limit,w_800,f_webp,q_auto
+  ```
+
+  Keeps full aspect ratio (portrait logos OK), max width 800 px, WebP. **Do not** use `c_fill`, `c_crop`, or a fixed `h_` — that crops the logo.
+
 Save each preset.
 
 ### 3. Add environment variables
@@ -125,6 +140,7 @@ VITE_CLOUDINARY_PRESET_PROMO=popcorn_event_pr
 VITE_CLOUDINARY_PRESET_GALLERY=popcorn_event_gallery
 VITE_CLOUDINARY_PRESET_POST=popcorn_post_cover
 VITE_CLOUDINARY_PRESET_POST_GALLERY=popcorn_post_gallery
+VITE_CLOUDINARY_PRESET_SITE_LOGO=popcorn_site_logo
 ```
 
 (`VITE_CLOUDINARY_UPLOAD_PRESET` still works as a fallback for the cover preset only.)

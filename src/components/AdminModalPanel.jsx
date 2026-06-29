@@ -1,13 +1,13 @@
 import { forwardRef } from 'react';
 
 const AdminModalPanel = forwardRef(function AdminModalPanel(
-  { className = '', children, onClick, onMouseDown, bare = false },
-  ref,
+  { className = '', children, footer = null, panelRef = null, onClick, onMouseDown, bare = false },
+  scrollRef,
 ) {
   if (bare) {
     return (
       <div
-        ref={ref}
+        ref={scrollRef}
         className={['event-share-form__content', className].filter(Boolean).join(' ')}
       >
         {children}
@@ -17,13 +17,15 @@ const AdminModalPanel = forwardRef(function AdminModalPanel(
 
   return (
     <div
+      ref={panelRef}
       className={['admin-modal__panel', className].filter(Boolean).join(' ')}
       onClick={onClick}
       onMouseDown={onMouseDown}
     >
-      <div ref={ref} className="admin-modal__scroll">
+      <div ref={scrollRef} className="admin-modal__scroll">
         {children}
       </div>
+      {footer}
     </div>
   );
 });

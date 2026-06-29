@@ -1,0 +1,29 @@
+/* Decorative Czech quote marks — serif contrast to Poppins body text */
+.hero__mark,
+.page-block__citation-small-mark,
+.page-block__reference-quote-mark,
+.block-wireframe__quote,
+.block-wireframe__citation-small-mark {
+  font-family: var(--font-quotes);
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Narrow no-break space before closing Czech quote („…“) */
+.hero__mark--close,
+.page-block__citation-small-mark--close,
+.page-block__reference-quote-mark--close,
+.block-wireframe__quote--close,
+.block-wireframe__citation-small .block-wireframe__citation-small-mark:last-of-type {
+  margin-left: 0;
+}
+
+.hero__mark--close::before,
+.page-block__citation-small-mark--close::before,
+.page-block__reference-quote-mark--close::before,
+.block-wireframe__quote--close::before,
+.block-wireframe__citation-small .block-wireframe__citation-small-mark:last-of-type::before {
+  content: '\202F';
+  font-family: var(--font);
+  font-weight: 400;
+}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ICONS } from '../data/icons';
 import { bindFrameImage } from '../hooks/useImageFrames';
-import { fetchInstagramPosts, INSTAGRAM_PROFILE_URL } from '../services/instagram';
+import { useSiteSettings } from '../contexts/SiteSettingsContext';
+import { getInstagramProfileUrl, getInstagramUsername } from '../data/site-settings';
+import { fetchInstagramPosts } from '../services/instagram';
 
 function InstagramPost({ post, index }) {
   const handleImageReady = (event) => {
@@ -38,18 +40,30 @@ function InstagramPost({ post, index }) {
 }
 
 export default function InstagramFeed() {
+  const { settings } = useSiteSettings();
+  const profileUrl = getInstagramProfileUrl(settings);
+  const profileHandle = `@${getInstagramUsername(settings)}`;
   const [posts, setPosts] = useState([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    const username = getInstagramUsername(settings);
 
-    fetchInstagramPosts(4)
-      .then((data) => {
-        if (!cancelled) setPosts(data);
+    setLoading(true);
+    setLoadError('');
+    fetchInstagramPosts(4, username)
+      .then(({ posts: nextPosts, error }) => {
+        if (cancelled) return;
+        setPosts(nextPosts);
+        setLoadError(error || '');
       })
       .catch(() => {
-        if (!cancelled) setPosts([]);
+        if (!cancelled) {
+          setPosts([]);
+          setLoadError('Nepodařilo se načíst příspěvky z Instagramu.');
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -58,7 +72,7 @@ export default function InstagramFeed() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [settings.brandLinks?.instagram, settings.instagramUsername]);
 
   useEffect(() => {
     if (!posts.length) return undefined;
@@ -70,14 +84,18 @@ export default function InstagramFeed() {
     return () => cancelAnimationFrame(frame);
   }, [posts]);
 
-  if (!loading && !posts.length) return null;
-
   return (
     <section className="section section--instagram" id="instagram">
       <div className="container">
-        <div className="instagram-feed__head reveal">
+        <div className="section__label reveal">
+          <span className="section__label-line section__label-line--red" aria-hidden="true" />
+          <h2 className="section__label-text">Instagram</h2>
+          <span className="section__label-line section__label-line--red" aria-hidden="true" />
+        </div>
+
+        <div className="instagram-feed__head reveal reveal--delay-1">
           <a
-            href={INSTAGRAM_PROFILE_URL}
+            href={profileUrl}
             className="instagram-feed__profile"
             target="_blank"
             rel="noopener noreferrer"
@@ -89,24 +107,40 @@ export default function InstagramFeed() {
             />
             <span className="instagram-feed__profile-copy">
               <span className="instagram-feed__profile-label">Sleduj nás na Instagramu</span>
-              <span className="instagram-feed__profile-handle">@popcorn_puk</span>
+              <span className="instagram-feed__profile-handle">{profileHandle}</span>
             </span>
           </a>
         </div>
 
         {loading ? (
-          <div className="instagram-feed reveal" aria-busy="true" aria-label="Načítám Instagram">
+          <div className="instagram-feed reveal reveal--delay-2" aria-busy="true" aria-label="Načítám Instagram">
             {Array.from({ length: 4 }, (_, index) => (
               <div key={index} className="instagram-feed__item-wrap">
                 <div className="instagram-feed__item instagram-feed__item--placeholder" />
               </div>
             ))}
           </div>
-        ) : (
-          <div className="instagram-feed">
+        ) : posts.length > 0 ? (
+          <div className="instagram-feed reveal reveal--delay-2">
             {posts.map((post, index) => (
               <InstagramPost key={post.id} post={post} index={index} />
             ))}
+          </div>
+        ) : (
+          <div className="instagram-feed__fallback reveal reveal--delay-2">
+            <p className="instagram-feed__fallback-text">
+              {loadError
+                ? 'Příspěvky se teď nepodařilo načíst. Zkuste to později, nebo nás sledujte přímo na Instagramu.'
+                : 'Zatím tu nejsou žádné příspěvky k zobrazení.'}
+            </p>
+            <a
+              href={profileUrl}
+              className="btn btn--primary shine-hover"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Otevřít profil {profileHandle}
+            </a>
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import {
   buildAuthorSnapshot,
@@ -16,25 +17,30 @@ import {
 } from '../services/blog-posts';
 
 export function useBlogAuthoring() {
-  const { user, profile, profileComplete } = useAdminAuth();
+  const { user, profile, profileComplete, canAccessAdmin } = useAdminAuth();
+  const { settings } = useSiteSettings();
   const { posts, prependPost } = useBlogPosts();
   const [formOpen, setFormOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [postToDelete, setPostToDelete] = useState(null);
   const [saveError, setSaveError] = useState('');
 
-  const canAuthor = Boolean(user && profileComplete);
+  const canCreatePosts = Boolean(
+    user && profileComplete && (settings.membersCanCreateBlogPosts || canAccessAdmin),
+  );
+  const canAuthor = canCreatePosts;
 
   const canManagePost = useCallback(
-    (post) => canAuthor && post?.author?.uid === user.uid,
-    [canAuthor, user],
+    (post) => Boolean(user && profileComplete && post?.author?.uid === user.uid),
+    [user, profileComplete],
   );
 
   const openCreate = useCallback(() => {
+    if (!canCreatePosts) return;
     setEditingPost(null);
     setSaveError('');
     setFormOpen(true);
-  }, []);
+  }, [canCreatePosts]);
 
   const openEdit = useCallback((post) => {
     if (!canManagePost(post)) return;
@@ -60,8 +66,13 @@ export function useBlogAuthoring() {
   const handleSave = useCallback(async (payload) => {
     setSaveError('');
 
-    if (!canAuthor) {
+    if (!user || !profileComplete) {
       setSaveError('Pro publikování dokončete profil a přihlaste se.');
+      return false;
+    }
+
+    if (!editingPost && !canCreatePosts) {
+      setSaveError('Zakládání příspěvků je momentálně dostupné jen pro administrátory.');
       return false;
     }
 
@@ -113,7 +124,7 @@ export function useBlogAuthoring() {
       return false;
     }
   }, [
-    canAuthor,
+    canCreatePosts,
     canManagePost,
     editingPost,
     posts,
@@ -140,6 +151,7 @@ export function useBlogAuthoring() {
 
   return {
     canAuthor,
+    canCreatePosts,
     canManagePost,
     formOpen,
     editingPost,

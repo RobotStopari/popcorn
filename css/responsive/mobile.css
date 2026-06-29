@@ -11,12 +11,7 @@
 
   .flow-connector {
     max-width: 200px;
-    padding: 1.5rem 1rem 1rem;
-  }
-
-  .flow-connector--compact {
-    padding-top: 0.5rem;
-    padding-bottom: 1.5rem;
+    padding: 1.5rem 1rem 2rem;
   }
 
   .navbar__toggle {
@@ -32,8 +27,8 @@
   }
 
   .navbar__logo {
-    width: 44px;
     height: 44px;
+    max-width: 56px;
   }
 
   .navbar__nav {
@@ -84,6 +79,14 @@
     padding-bottom: 3rem;
   }
 
+  .page-blocks .page-block--citation.hero {
+    padding: 2.5rem 0 3rem;
+  }
+
+  .page-blocks--home > .page-blocks__item--first .page-block--citation.hero {
+    padding-top: 2rem;
+  }
+
   .hero__text {
     font-size: clamp(1.5rem, 6.5vw, 2rem);
     line-height: 1.45;
@@ -95,14 +98,21 @@
   }
 
   .parallax-section {
-    height: 38vh;
-    min-height: 260px;
+    height: var(--parallax-height, 38vh);
+    min-height: var(--parallax-min-height, 260px);
+  }
+
+  .social-row {
+    display: grid;
+    grid-template-columns: repeat(2, 9.5rem);
+    justify-content: center;
+    gap: 0.85rem;
   }
 
   .social-btn {
-    padding: 1rem 1.5rem;
-    flex: 1;
-    min-width: 100px;
+    width: 100%;
+    min-height: 6.5rem;
+    padding: 1rem 0.65rem;
   }
 
   .section:not(.events-list):not(.content-page-section):not(.blog-list):not(.blog-detail) {
@@ -121,6 +131,10 @@
   .section--calendar {
     padding-top: 3rem;
     padding-bottom: 2.5rem;
+  }
+
+  .section#past {
+    padding-bottom: 1.75rem;
   }
 
   .event-detail {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAdminShell } from '../contexts/AdminShellContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { adminText } from '../utils/admin-text';
 import AdminAvatar from './AdminAvatar';
 import AdminBrand from './AdminBrand';
 import AdminEditProfileModal from './AdminEditProfileModal';
@@ -52,7 +53,7 @@ export default function AdminNavbar() {
             <button
               type="button"
               className="admin-navbar__menu-btn"
-              aria-label="Otevřít menu administrace"
+              aria-label={adminText('shell.navbar.openMenu')}
               onClick={toggleSidebar}
             >
               <span className="admin-navbar__menu-icon" aria-hidden="true">
@@ -70,7 +71,7 @@ export default function AdminNavbar() {
                 className="admin-profile-menu__trigger"
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
-                aria-label={`Profil: ${profileLabel}`}
+                aria-label={adminText('shell.navbar.profileAria', { label: profileLabel })}
                 onClick={(e) => {
                   e.stopPropagation();
                   setMenuOpen((open) => !open);
@@ -101,7 +102,7 @@ export default function AdminNavbar() {
                         setEditOpen(true);
                       }}
                     >
-                      Upravit profil
+                      {adminText('shell.navbar.editProfile')}
                     </button>
                   </li>
                   <li role="none">
@@ -114,7 +115,7 @@ export default function AdminNavbar() {
                         signOutUser();
                       }}
                     >
-                      Odhlásit se
+                      {adminText('shell.navbar.signOut')}
                     </button>
                   </li>
                 </ul>

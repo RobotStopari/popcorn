@@ -23,10 +23,20 @@ const PRESET_ENV_KEYS = {
   gallery: ['VITE_CLOUDINARY_PRESET_GALLERY'],
   post: ['VITE_CLOUDINARY_PRESET_POST'],
   postGallery: ['VITE_CLOUDINARY_PRESET_POST_GALLERY'],
+  siteLogo: ['VITE_CLOUDINARY_PRESET_SITE_LOGO'],
 };
 
 function getCloudName() {
   return import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
+}
+
+export function buildCloudinaryDisplayUrl(publicId, { width = 200, height = 200 } = {}) {
+  const cloudName = getCloudName();
+  const trimmed = typeof publicId === 'string' ? publicId.trim() : '';
+  if (!cloudName || !trimmed) return '';
+
+  const transforms = `f_auto,q_auto,c_limit,w_${width},h_${height}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${transforms}/${trimmed}`;
 }
 
 function getUploadPreset(type) {
@@ -164,6 +174,10 @@ export async function uploadEventGalleryPick(file) {
 
 export async function uploadBlogPostGalleryImage(file) {
   return uploadImage(file, 'postGallery');
+}
+
+export async function uploadSiteLogoImage(file) {
+  return uploadImage(file, 'siteLogo');
 }
 
 export async function uploadEventImages(files, type, { concurrency = 2, onProgress } = {}) {
