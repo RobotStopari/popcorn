@@ -38,7 +38,7 @@ export default function EventCard({ event, index, past = false }) {
   const pastClass = past ? ' event-card--past' : '';
   const noImageClass = hasCover ? '' : ' event-card--no-image';
   const delayClass = ` reveal--delay-${index + 1}`;
-  const href = eventUrl(event.id);
+  const href = eventUrl(event);
   const actionLabel = past ? 'Přečíst o akci' : 'Více informací';
 
   return (

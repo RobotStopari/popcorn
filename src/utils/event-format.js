@@ -14,6 +14,7 @@ import {
   getEventCategoryLabel,
   normalizeEventCategory,
 } from '../data/event-categories';
+import { deriveEventSlug } from '../data/events';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -113,6 +114,7 @@ export function normalizeEvent(raw) {
 
   const event = {
     id: raw.id,
+    slug: raw.slug?.trim() || deriveEventSlug({ id: raw.id, title: raw.title, slug: '' }),
     title: raw.title?.trim() || '',
     dateStart: raw.dateStart || '',
     timeStart: raw.timeStart || '',
@@ -191,6 +193,8 @@ export function normalizeEvent(raw) {
 export function toCalendarEvent(event) {
   return {
     id: event.id,
+    slug: event.slug,
+    title: event.title,
     name: event.title,
     start: event.dateStart,
     end: event.dateEnd,
@@ -231,6 +235,7 @@ export function eventToFormState(event) {
   if (!event) {
     return {
       title: '',
+      slug: '',
       dateStart: '',
       timeStart: '',
       dateEnd: '',
@@ -256,6 +261,7 @@ export function eventToFormState(event) {
 
   return {
     title: event.title || '',
+    slug: event.slug || '',
     dateStart: event.dateStart || '',
     timeStart: event.timeStart || '',
     dateEnd: event.dateEnd || '',
@@ -291,6 +297,7 @@ export function formStateToPayload(form) {
 
   return {
     title: form.title.trim(),
+    slug: form.slug?.trim() || '',
     dateStart: form.dateStart,
     timeStart: form.timeStart,
     dateEnd: form.dateEnd,

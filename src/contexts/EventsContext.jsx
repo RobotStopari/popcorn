@@ -8,13 +8,27 @@ import {
 } from 'react';
 import { subscribeEvents } from '../services/events';
 import { getTopPast, getTopUpcoming } from '../utils/event-dates';
-import { isEventListedPublicly, isEventPublic, toCalendarEvent } from '../utils/event-format';
+import { deriveEventSlug } from '../data/events';
+import { isEventListedPublicly, isEventPublic, normalizeEvent, toCalendarEvent } from '../utils/event-format';
 
 const EventsContext = createContext(null);
 
-export function EventsProvider({ children }) {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+function normalizeInitialEvents(initialEvents) {
+  if (!initialEvents?.length) return [];
+  return initialEvents
+    .map((item) => {
+      try {
+        return normalizeEvent(item);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+export function EventsProvider({ children, initialEvents = null }) {
+  const [events, setEvents] = useState(() => normalizeInitialEvents(initialEvents));
+  const [loading, setLoading] = useState(initialEvents === null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -49,6 +63,16 @@ export function EventsProvider({ children }) {
     return { event, past: event.past };
   }, [listedEvents]);
 
+  const getEventBySlug = useCallback((slug) => {
+    const event = listedEvents.find((item) => deriveEventSlug(item) === slug || item.slug === slug);
+    if (!event) return null;
+    return { event, past: event.past };
+  }, [listedEvents]);
+
+  const getEventBySlugOrId = useCallback((slugOrId) => (
+    getEventBySlug(slugOrId) || getEventById(slugOrId)
+  ), [getEventBySlug, getEventById]);
+
   const upcomingTop = useMemo(() => getTopUpcoming(listedEvents, 3), [listedEvents]);
   const pastTop = useMemo(() => getTopPast(listedEvents, 3), [listedEvents]);
   const calendarEvents = useMemo(
@@ -64,7 +88,19 @@ export function EventsProvider({ children }) {
     pastTop,
     calendarEvents,
     getEventById,
-  }), [events, loading, error, upcomingTop, pastTop, calendarEvents, getEventById]);
+    getEventBySlug,
+    getEventBySlugOrId,
+  }), [
+    events,
+    loading,
+    error,
+    upcomingTop,
+    pastTop,
+    calendarEvents,
+    getEventById,
+    getEventBySlug,
+    getEventBySlugOrId,
+  ]);
 
   return (
     <EventsContext.Provider value={value}>

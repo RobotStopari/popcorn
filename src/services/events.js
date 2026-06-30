@@ -47,6 +47,7 @@ export async function fetchEventById(eventId) {
 
 const EMPTY_EVENT_FIELDS = {
   title: '',
+  slug: '',
   dateStart: '',
   timeStart: '',
   dateEnd: '',

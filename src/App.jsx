@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import HomeRoute from './components/HomeRoute';
 import SlugRoute from './components/SlugRoute';
-import EventPage from './pages/EventPage';
+import EventPage, { EventLegacyIdRedirect } from './pages/EventPage';
 import EventShareEditPage from './pages/EventShareEditPage';
 import BlogPostPage from './pages/BlogPostPage';
 import AdminPage from './pages/AdminPage';
@@ -31,7 +31,7 @@ function isStandaloneRoute(pathname) {
   return pathname.startsWith('/share/') || pathname.startsWith('/admin');
 }
 
-function EventLegacyRedirect() {
+function EventLegacyQueryRedirect() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get('id');
   if (!id) return <Navigate to="/" replace />;
@@ -64,8 +64,9 @@ function AppRoutes() {
           <Route key={from} path={from} element={<Navigate to={to} replace />} />
         ))}
         <Route path="blog/:postSlug" element={<BlogPostPage />} />
-        <Route path="event/:id" element={<EventPage />} />
-        <Route path="event.html" element={<EventLegacyRedirect />} />
+        <Route path="akce/:eventSlug" element={<EventPage />} />
+        <Route path="event/:legacyId" element={<EventLegacyIdRedirect />} />
+        <Route path="event.html" element={<EventLegacyQueryRedirect />} />
         <Route path=":slug" element={<SlugRoute />} />
       </Route>
       <Route path="admin" element={<AdminLayout />}>
@@ -83,16 +84,16 @@ function AppRoutes() {
   );
 }
 
-export default function App() {
+export default function App({ ssrData = null }) {
   return (
     <AdminAuthProvider>
-      <SiteColorsProvider>
-        <SiteSettingsProvider>
-          <PagesProvider>
-            <SiteMenuProvider>
-              <EventsProvider>
-                <BlogPostsProvider>
-                  <NotificationsProvider>
+      <SiteColorsProvider initialColors={ssrData?.siteColors}>
+        <SiteSettingsProvider initialSettings={ssrData?.siteSettings}>
+          <PagesProvider initialPages={ssrData?.pages}>
+            <SiteMenuProvider initialMenu={ssrData?.siteMenu}>
+              <EventsProvider initialEvents={ssrData?.events}>
+                <BlogPostsProvider initialPosts={ssrData?.blogPosts}>
+                  <NotificationsProvider initialNotifications={ssrData?.notifications}>
                     <AppRoutes />
                   </NotificationsProvider>
                 </BlogPostsProvider>

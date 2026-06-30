@@ -34,3 +34,64 @@
 @import url('responsive/mobile.css');
 @import url('responsive/small.css');
 @import url('responsive/grid-tablet.css');
+
+/* SSR fallback — visible to crawlers until React hydrates */
+.ssr-fallback {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+  font-family: var(--font-body, 'Poppins', sans-serif);
+  color: var(--color-black, #1a1a1a);
+}
+
+.ssr-fallback__nav,
+.ssr-fallback__footer {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ssr-fallback__footer {
+  border-bottom: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  margin-bottom: 0;
+}
+
+.ssr-fallback__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ssr-fallback__links a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.ssr-fallback__section {
+  margin-top: 2rem;
+}
+
+.ssr-fallback__section h2 {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ssr-fallback h1 {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-bottom: 0.75rem;
+}
+
+.ssr-fallback p {
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+

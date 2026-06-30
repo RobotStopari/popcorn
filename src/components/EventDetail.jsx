@@ -257,9 +257,9 @@ function NotFound() {
   );
 }
 
-export default function EventDetail({ id }) {
-  const { getEventById, loading } = useEvents();
-  const result = id ? getEventById(id) : null;
+export default function EventDetail({ slug }) {
+  const { getEventBySlugOrId, loading } = useEvents();
+  const result = slug ? getEventBySlugOrId(slug) : null;
 
   if (loading) {
     return (

@@ -7,13 +7,15 @@ import {
   useState,
 } from 'react';
 import { PAGE_TYPES, pagePath } from '../data/pages';
-import { subscribePages, applyLocalPagePatch } from '../services/pages';
+import { mergePages, subscribePages, applyLocalPagePatch } from '../services/pages';
 
 const PagesContext = createContext(null);
 
-export function PagesProvider({ children }) {
-  const [pages, setPages] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function PagesProvider({ children, initialPages = null }) {
+  const [pages, setPages] = useState(() => (
+    initialPages ? mergePages(initialPages) : []
+  ));
+  const [loading, setLoading] = useState(initialPages === null);
   const [error, setError] = useState('');
 
   useEffect(() => {

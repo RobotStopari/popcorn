@@ -14,7 +14,7 @@ export const PAGE_TYPE_LABELS = {
   [PAGE_TYPES.content]: 'Obsah',
 };
 
-export const RESERVED_SLUGS = ['event', 'admin'];
+export const RESERVED_SLUGS = ['event', 'akce', 'admin'];
 
 export const SYSTEM_PAGE_CONFIG = {
   home: { noDelete: true, lockName: true, lockSlug: true },
@@ -169,12 +169,4 @@ export function canEditPageSlug(page) {
   return !getSystemFlags(page.id).lockSlug;
 }
 
-export function slugifyTitle(title) {
-  return title
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
+export { slugifyTitle } from '../../shared/slug.js';

@@ -11,10 +11,14 @@ import { usePages } from './PagesContext';
 
 const SiteMenuContext = createContext(null);
 
-export function SiteMenuProvider({ children }) {
+export function SiteMenuProvider({ children, initialMenu = null }) {
   const { pages } = usePages();
-  const [items, setItems] = useState(normalizeMenuItems(DEFAULT_SITE_MENU.items));
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState(() => {
+    if (initialMenu?.items) return normalizeMenuItems(initialMenu.items);
+    if (Array.isArray(initialMenu)) return normalizeMenuItems(initialMenu);
+    return normalizeMenuItems(DEFAULT_SITE_MENU.items);
+  });
+  const [loading, setLoading] = useState(initialMenu === null);
   const [error, setError] = useState('');
 
   useEffect(() => {

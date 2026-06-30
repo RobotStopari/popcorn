@@ -3,6 +3,12 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { eventUrl } from '../data/events';
+import { useEvents } from '../contexts/EventsContext';
+import {
+  ensureUniqueEventSlug,
+  suggestEventSlugFromTitle,
+  validateEventSlug,
+} from '../utils/event-slug';
 import {
   createEmptyOrganiser,
   createEmptyParticipant,
@@ -179,6 +185,7 @@ export default function AdminEventFormModal({
   shareId = null,
 }) {
   const [form, setForm] = useState(eventToFormState());
+  const [slugTouched, setSlugTouched] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -196,6 +203,7 @@ export default function AdminEventFormModal({
   const skipFormResetRef = useRef(false);
   const formRef = useRef(form);
   const navigate = useNavigate();
+  const { events } = useEvents();
   const { mounted, visible } = useAnimatedPresence(open, 240);
   const eventId = event?.id ?? null;
   const eventFormSyncKey = event
@@ -229,6 +237,7 @@ export default function AdminEventFormModal({
     }
 
     setForm(eventToFormState(event));
+    setSlugTouched(Boolean(event?.slug));
     setActiveTab('basic');
     setError('');
     setPresetMessage('');
@@ -301,7 +310,13 @@ export default function AdminEventFormModal({
   if (!open) return null;
 
   const updateField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'title' && !slugTouched) {
+        next.slug = suggestEventSlugFromTitle(value);
+      }
+      return next;
+    });
   };
 
   const handleCategoryChange = (category) => {
@@ -467,8 +482,15 @@ export default function AdminEventFormModal({
     setError('');
 
     const currentForm = formRef.current;
+    const slug = ensureUniqueEventSlug(
+      currentForm.title,
+      currentForm.slug,
+      events,
+      event?.id ?? '',
+    );
+    const payload = formStateToPayload({ ...currentForm, slug });
     const published = isEventPublishable(currentForm);
-    const ok = await onSave(formStateToPayload(currentForm), {
+    const ok = await onSave(payload, {
       published,
       eventId: event?.id ?? null,
     });
@@ -533,6 +555,8 @@ export default function AdminEventFormModal({
       if (!form.title.trim()) {
         return { message: 'Název akce je povinný.', tab: 'basic' };
       }
+      const slugError = validateEventSlug(form.slug);
+      if (slugError) return { message: slugError, tab: 'basic' };
       if (form.title.trim().length > 200) {
         return { message: 'Název může mít maximálně 200 znaků.', tab: 'basic' };
       }
@@ -660,6 +684,23 @@ export default function AdminEventFormModal({
                       maxLength={200}
                       onChange={(e) => updateField('title', e.target.value)}
                       placeholder="Např. Letní setkání Popcorn"
+                      required
+                    />
+                  </FieldGroup>
+                  <FieldGroup
+                    label="URL akce"
+                    hint="Adresa pod /akce/… — jen malá písmena, čísla a pomlčky."
+                    required
+                  >
+                    <input
+                      type="text"
+                      className="admin-form__input"
+                      value={form.slug}
+                      onChange={(e) => {
+                        setSlugTouched(true);
+                        updateField('slug', e.target.value);
+                      }}
+                      placeholder="letni-setkani-popcorn"
                       required
                     />
                   </FieldGroup>
@@ -1215,7 +1256,7 @@ export default function AdminEventFormModal({
             type="button"
             className="btn btn--primary"
             onClick={() => {
-              if (event?.id) navigate(eventUrl(event.id));
+              if (event?.id) navigate(eventUrl({ ...event, slug: form.slug || event.slug }));
             }}
           >
             Zobrazit akci na webu

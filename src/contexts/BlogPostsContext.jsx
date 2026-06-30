@@ -7,13 +7,26 @@ import {
   useState,
 } from 'react';
 import { subscribeBlogPosts } from '../services/blog-posts';
-import { sortPostsByPublished } from '../utils/blog-post-format';
+import { normalizeBlogPost, sortPostsByPublished } from '../utils/blog-post-format';
 
 const BlogPostsContext = createContext(null);
 
-export function BlogPostsProvider({ children }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+function normalizeInitialPosts(initialPosts) {
+  if (!initialPosts?.length) return [];
+  return initialPosts
+    .map((item) => {
+      try {
+        return normalizeBlogPost(item);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+export function BlogPostsProvider({ children, initialPosts = null }) {
+  const [posts, setPosts] = useState(() => normalizeInitialPosts(initialPosts));
+  const [loading, setLoading] = useState(initialPosts === null);
   const [error, setError] = useState('');
 
   useEffect(() => {

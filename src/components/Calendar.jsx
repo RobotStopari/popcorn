@@ -167,7 +167,7 @@ function MonthAgenda({ events, year, month }) {
           return (
             <li key={event.id}>
               <a
-                href={opensExternally ? event.externalPageUrl : eventUrl(event.id)}
+                href={opensExternally ? event.externalPageUrl : eventUrl(event)}
                 className={`cal__agenda-item cal__agenda-item--${category} cal__agenda-item--${timing}`}
                 {...(opensExternally ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               >
@@ -207,7 +207,7 @@ function EventBar({ seg }) {
 
   return (
     <a
-      href={opensExternally ? event.externalPageUrl : eventUrl(event.id)}
+      href={opensExternally ? event.externalPageUrl : eventUrl(event)}
       className={classes.join(' ')}
       style={{ gridColumn: `${colStart + 1} / span ${span}`, gridRow: lane + 2 }}
       title={event.name}

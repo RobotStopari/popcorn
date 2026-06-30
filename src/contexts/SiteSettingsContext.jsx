@@ -10,9 +10,11 @@ import { normalizeSiteSettings, subscribeSiteSettings } from '../services/site-s
 
 const SiteSettingsContext = createContext(null);
 
-export function SiteSettingsProvider({ children }) {
-  const [settings, setSettings] = useState(DEFAULT_SITE_SETTINGS);
-  const [loading, setLoading] = useState(true);
+export function SiteSettingsProvider({ children, initialSettings = null }) {
+  const [settings, setSettings] = useState(() => (
+    initialSettings ? normalizeSiteSettings(initialSettings) : DEFAULT_SITE_SETTINGS
+  ));
+  const [loading, setLoading] = useState(initialSettings === null);
   const [error, setError] = useState('');
 
   useEffect(() => {

@@ -6,13 +6,28 @@ import {
   useState,
 } from 'react';
 import { subscribeNotifications } from '../services/notifications';
-import { isNotificationActive, sortActiveNotificationsByCreated } from '../utils/notification-format';
+import { isNotificationActive, normalizeNotification, sortActiveNotificationsByCreated } from '../utils/notification-format';
 
 const NotificationsContext = createContext(null);
 
-export function NotificationsProvider({ children }) {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+function normalizeInitialNotifications(initialNotifications) {
+  if (!initialNotifications?.length) return [];
+  return initialNotifications
+    .map((item) => {
+      try {
+        return normalizeNotification(item);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+export function NotificationsProvider({ children, initialNotifications = null }) {
+  const [notifications, setNotifications] = useState(() => (
+    normalizeInitialNotifications(initialNotifications)
+  ));
+  const [loading, setLoading] = useState(initialNotifications === null);
   const [error, setError] = useState('');
 
   useEffect(() => {

@@ -17,9 +17,11 @@ const SiteColorsContext = createContext(null);
 
 const DEFAULT_PALETTE = normalizeSiteColors({});
 
-export function SiteColorsProvider({ children }) {
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  const [loading, setLoading] = useState(true);
+export function SiteColorsProvider({ children, initialColors = null }) {
+  const [palette, setPalette] = useState(() => (
+    initialColors ? normalizeSiteColors(initialColors) : DEFAULT_PALETTE
+  ));
+  const [loading, setLoading] = useState(initialColors === null);
   const [error, setError] = useState('');
 
   useEffect(() => {
