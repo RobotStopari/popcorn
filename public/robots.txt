@@ -1,9 +1,13 @@
+# Static fallback — production serves dynamic robots.txt from the Cloudflare Worker.
+# See shared/robots.js
+
 User-agent: *
 Allow: /
-
-Disallow: /admin
+Allow: /akce/
+Allow: /blog/
 Disallow: /admin/
 Disallow: /share/
 Disallow: /event/
+Disallow: /api/
 
-Sitemap: /sitemap.xml
+Sitemap: https://komunitapopcorn.cz/sitemap.xml

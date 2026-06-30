@@ -7,8 +7,8 @@ import {
   jsonResponse,
   resolveInstagramUsername,
 } from './worker/instagram.js';
+import { buildRobotsTxt } from './shared/robots.js';
 import {
-  buildRobotsTxt,
   buildSitemapXml,
   fetchSsrPayload,
   injectSsrIntoHtml,

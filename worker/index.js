@@ -1,7 +1,7 @@
 import { handleInstagramImageRequest, handleInstagramPostsRequest } from './instagram.js';
 import shellHtml from './shell.html';
+import { buildRobotsTxt } from '../shared/robots.js';
 import {
-  buildRobotsTxt,
   buildSitemapXml,
   fetchSsrPayload,
   injectSsrIntoHtml,
@@ -87,7 +87,7 @@ export default {
       return new Response(buildRobotsTxt(siteUrl), {
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': 'public, max-age=86400',
         },
       });
     }

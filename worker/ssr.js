@@ -378,19 +378,6 @@ function escapeXml(value) {
     .replace(/'/g, '&apos;');
 }
 
-export function buildRobotsTxt(siteUrl) {
-  return `User-agent: *
-Allow: /
-
-Disallow: /admin
-Disallow: /admin/
-Disallow: /share/
-Disallow: /event/
-
-Sitemap: ${siteUrl}/sitemap.xml
-`;
-}
-
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -507,6 +494,11 @@ export function isStaticOrDevAsset(pathname) {
   );
 }
 
+function isSearchCrawler(request) {
+  const userAgent = request.headers.get('User-Agent') || '';
+  return /googlebot|google-inspectiontool|bingbot|applebot|yandex|duckduckbot|baiduspider|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|discordbot|telegrambot|seobility|seomaker|semrush/i.test(userAgent);
+}
+
 export function shouldHandleSsr(pathname, request) {
   if (pathname.startsWith('/api/')) return false;
   if (pathname.startsWith('/admin')) return false;
@@ -514,6 +506,8 @@ export function shouldHandleSsr(pathname, request) {
   if (pathname === '/sitemap.xml') return false;
   if (pathname === '/robots.txt') return false;
   if (isStaticOrDevAsset(pathname)) return false;
+
+  if (isSearchCrawler(request)) return true;
 
   const accept = request.headers.get('Accept') || '';
   if (!accept.includes('text/html')) return false;
