@@ -1,4 +1,12 @@
 import { deriveEventSlug } from '../shared/event-url.js';
+import {
+  buildHomeMetaDescription,
+  buildHomeMetaKeywords,
+  formatMetaKeywords,
+  SITE_LANGUAGE,
+  SITE_LOCALE,
+  trimMetaDescription,
+} from '../shared/seo-defaults.js';
 import { buildSsrShellHtml } from './ssr-links.js';
 import {
   fetchFirestoreCollection,
@@ -77,10 +85,11 @@ export function matchPublicRoute(pathname) {
 }
 
 async function fetchGlobalSiteData(env) {
-  const [siteSettings, siteMenu, siteColors, notifications] = await Promise.all([
+  const [siteSettings, siteMenu, siteColors, siteTexts, notifications] = await Promise.all([
     fetchFirestoreDocument('siteSettings', 'config', env),
     fetchFirestoreDocument('siteMenu', 'config', env),
     fetchFirestoreDocument('siteColors', 'config', env),
+    fetchFirestoreDocument('siteTexts', 'config', env),
     fetchFirestoreCollection('notifications', env),
   ]);
 
@@ -88,6 +97,7 @@ async function fetchGlobalSiteData(env) {
     siteSettings: siteSettings || {},
     siteMenu: siteMenu || {},
     siteColors: siteColors || {},
+    siteTexts: siteTexts || {},
     notifications: notifications || [],
   };
 }
@@ -177,14 +187,36 @@ export async function fetchSsrPayload(pathname, env, request) {
 
 function buildMeta({ route, siteUrl, data, pathname }) {
   const canonical = `${siteUrl}${pathname === '/' ? '/' : pathname.replace(/\/+$/, '')}`;
-  const defaultDescription = 'Komunita Popcorn — setkávání, akce a blog komunity.';
+  const defaultDescription = trimMetaDescription(
+    'Komunita Popcorn — setkávání absolventů kurzu Zapalovač, komunitní akce VyPUKne, blog a inspirace pro neformální rozvoj a sdílení zkušeností.',
+  );
+
+  if (route.type === 'home') {
+    const description = buildHomeMetaDescription(data.siteTexts);
+    return {
+      title: SITE_NAME,
+      description,
+      keywords: buildHomeMetaKeywords(),
+      canonical,
+      ogType: 'website',
+      ogImage: data.siteSettings?.logoUrl || '',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SITE_NAME,
+        description,
+        url: siteUrl,
+      },
+    };
+  }
 
   if (route.type === 'event' && data.event) {
     const event = data.event;
-    const description = stripHtml(event.description || event.report).slice(0, 160);
+    const description = trimMetaDescription(stripHtml(event.description || event.report), 160);
     return {
       title: `${event.title || 'Akce'} — ${SITE_NAME}`,
       description: description || defaultDescription,
+      keywords: formatMetaKeywords([event.title, event.category, 'akce', 'Popcorn', event.place].filter(Boolean)),
       canonical,
       ogType: 'website',
       ogImage: event.coverImage || '',
@@ -204,10 +236,11 @@ function buildMeta({ route, siteUrl, data, pathname }) {
 
   if (route.type === 'blog-post' && data.blogPost) {
     const post = data.blogPost;
-    const description = stripHtml(post.body).slice(0, 160);
+    const description = trimMetaDescription(stripHtml(post.body), 160);
     return {
       title: `${post.title} — ${SITE_NAME}`,
       description: description || defaultDescription,
+      keywords: formatMetaKeywords(post.keywords),
       canonical,
       ogType: 'article',
       ogImage: post.coverImage || '',
@@ -227,10 +260,12 @@ function buildMeta({ route, siteUrl, data, pathname }) {
 
   const page = data.page;
   if (page?.title) {
-    const intro = stripHtml(page.intro || '').slice(0, 160);
+    const intro = trimMetaDescription(stripHtml(page.intro || ''), 160);
+    const isHomePage = page.slug === '' || page.type === 'home';
     return {
-      title: page.slug === '' ? SITE_NAME : `${page.title} — ${SITE_NAME}`,
-      description: intro || defaultDescription,
+      title: isHomePage ? SITE_NAME : `${page.title} — ${SITE_NAME}`,
+      description: isHomePage ? buildHomeMetaDescription(data.siteTexts) : (intro || defaultDescription),
+      keywords: isHomePage ? buildHomeMetaKeywords() : formatMetaKeywords([page.title, 'Popcorn', page.slug]),
       canonical,
       ogType: 'website',
       ogImage: data.siteSettings?.logoUrl || '',
@@ -369,6 +404,9 @@ export function buildHeadTags(meta) {
 
   const tags = [
     `<title>${escapeHtml(meta.title)}</title>`,
+    `<meta http-equiv="content-language" content="${SITE_LANGUAGE}">`,
+    `<meta name="language" content="${SITE_LANGUAGE}">`,
+    `<meta property="og:locale" content="${SITE_LOCALE}">`,
     `<meta name="description" content="${escapeHtml(meta.description)}">`,
     `<link rel="canonical" href="${escapeHtml(meta.canonical)}">`,
     `<meta property="og:title" content="${escapeHtml(meta.title)}">`,
@@ -384,6 +422,10 @@ export function buildHeadTags(meta) {
   if (meta.ogImage) {
     tags.push(`<meta property="og:image" content="${escapeHtml(meta.ogImage)}">`);
     tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.ogImage)}">`);
+  }
+
+  if (meta.keywords) {
+    tags.push(`<meta name="keywords" content="${escapeHtml(meta.keywords)}">`);
   }
 
   if (meta.jsonLd) {
@@ -418,9 +460,13 @@ export function buildSsrFallbackHtml(route, data) {
     </article>`;
   } else if (data.page?.title) {
     const intro = stripHtml(data.page.intro || '').slice(0, 500);
+    const isHomePage = route.type === 'home' || data.page.slug === '' || data.page.type === 'home';
+    const description = isHomePage
+      ? buildHomeMetaDescription(data.siteTexts)
+      : intro;
     mainContent = `    <article>
       <h1>${escapeHtml(data.page.title)}</h1>
-      ${intro ? `<p>${escapeHtml(intro)}</p>` : ''}
+      ${description ? `<p>${escapeHtml(description)}</p>` : ''}
     </article>`;
   } else {
     mainContent = `    <article><h1>${escapeHtml(SITE_NAME)}</h1></article>`;
