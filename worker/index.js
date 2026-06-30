@@ -1,4 +1,5 @@
 import { handleInstagramImageRequest, handleInstagramPostsRequest } from './instagram.js';
+import shellHtml from './shell.html';
 import {
   buildRobotsTxt,
   buildSitemapXml,
@@ -14,6 +15,16 @@ function resolveSiteUrl(env, request) {
   return `${url.protocol}//${url.host}`;
 }
 
+async function loadShellHtml(request, env) {
+  const assetResponse = await env.ASSETS.fetch(request);
+  if (assetResponse.ok) {
+    return assetResponse.text();
+  }
+
+  // SPA asset routing can 307 /index.html → / — never forward that to the client.
+  return shellHtml;
+}
+
 async function handleSsrRequest(request, env) {
   const url = new URL(request.url);
 
@@ -24,14 +35,8 @@ async function handleSsrRequest(request, env) {
       return Response.redirect(payload.redirect, 301);
     }
 
-    const assetRequest = new Request(new URL('/index.html', request.url), request);
-    const assetResponse = await env.ASSETS.fetch(assetRequest);
-    if (!assetResponse.ok) {
-      return assetResponse;
-    }
-
-    let html = await assetResponse.text();
-    html = injectSsrIntoHtml(html, {
+    const template = await loadShellHtml(request, env);
+    const html = injectSsrIntoHtml(template, {
       pathname: url.pathname,
       meta: payload.meta,
       data: payload.data,
@@ -39,7 +44,7 @@ async function handleSsrRequest(request, env) {
     });
 
     return new Response(html, {
-      status: assetResponse.status,
+      status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
@@ -47,7 +52,21 @@ async function handleSsrRequest(request, env) {
     });
   } catch (error) {
     console.error('SSR failed:', error);
-    return env.ASSETS.fetch(request);
+
+    try {
+      const html = injectSsrIntoHtml(shellHtml, {
+        pathname: url.pathname,
+        meta: null,
+        data: null,
+        route: { type: 'unknown' },
+      });
+      return new Response(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    } catch {
+      return new Response('Page unavailable', { status: 503 });
+    }
   }
 }
 
