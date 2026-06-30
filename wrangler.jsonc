@@ -10,6 +10,7 @@
     "run_worker_first": true
   },
   "vars": {
-    "SITE_URL": "https://komunitapopcorn.cz"
+    "SITE_URL": "https://komunitapopcorn.cz",
+    "FIREBASE_PROJECT_ID": "komunita-popcorn"
   }
 }
