@@ -4,7 +4,14 @@ import { resolveBlockSocialLinks } from '../utils/site-branding';
 import { PAGE_BLOCK_TYPES } from '../data/page-blocks';
 import { useSiteColors } from '../contexts/SiteColorsContext';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
-import { getImageTextGridStyle, getImageTripletBlockStyle, getReferenceGridStyle, getWideImageBlockStyle, isReferenceWideLayout } from '../utils/page-blocks';
+import { getPageBlockButtonColorStyle } from '../utils/page-block-button-color';
+import {
+  getImageTextGridStyle,
+  getImageTripletBlockStyle,
+  getReferenceGridStyle,
+  getWideImageBlockStyle,
+  isReferenceWideLayout,
+} from '../utils/page-blocks';
 import { getParallaxOverlayBackground } from '../utils/parallax-overlay';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 
@@ -361,11 +368,12 @@ function WireImageTriplet({ block }) {
   );
 }
 
-function WireButton({ label, external = false, large = false }) {
+function WireButton({ label, external = false, large = false, color = 'orange' }) {
   const text = label?.trim();
   return (
     <span
-      className={`block-wireframe__btn${large ? ' block-wireframe__btn--large' : ''}${external ? ' block-wireframe__btn--external' : ''}`}
+      className={`block-wireframe__btn block-wireframe__btn--accent${large ? ' block-wireframe__btn--large' : ''}${external ? ' block-wireframe__btn--external' : ''}`}
+      style={getPageBlockButtonColorStyle(color)}
     >
       {text || 'Tlačítko'}
       {external && <span className="block-wireframe__btn-icon" aria-hidden="true">↗</span>}
@@ -383,6 +391,7 @@ function WireButtonPair({ buttons = [] }) {
             key={index}
             label={button.label}
             external={button.openInNewTab}
+            color={button.color}
           />
         );
       })}
@@ -474,12 +483,7 @@ export default function AdminPageBlockWireframe({ block }) {
       preview = <WireParallaxBand block={block} imageOnly />;
       break;
     case PAGE_BLOCK_TYPES.instagramFeed:
-      preview = (
-        <>
-          <WireSectionLabel text="Instagram" />
-          <WireInstagram />
-        </>
-      );
+      preview = <WireInstagram />;
       break;
     case PAGE_BLOCK_TYPES.wideImage:
       preview = <WireWideImage block={block} />;
@@ -495,7 +499,7 @@ export default function AdminPageBlockWireframe({ block }) {
       preview = (
         <WireNarrow>
           <div className="block-wireframe__button-row">
-            <WireButton label={block.label} external={block.openInNewTab} large />
+            <WireButton label={block.label} external={block.openInNewTab} color={block.color} large />
           </div>
         </WireNarrow>
       );

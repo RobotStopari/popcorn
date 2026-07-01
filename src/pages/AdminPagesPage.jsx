@@ -7,8 +7,11 @@ import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { usePages } from '../contexts/PagesContext';
 import {
   canDeletePage,
+  canEditPageSlug,
+  canEditPageTitle,
   filterAndGroupPages,
-  pagePath,
+  getPageAdminListTitle,
+  getPageSlugLabel,
 } from '../data/pages';
 import {
   createPage,
@@ -37,15 +40,18 @@ function TrashIcon() {
 }
 
 function PageRow({ page, onEdit, onDelete }) {
+  const slugLabel = getPageSlugLabel(page);
+  const listTitle = getPageAdminListTitle(page);
+
   return (
     <li className="admin-pages__row">
-      <div className="admin-pages__title">{page.title}</div>
-      <div className="admin-pages__slug">{pagePath(page)}</div>
+      <div className="admin-pages__title">{listTitle}</div>
+      <div className="admin-pages__slug">{slugLabel}</div>
       <div className="admin-pages__actions">
         <button
           type="button"
           className="admin-events__action"
-          aria-label={`Upravit stránku ${page.title}`}
+          aria-label={`Upravit stránku ${listTitle}`}
           onClick={() => onEdit(page)}
         >
           <EditIcon />
@@ -54,7 +60,7 @@ function PageRow({ page, onEdit, onDelete }) {
           <button
             type="button"
             className="admin-events__action admin-events__action--danger"
-            aria-label={`Smazat stránku ${page.title}`}
+            aria-label={`Smazat stránku ${listTitle}`}
             onClick={() => onDelete(page)}
           >
             <TrashIcon />

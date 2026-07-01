@@ -1,3 +1,5 @@
+import { PAGE_BLOCK_BUTTON_COLORS } from '../data/page-block-button-colors';
+
 function BlockEditorField({ label, htmlFor, hint, children }) {
   const Tag = htmlFor ? 'label' : 'div';
   return (
@@ -19,6 +21,7 @@ export default function AdminPageBlockButtonFields({
   onChange,
 }) {
   const update = (patch) => onChange({ ...button, ...patch });
+  const selectedColor = button.color || 'orange';
 
   return (
     <>
@@ -45,6 +48,27 @@ export default function AdminPageBlockButtonFields({
           onChange={(event) => update({ href: event.target.value })}
           placeholder="https://… nebo /stranka"
         />
+      </BlockEditorField>
+
+      <BlockEditorField label="Barva tlačítka">
+        <div className="admin-notification-form__swatches">
+          {PAGE_BLOCK_BUTTON_COLORS.map((color) => (
+            <label
+              key={color.id}
+              className={`admin-notification-form__swatch${selectedColor === color.id ? ' admin-notification-form__swatch--active' : ''}`}
+              style={{ '--swatch-color': `var(--${color.token})` }}
+            >
+              <input
+                type="radio"
+                name={`${prefix}-color`}
+                value={color.id}
+                checked={selectedColor === color.id}
+                onChange={() => update({ color: color.id })}
+              />
+              <span>{color.label}</span>
+            </label>
+          ))}
+        </div>
       </BlockEditorField>
 
       <label className="admin-toggle admin-page-block-button__toggle">

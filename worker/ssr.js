@@ -7,6 +7,12 @@ import {
   SITE_LOCALE,
   trimMetaDescription,
 } from '../shared/seo-defaults.js';
+import {
+  COMING_SOON_PAGE_SLUG,
+  isHiddenPublicPageSlug,
+  NOT_FOUND_PAGE_ID,
+  pageHasPublicUrl,
+} from '../shared/page-system.js';
 import { buildSsrShellHtml } from './ssr-links.js';
 import {
   fetchFirestoreCollection,
@@ -111,11 +117,6 @@ async function findEventBySlugOrId(events, slugOrId) {
 export async function fetchSsrPayload(pathname, env, request) {
   const route = matchPublicRoute(pathname);
   const siteUrl = resolveSiteUrl(env, request);
-
-  if (route.type === 'unknown') {
-    return { route, siteUrl, redirect: null, data: null, meta: null };
-  }
-
   const global = await fetchGlobalSiteData(env);
 
   if (route.type === 'event-legacy-id') {
@@ -129,8 +130,20 @@ export async function fetchSsrPayload(pathname, env, request) {
         redirect: `${siteUrl}/akce/${encodeURIComponent(slug)}`,
         data: null,
         meta: null,
+        notFound: false,
       };
     }
+  }
+
+  if (route.type === 'page' && route.slug === COMING_SOON_PAGE_SLUG) {
+    return {
+      route,
+      siteUrl,
+      redirect: `${siteUrl}/`,
+      data: null,
+      meta: null,
+      notFound: false,
+    };
   }
 
   const [pages, eventsRaw, blogPosts] = await Promise.all([
@@ -141,10 +154,12 @@ export async function fetchSsrPayload(pathname, env, request) {
 
   const events = withEventSlugs(eventsRaw).filter(isEventListed);
   const publishedPosts = blogPosts.filter((post) => post.title && post.slug);
+  const notFoundPage = pages.find((item) => item.id === NOT_FOUND_PAGE_ID) || null;
 
   let page = null;
   let event = null;
   let blogPost = null;
+  let notFound = route.type === 'unknown' || route.type === 'event-legacy-id';
 
   if (route.type === 'home') {
     page = pages.find((item) => item.type === 'home' || item.slug === '') || null;
@@ -155,19 +170,46 @@ export async function fetchSsrPayload(pathname, env, request) {
   } else if (route.type === 'blog-list') {
     page = pages.find((item) => item.type === 'blog-list' || item.slug === 'blog') || null;
   } else if (route.type === 'page') {
-    page = pages.find((item) => item.slug === route.slug) || null;
+    if (isHiddenPublicPageSlug(route.slug)) {
+      notFound = true;
+    } else {
+      page = pages.find((item) => item.slug === route.slug) || null;
+      if (!page) notFound = true;
+    }
   } else if (route.type === 'event') {
     event = await findEventBySlugOrId(events, route.slug);
     if (!event) {
       const queried = await queryFirestoreByField('events', 'slug', route.slug, env);
       if (queried[0]) event = normalizeEventSlug(queried[0]);
     }
+    if (!event) notFound = true;
   } else if (route.type === 'blog-post') {
     blogPost = publishedPosts.find((post) => post.slug === route.slug) || null;
     if (!blogPost) {
       const queried = await queryFirestoreByField('blogPosts', 'slug', route.slug, env);
       if (queried[0]) blogPost = queried[0];
     }
+    if (!blogPost) notFound = true;
+  }
+
+  if (notFound) {
+    return {
+      route: { ...route, type: 'not-found' },
+      siteUrl,
+      redirect: null,
+      notFound: true,
+      data: {
+        ...global,
+        pages,
+        events,
+        blogPosts: publishedPosts,
+        page: notFoundPage,
+        notFoundPage,
+        event: null,
+        blogPost: null,
+      },
+      meta: buildNotFoundMeta({ notFoundPage, siteUrl, pathname }),
+    };
   }
 
   const data = {
@@ -182,7 +224,22 @@ export async function fetchSsrPayload(pathname, env, request) {
 
   const meta = buildMeta({ route, siteUrl, data, pathname });
 
-  return { route, siteUrl, redirect: null, data, meta };
+  return { route, siteUrl, redirect: null, data, meta, notFound: false };
+}
+
+function buildNotFoundMeta({ notFoundPage, siteUrl, pathname }) {
+  const canonical = `${siteUrl}${pathname === '/' ? '/' : pathname.replace(/\/+$/, '')}`;
+  const heading = notFoundPage?.title?.trim() || 'Stránka nenalezena';
+
+  return {
+    title: `${heading} — ${SITE_NAME}`,
+    description: trimMetaDescription('Požadovaná stránka nebyla nalezena.'),
+    canonical,
+    ogType: 'website',
+    ogImage: '',
+    robots: 'noindex, nofollow',
+    jsonLd: null,
+  };
 }
 
 function buildMeta({ route, siteUrl, data, pathname }) {
@@ -341,6 +398,7 @@ export async function buildSitemapXml(env, request) {
   const urls = new Set([`${siteUrl}/`]);
 
   for (const page of pages) {
+    if (!pageHasPublicUrl(page.id)) continue;
     if (page.slug === '') {
       urls.add(`${siteUrl}/`);
     } else if (page.slug) {
@@ -415,6 +473,10 @@ export function buildHeadTags(meta) {
     tags.push(`<meta name="keywords" content="${escapeHtml(meta.keywords)}">`);
   }
 
+  if (meta.robots) {
+    tags.push(`<meta name="robots" content="${escapeHtml(meta.robots)}">`);
+  }
+
   if (meta.jsonLd) {
     tags.push(`<script type="application/ld+json">${JSON.stringify(meta.jsonLd)}</script>`);
   }
@@ -444,6 +506,11 @@ export function buildSsrFallbackHtml(route, data) {
       <h1>${escapeHtml(post.title || 'Blog')}</h1>
       ${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}
       <p><a href="/blog">Všechny blogové příspěvky</a></p>
+    </article>`;
+  } else if (route.type === 'not-found' && data.notFoundPage?.title) {
+    mainContent = `    <article>
+      <h1>${escapeHtml(data.notFoundPage.title)}</h1>
+      <p>Požadovaná stránka nebyla nalezena.</p>
     </article>`;
   } else if (data.page?.title) {
     const intro = stripHtml(data.page.intro || '').slice(0, 500);

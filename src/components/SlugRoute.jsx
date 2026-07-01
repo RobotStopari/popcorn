@@ -1,5 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom';
+import { COMING_SOON_PAGE_SLUG, isHiddenPublicPageSlug } from '../data/pages';
 import { usePages } from '../contexts/PagesContext';
+import NotFoundPage from './NotFoundPage';
 import PageRenderer from './PageRenderer';
 
 export default function SlugRoute() {
@@ -16,10 +18,17 @@ export default function SlugRoute() {
     );
   }
 
+  if (isHiddenPublicPageSlug(slug)) {
+    if (slug === COMING_SOON_PAGE_SLUG) {
+      return <Navigate to="/" replace />;
+    }
+    return <NotFoundPage />;
+  }
+
   const page = getPageBySlug(slug);
 
   if (!page) {
-    return <Navigate to="/" replace />;
+    return <NotFoundPage />;
   }
 
   return <PageRenderer page={page} />;

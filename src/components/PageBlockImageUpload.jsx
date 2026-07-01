@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
-import { isCloudinaryConfigured, uploadBlogPostGalleryImage, uploadSiteLogoImage, buildCloudinaryDisplayUrl } from '../services/cloudinary';
+import { isCloudinaryConfigured, isCloudinaryCloudNameConfigured, uploadBlogPostGalleryImage, uploadSiteLogoImage, buildCloudinaryDisplayUrl } from '../services/cloudinary';
 import { setUploadBusy } from '../utils/upload-busy';
 
 const UPLOAD_HINT = 'JPG, PNG, WebP nebo GIF do 10 MB. Použije se preset galerie příspěvku (WebP, zachovaný poměr stran).';
@@ -134,11 +134,25 @@ export default function PageBlockImageUpload({
 
         {!cloudinaryReady && (
           <p className="admin-error admin-page-block-image__error">
-            Cloudinary preset není nastaven — doplňte
-            {' '}
-            <code>{uploadConfig.envKey}</code>
-            {' '}
-            do `.env.local`.
+            {isCloudinaryCloudNameConfigured()
+              ? (
+                <>
+                  Cloudinary preset není nastaven — doplňte
+                  {' '}
+                  <code>{uploadConfig.envKey}</code>
+                  {' '}
+                  do `.env.local`.
+                </>
+              )
+              : (
+                <>
+                  Cloudinary není nakonfigurováno — doplňte
+                  {' '}
+                  <code>VITE_CLOUDINARY_CLOUD_NAME</code>
+                  {' '}
+                  do `.env.local` (viz README).
+                </>
+              )}
           </p>
         )}
 

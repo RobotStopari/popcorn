@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ICONS } from '../../data/icons';
+import { getPageBlockButtonColorStyle } from '../../utils/page-block-button-color';
 
 function isInternalHref(href) {
   return href.startsWith('/') && !href.startsWith('//');
@@ -10,6 +11,7 @@ export default function PageBlockLinkButton({
   href,
   openInNewTab = false,
   large = false,
+  color = 'orange',
 }) {
   const trimmedLabel = label?.trim();
   const trimmedHref = href?.trim();
@@ -18,9 +20,12 @@ export default function PageBlockLinkButton({
   const className = [
     'btn',
     'page-block__link-btn',
-    openInNewTab ? 'btn--external' : 'btn--primary',
+    'page-block__link-btn--accent',
+    openInNewTab ? 'page-block__link-btn--external' : '',
     large ? 'btn--large' : '',
   ].filter(Boolean).join(' ');
+
+  const style = getPageBlockButtonColorStyle(color);
 
   const content = (
     <>
@@ -37,7 +42,7 @@ export default function PageBlockLinkButton({
 
   if (!openInNewTab && isInternalHref(trimmedHref)) {
     return (
-      <Link to={trimmedHref} className={className}>
+      <Link to={trimmedHref} className={className} style={style}>
         {content}
       </Link>
     );
@@ -47,6 +52,7 @@ export default function PageBlockLinkButton({
     <a
       href={trimmedHref}
       className={className}
+      style={style}
       target={openInNewTab ? '_blank' : undefined}
       rel={openInNewTab ? 'noopener noreferrer' : undefined}
     >

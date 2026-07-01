@@ -1,3 +1,10 @@
+import {
+  COMING_SOON_PAGE_SLUG,
+  NOT_FOUND_PAGE_ID,
+  NOT_FOUND_PAGE_SLUG,
+  isHiddenPublicPageSlug,
+} from '../../shared/page-system.js';
+
 export const PAGE_TYPES = {
   home: 'home',
   eventsUpcoming: 'events-upcoming',
@@ -14,13 +21,27 @@ export const PAGE_TYPE_LABELS = {
   [PAGE_TYPES.content]: 'Obsah',
 };
 
-export const RESERVED_SLUGS = ['event', 'akce', 'admin'];
+export {
+  COMING_SOON_PAGE_SLUG,
+  NOT_FOUND_PAGE_ID,
+  NOT_FOUND_PAGE_SLUG,
+  isHiddenPublicPageSlug,
+};
+
+export const COMING_SOON_PAGE_ID = 'coming-soon';
+export const NOT_FOUND_PAGE_ADMIN_TITLE = '404 – Stránka nenalezena';
+
+export const STANDALONE_CONTENT_PAGE_IDS = [COMING_SOON_PAGE_ID, NOT_FOUND_PAGE_ID];
+
+export const RESERVED_SLUGS = ['event', 'akce', 'admin', COMING_SOON_PAGE_SLUG, NOT_FOUND_PAGE_SLUG];
 
 export const SYSTEM_PAGE_CONFIG = {
   home: { noDelete: true, lockName: true, lockSlug: true },
   vypukne: { noDelete: true },
   probehle: { noDelete: true },
   blog: { noDelete: true },
+  [COMING_SOON_PAGE_ID]: { noDelete: true, lockSlug: true, hideSlug: true },
+  [NOT_FOUND_PAGE_ID]: { noDelete: true, lockName: true, lockSlug: true, hideSlug: true },
 };
 
 export const DEFAULT_PAGES = [
@@ -47,6 +68,18 @@ export const DEFAULT_PAGES = [
     slug: 'blog',
     title: 'Blog',
     type: PAGE_TYPES.blogList,
+  },
+  {
+    id: COMING_SOON_PAGE_ID,
+    slug: COMING_SOON_PAGE_SLUG,
+    title: 'Již brzy',
+    type: PAGE_TYPES.content,
+  },
+  {
+    id: NOT_FOUND_PAGE_ID,
+    slug: NOT_FOUND_PAGE_SLUG,
+    title: NOT_FOUND_PAGE_ADMIN_TITLE,
+    type: PAGE_TYPES.content,
   },
   {
     id: 'co-je-popcorn',
@@ -80,13 +113,13 @@ export const DEFAULT_PAGES = [
   },
 ];
 
-export const PINNED_PAGE_IDS = ['home', 'vypukne', 'probehle', 'blog'];
+export const PINNED_PAGE_IDS = ['home', 'vypukne', 'probehle', 'blog', COMING_SOON_PAGE_ID, NOT_FOUND_PAGE_ID];
 
 export function filterAndGroupPages(pages, query = '') {
   const q = query.trim().toLowerCase();
   const matches = (page) => {
     if (!q) return true;
-    const hay = `${page.title} ${page.slug} ${pagePath(page)}`.toLowerCase();
+    const hay = `${getPageAdminListTitle(page)} ${page.slug} ${pagePath(page)}`.toLowerCase();
     return hay.includes(q);
   };
 
@@ -167,6 +200,28 @@ export function canEditPageTitle(page) {
 
 export function canEditPageSlug(page) {
   return !getSystemFlags(page.id).lockSlug;
+}
+
+export function pageHasPublicUrl(page) {
+  return !getSystemFlags(page?.id).hideSlug;
+}
+
+export function getPageSlugLabel(page) {
+  if (!pageHasPublicUrl(page)) return '—';
+  return page?.type === PAGE_TYPES.home ? '/' : pagePath(page);
+}
+
+export function isStandaloneContentPage(page) {
+  return STANDALONE_CONTENT_PAGE_IDS.includes(page?.id);
+}
+
+export function isStandalonePageWithEditableAdminTitle(page) {
+  return page?.id === COMING_SOON_PAGE_ID;
+}
+
+export function getPageAdminListTitle(page) {
+  if (page?.id === NOT_FOUND_PAGE_ID) return NOT_FOUND_PAGE_ADMIN_TITLE;
+  return page?.title || '';
 }
 
 export { slugifyTitle } from '../../shared/slug.js';

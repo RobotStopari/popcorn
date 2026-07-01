@@ -323,7 +323,9 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin() && validNotificationData(request.resource.data);
+      allow create: if isAdmin() && validNotificationData(request.resource.data);
+      allow update: if isAdmin() && validNotificationData(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     function validSiteTextsData() {
@@ -371,7 +373,9 @@ service cloud.firestore {
       return pageId == 'home'
         || pageId == 'vypukne'
         || pageId == 'probehle'
-        || pageId == 'blog';
+        || pageId == 'blog'
+        || pageId == 'coming-soon'
+        || pageId == '404';
     }
 
     function validPageType(type) {
@@ -546,9 +550,15 @@ service cloud.firestore {
       allow update: if isAdmin()
         && validPageFields()
         && request.resource.data.type == resource.data.type
-        && (pageId != 'home'
-          || (request.resource.data.title == resource.data.title
-            && request.resource.data.slug == resource.data.slug));
+        && (pageId != 'home' && pageId != 'coming-soon' && pageId != '404'
+          || (pageId == 'home'
+            && request.resource.data.title == resource.data.title
+            && request.resource.data.slug == resource.data.slug)
+          || (pageId == 'coming-soon'
+            && request.resource.data.slug == resource.data.slug)
+          || (pageId == '404'
+            && request.resource.data.slug == resource.data.slug
+            && request.resource.data.title == resource.data.title));
 
       allow delete: if isAdmin() && !isProtectedPage(pageId);
     }

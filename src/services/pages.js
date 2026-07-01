@@ -13,18 +13,23 @@ import {
 import { db } from '../firebase';
 import {
   DEFAULT_PAGES,
+  NOT_FOUND_PAGE_ADMIN_TITLE,
+  NOT_FOUND_PAGE_ID,
   PAGE_TYPES,
   canDeletePage,
   canEditPageSlug,
   canEditPageTitle,
   getSystemFlags,
   isSlugValid,
+  pageHasPublicUrl,
 } from '../data/pages';
 import { DEFAULT_SITE_TEXTS } from '../data/site-texts';
 import {
   canPageHaveBlocks,
+  getDefaultComingSoonBlocks,
   getDefaultContentBlocks,
   getDefaultHomeBlocks,
+  getDefaultNotFoundBlocks,
   getPageBlockLimit,
   normalizePageBlocks,
 } from '../utils/page-blocks';
@@ -133,7 +138,11 @@ async function ensurePageBlocks(pageId, data) {
 
   const blocks = pageId === 'home'
     ? getDefaultHomeBlocks(DEFAULT_SITE_TEXTS.heroQuote)
-    : getDefaultContentBlocks(data.title || '');
+    : pageId === 'coming-soon'
+      ? getDefaultComingSoonBlocks()
+      : pageId === '404'
+        ? getDefaultNotFoundBlocks()
+        : getDefaultContentBlocks(data.title || '');
 
   await updateDoc(doc(pagesRef, pageId), {
     blocks,
@@ -161,7 +170,11 @@ export async function ensureDefaultPages() {
     if (canPageHaveBlocks(page)) {
       payload.blocks = page.id === 'home'
         ? getDefaultHomeBlocks(DEFAULT_SITE_TEXTS.heroQuote)
-        : getDefaultContentBlocks(page.title);
+        : page.id === 'coming-soon'
+          ? getDefaultComingSoonBlocks()
+          : page.id === '404'
+            ? getDefaultNotFoundBlocks()
+            : getDefaultContentBlocks(page.title);
     }
 
     batch.set(doc(pagesRef, page.id), payload);
@@ -182,6 +195,14 @@ export async function ensureDefaultPages() {
       }
     }),
   );
+
+  const notFoundDoc = snapshot.docs.find((item) => item.id === NOT_FOUND_PAGE_ID);
+  if (notFoundDoc?.data()?.title !== NOT_FOUND_PAGE_ADMIN_TITLE) {
+    await updateDoc(doc(pagesRef, NOT_FOUND_PAGE_ID), {
+      title: NOT_FOUND_PAGE_ADMIN_TITLE,
+      updatedAt: serverTimestamp(),
+    });
+  }
 }
 
 function assertUniqueSlug(pages, slug, excludeId = null) {
@@ -219,33 +240,35 @@ export async function createPage(pages, { title, slug }) {
 
 export async function updatePage(pages, page, { title, slug, blocks, intro }) {
   if (!canEditPageTitle(page) && title.trim() !== page.title) {
-    throw new Error('Název hlavní stránky nelze měnit.');
+    throw new Error('Název této stránky nelze měnit.');
   }
 
   if (!canEditPageSlug(page) && slug.trim() !== page.slug) {
-    throw new Error('URL hlavní stránky nelze měnit.');
+    throw new Error('URL této stránky nelze měnit.');
   }
 
   const trimmedTitle = title.trim();
-  const trimmedSlug = slug.trim();
+  const trimmedSlug = pageHasPublicUrl(page) ? slug.trim() : page.slug;
 
   if (!trimmedTitle) {
     throw new Error('Vyplňte název stránky.');
   }
 
-  if (!isSlugValid(trimmedSlug, { allowEmpty: page.type === PAGE_TYPES.home })) {
-    throw new Error('URL smí obsahovat jen malá písmena, čísla a pomlčky.');
-  }
+  if (pageHasPublicUrl(page)) {
+    if (!isSlugValid(trimmedSlug, { allowEmpty: page.type === PAGE_TYPES.home })) {
+      throw new Error('URL smí obsahovat jen malá písmena, čísla a pomlčky.');
+    }
 
-  if (page.type === PAGE_TYPES.home && trimmedSlug !== '') {
-    throw new Error('Hlavní stránka musí mít prázdnou URL.');
-  }
+    if (page.type === PAGE_TYPES.home && trimmedSlug !== '') {
+      throw new Error('Hlavní stránka musí mít prázdnou URL.');
+    }
 
-  if (page.type !== PAGE_TYPES.home && !trimmedSlug) {
-    throw new Error('Vyplňte URL stránky.');
-  }
+    if (page.type !== PAGE_TYPES.home && !trimmedSlug) {
+      throw new Error('Vyplňte URL stránky.');
+    }
 
-  assertUniqueSlug(pages, trimmedSlug, page.id);
+    assertUniqueSlug(pages, trimmedSlug, page.id);
+  }
 
   const payload = {
     title: trimmedTitle,

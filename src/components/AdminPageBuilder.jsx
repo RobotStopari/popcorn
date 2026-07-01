@@ -9,7 +9,7 @@ import {
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
   PAGE_BLOCK_TYPES,
 } from '../data/page-blocks';
-import { canEditPageSlug, canEditPageTitle, getPageIntroFieldCopy, pagePath } from '../data/pages';
+import { canEditPageSlug, canEditPageTitle, getPageAdminListTitle, getPageIntroFieldCopy, isStandalonePageWithEditableAdminTitle, pageHasPublicUrl, pagePath, PAGE_TYPES, NOT_FOUND_PAGE_ADMIN_TITLE, NOT_FOUND_PAGE_ID } from '../data/pages';
 import {
   applyHomeIntroToBlocks,
   canPageHaveBlocks,
@@ -269,6 +269,7 @@ export default function AdminPageBuilder({
   const onCloseRef = useRef(onClose);
   const previewWindowRef = useRef(null);
   const removeTimeoutsRef = useRef(new Map());
+  const skipTitleToH1SyncRef = useRef(false);
   blocksRef.current = blocks;
   editingBlockIdRef.current = editingBlockId;
   paletteOpenRef.current = paletteOpen;
@@ -292,7 +293,7 @@ export default function AdminPageBuilder({
 
     const nextBlocks = hasBlocks ? getBlocksForPage(page) : [];
     blocksRef.current = nextBlocks;
-    setForm({ title: page.title, slug: page.slug });
+    setForm({ title: getPageAdminListTitle(page), slug: page.slug });
     setHomeIntro(page?.id === 'home' ? getHomeIntroFromBlocks(nextBlocks) : '');
     setBlocks(nextBlocks);
     setSaving(false);
@@ -318,6 +319,26 @@ export default function AdminPageBuilder({
       return next;
     });
   }, [form.title, lockedTitleBlock, open, page?.id, page?.type]);
+
+  useEffect(() => {
+    if (!open || !isStandalonePageWithEditableAdminTitle(page)) return;
+    if (skipTitleToH1SyncRef.current) {
+      skipTitleToH1SyncRef.current = false;
+      return;
+    }
+
+    setBlocks((prev) => {
+      const index = prev.findIndex((block) => block.type === PAGE_BLOCK_TYPES.h1);
+      if (index === -1) return prev;
+
+      if (prev[index].text === form.title) return prev;
+
+      const next = [...prev];
+      next[index] = { ...next[index], text: form.title };
+      blocksRef.current = next;
+      return next;
+    });
+  }, [form.title, open, page?.id]);
 
   useEffect(() => {
     if (!saveMessage) return undefined;
@@ -360,6 +381,7 @@ export default function AdminPageBuilder({
 
   const lockTitle = !canEditPageTitle(page);
   const lockSlug = !canEditPageSlug(page);
+  const showUrlField = pageHasPublicUrl(page);
 
   const markBlockEntering = (blockId) => {
     setEnteringBlockIds((prev) => new Set(prev).add(blockId));
@@ -433,6 +455,8 @@ export default function AdminPageBuilder({
   const handleUpdateBlock = (blockId, patch) => {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return;
 
+    const sourceBlock = blocksRef.current.find((item) => item.id === blockId);
+
     setBlocks((prev) => {
       const next = prev.map((item) => (
         item.id === blockId ? mergePageBlockPatch(item, patch) : item
@@ -440,6 +464,15 @@ export default function AdminPageBuilder({
       blocksRef.current = next;
       return next;
     });
+
+    if (
+      isStandalonePageWithEditableAdminTitle(page)
+      && patch.text !== undefined
+      && sourceBlock?.type === PAGE_BLOCK_TYPES.h1
+    ) {
+      skipTitleToH1SyncRef.current = true;
+      setForm((prev) => ({ ...prev, title: patch.text }));
+    }
   };
 
   const handleRequestRemoveBlock = (blockId) => {
@@ -472,9 +505,16 @@ export default function AdminPageBuilder({
       const currentBlocks = page?.id === 'home'
         ? applyHomeIntroToBlocks(blocksRef.current, homeIntro)
         : blocksRef.current;
+      const h1Block = currentBlocks.find((block) => block.type === PAGE_BLOCK_TYPES.h1);
+      const resolvedTitle = page?.id === NOT_FOUND_PAGE_ID
+        ? NOT_FOUND_PAGE_ADMIN_TITLE
+        : isStandalonePageWithEditableAdminTitle(page) && h1Block?.text?.trim()
+          ? h1Block.text.trim()
+          : form.title.trim();
+
       await onSave({
-        title: form.title,
-        slug: form.slug,
+        title: resolvedTitle,
+        slug: pageHasPublicUrl(page) ? form.slug : page.slug,
         blocks: hasBlocks
           ? validatePageBlocks(currentBlocks, page, { pageTitle: form.title })
           : undefined,
@@ -517,7 +557,7 @@ export default function AdminPageBuilder({
           <div className="admin-page-builder__header-copy">
             <p className="admin-page-builder__eyebrow">{adminText('pages.builder.eyebrow')}</p>
             <h2 id="admin-page-builder-title" className="admin-page-builder__title">
-              {form.title || page.title}
+              {getPageAdminListTitle(page) || form.title || page.title}
             </h2>
           </div>
         </div>
@@ -546,23 +586,26 @@ export default function AdminPageBuilder({
 
       {metaOpen && (
         <section className="admin-page-builder__meta-bar">
-          <div className="admin-page-builder__meta-field">
+          <div className={`admin-page-builder__meta-field${showUrlField ? '' : ' admin-page-builder__meta-field--wide'}`}>
             <label className="admin-page-builder__meta-label" htmlFor="builder-page-title">{adminText('pages.builder.metaName')}</label>
             <input
               id="builder-page-title"
-              className="admin-form__input"
+              className="admin-form__input admin-page-meta-control"
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               disabled={lockTitle}
               required
             />
           </div>
+          {showUrlField && (
           <div className="admin-page-builder__meta-field">
             <label className="admin-page-builder__meta-label" htmlFor="builder-page-slug">{adminText('pages.builder.metaUrl')}</label>
             {lockSlug ? (
-              <div className="admin-page-dialog__url-fixed" id="builder-page-slug">/</div>
+              <div className="admin-page-dialog__url-fixed admin-page-meta-control" id="builder-page-slug">
+                {page.type === PAGE_TYPES.home ? '/' : pagePath(page)}
+              </div>
             ) : (
-              <div className="admin-page-dialog__url">
+              <div className="admin-page-dialog__url admin-page-meta-control">
                 <span className="admin-page-dialog__url-prefix">/</span>
                 <input
                   id="builder-page-slug"
@@ -580,6 +623,7 @@ export default function AdminPageBuilder({
               </div>
             )}
           </div>
+          )}
           {page?.id === 'home' && (
             <div className="admin-page-builder__meta-field admin-page-builder__meta-field--wide">
               <label className="admin-page-builder__meta-label" htmlFor="builder-page-intro">

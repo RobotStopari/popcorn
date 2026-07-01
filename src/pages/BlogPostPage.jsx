@@ -14,10 +14,9 @@ export default function BlogPostPage() {
 
   useEffect(() => {
     if (loading) return;
+    if (!post) return;
 
-    document.title = post
-      ? `${post.title} — Komunita Popcorn`
-      : 'Příspěvek nenalezen — Komunita Popcorn';
+    document.title = `${post.title} — Komunita Popcorn`;
   }, [postSlug, loading, post]);
 
   return <BlogPostDetail slug={postSlug} />;

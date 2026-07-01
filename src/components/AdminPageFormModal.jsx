@@ -6,7 +6,9 @@ import {
   getPageIntro,
   getPageIntroFieldCopy,
   pageHasIntroField,
+  pageHasPublicUrl,
   pagePath,
+  PAGE_TYPES,
   slugifyTitle,
 } from '../data/pages';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
@@ -74,6 +76,7 @@ export default function AdminPageFormModal({
 
   const lockTitle = page && !canEditPageTitle(page);
   const lockSlug = page && !canEditPageSlug(page);
+  const showUrlField = !page || pageHasPublicUrl(page);
   const introCopy = page ? getPageIntroFieldCopy(page) : null;
   const showIntro = Boolean(page && pageHasIntroField(page) && page.id !== 'home' && introCopy);
   const previewPath = pagePath({ slug: form.slug });
@@ -142,7 +145,9 @@ export default function AdminPageFormModal({
           {!isCreate && (
             <p className="admin-page-form-modal__subtitle">
               {form.title || page.title}
-              <span className="admin-page-form-modal__path">{previewPath}</span>
+              {showUrlField && (
+                <span className="admin-page-form-modal__path">{previewPath}</span>
+              )}
             </p>
           )}
         </header>
@@ -155,7 +160,7 @@ export default function AdminPageFormModal({
               </label>
               <input
                 id="page-title"
-                className="admin-form__input"
+                className="admin-form__input admin-page-meta-control"
                 value={form.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 disabled={lockTitle}
@@ -167,16 +172,17 @@ export default function AdminPageFormModal({
               )}
             </div>
 
+            {showUrlField && (
             <div className="admin-page-form-modal__field">
               <label className="admin-page-form-modal__label" htmlFor="page-slug">
                 {adminText('pages.form.urlLabel')}
               </label>
               {lockSlug ? (
-                <div className="admin-page-form-modal__url admin-page-form-modal__url--fixed" id="page-slug">
-                  /
+                <div className="admin-page-form-modal__url admin-page-form-modal__url--fixed admin-page-meta-control" id="page-slug">
+                  {page?.type === PAGE_TYPES.home ? '/' : pagePath(page)}
                 </div>
               ) : (
-                <div className="admin-page-form-modal__url">
+                <div className="admin-page-form-modal__url admin-page-meta-control">
                   <span className="admin-page-form-modal__url-prefix" aria-hidden="true">/</span>
                   <input
                     id="page-slug"
@@ -201,6 +207,7 @@ export default function AdminPageFormModal({
                   : adminText('pages.form.urlHint')}
               </p>
             </div>
+            )}
           </section>
 
           {showIntro && (

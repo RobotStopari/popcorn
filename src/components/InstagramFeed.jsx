@@ -87,13 +87,7 @@ export default function InstagramFeed() {
   return (
     <section className="section section--instagram" id="instagram">
       <div className="container">
-        <div className="section__label reveal">
-          <span className="section__label-line section__label-line--red" aria-hidden="true" />
-          <h2 className="section__label-text">Instagram</h2>
-          <span className="section__label-line section__label-line--red" aria-hidden="true" />
-        </div>
-
-        <div className="instagram-feed__head reveal reveal--delay-1">
+        <div className="instagram-feed__head reveal">
           <a
             href={profileUrl}
             className="instagram-feed__profile"
@@ -113,7 +107,7 @@ export default function InstagramFeed() {
         </div>
 
         {loading ? (
-          <div className="instagram-feed reveal reveal--delay-2" aria-busy="true" aria-label="Načítám Instagram">
+          <div className="instagram-feed reveal reveal--delay-1" aria-busy="true" aria-label="Načítám Instagram">
             {Array.from({ length: 4 }, (_, index) => (
               <div key={index} className="instagram-feed__item-wrap">
                 <div className="instagram-feed__item instagram-feed__item--placeholder" />
@@ -121,13 +115,13 @@ export default function InstagramFeed() {
             ))}
           </div>
         ) : posts.length > 0 ? (
-          <div className="instagram-feed reveal reveal--delay-2">
+          <div className="instagram-feed reveal reveal--delay-1">
             {posts.map((post, index) => (
               <InstagramPost key={post.id} post={post} index={index} />
             ))}
           </div>
         ) : (
-          <div className="instagram-feed__fallback reveal reveal--delay-2">
+          <div className="instagram-feed__fallback reveal reveal--delay-1">
             <p className="instagram-feed__fallback-text">
               {loadError
                 ? 'Příspěvky se teď nepodařilo načíst. Zkuste to později, nebo nás sledujte přímo na Instagramu.'

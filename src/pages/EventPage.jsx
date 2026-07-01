@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
+import NotFoundPage from '../components/NotFoundPage';
 import EventDetail from '../components/EventDetail';
 import { useEvents } from '../contexts/EventsContext';
 import { useImageFrames } from '../hooks/useImageFrames';
@@ -15,10 +16,9 @@ export default function EventPage() {
 
   useEffect(() => {
     if (loading) return;
+    if (!result) return;
 
-    document.title = result
-      ? `${result.event.name} — Komunita Popcorn`
-      : 'Akce nenalezena — Komunita Popcorn';
+    document.title = `${result.event.name} — Komunita Popcorn`;
   }, [eventSlug, loading, result]);
 
   return <EventDetail slug={eventSlug} />;
@@ -37,7 +37,7 @@ export function EventLegacyIdRedirect() {
   }
 
   const result = legacyId ? getEventById(legacyId) : null;
-  if (!result) return <Navigate to="/" replace />;
+  if (!result) return <NotFoundPage />;
 
   const slug = deriveEventSlug(result.event);
   return <Navigate to={`/akce/${encodeURIComponent(slug)}`} replace />;

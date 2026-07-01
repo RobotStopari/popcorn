@@ -195,10 +195,14 @@
 
   .instagram-feed__head {
     margin-bottom: 1.25rem;
+    max-width: 24rem;
+    margin-inline: auto;
+    width: 100%;
   }
 
   .instagram-feed__profile {
     width: 100%;
+    max-width: 100%;
     justify-content: center;
   }
 }

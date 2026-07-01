@@ -44,10 +44,12 @@ async function handleSsrRequest(request, env) {
     });
 
     return new Response(html, {
-      status: 200,
+      status: payload.notFound ? 404 : 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'Cache-Control': payload.notFound
+          ? 'no-cache'
+          : 'public, max-age=60, stale-while-revalidate=300',
       },
     });
   } catch (error) {

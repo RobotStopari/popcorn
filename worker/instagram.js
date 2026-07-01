@@ -1,18 +1,24 @@
 const INSTAGRAM_APP_ID = '936619743392459';
 const DEFAULT_USERNAME = 'popcorn_puk';
 const CACHE_TTL_SECONDS = 3600;
-const INSTAGRAM_HEADERS = {
-  'X-IG-App-ID': INSTAGRAM_APP_ID,
-  'X-ASBD-ID': '129477',
-  'X-IG-WWW-Claim': '0',
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  Accept: '*/*',
-  'Accept-Language': 'cs-CZ,cs;q=0.9,en;q=0.8',
-  Referer: 'https://www.instagram.com/',
-  'Sec-Fetch-Site': 'same-origin',
-  'Sec-Fetch-Mode': 'cors',
-  'Sec-Fetch-Dest': 'empty',
-};
+const INSTAGRAM_TIMELINE_DOC_ID = '34579740524958711';
+const INSTAGRAM_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
+
+function buildInstagramHeaders(username = '') {
+  const profilePath = username ? `${username}/` : '';
+  return {
+    'X-IG-App-ID': INSTAGRAM_APP_ID,
+    'X-ASBD-ID': '198387',
+    'User-Agent': INSTAGRAM_USER_AGENT,
+    Accept: '*/*',
+    'Accept-Language': 'cs-CZ,cs;q=0.9,en;q=0.8',
+    Referer: `https://www.instagram.com/${profilePath}`,
+    'X-Requested-With': 'XMLHttpRequest',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Dest': 'empty',
+  };
+}
 
 export function sanitizeInstagramUsername(value) {
   if (typeof value !== 'string') return '';
@@ -50,46 +56,118 @@ export function toProxiedImageUrl(imageUrl) {
 }
 
 function isPinnedPost(node) {
-  return Array.isArray(node?.pinned_for_users) && node.pinned_for_users.length > 0;
+  if (Array.isArray(node?.pinned_for_users) && node.pinned_for_users.length > 0) {
+    return true;
+  }
+
+  if (Array.isArray(node?.timeline_pinned_user_ids) && node.timeline_pinned_user_ids.length > 0) {
+    return true;
+  }
+
+  return false;
 }
 
 function normalizePost(node) {
-  if (!node?.shortcode) return null;
+  const shortcode = node?.shortcode || node?.code;
+  if (!shortcode || isPinnedPost(node)) return null;
 
-  const caption = node.edge_media_to_caption?.edges?.[0]?.node?.text?.trim() || '';
-  const imageUrl = node.display_url || node.thumbnail_src || '';
+  const caption = node.edge_media_to_caption?.edges?.[0]?.node?.text?.trim()
+    || node.caption?.text?.trim()
+    || '';
+  const imageUrl = node.display_url
+    || node.thumbnail_src
+    || node.image_versions2?.candidates?.[0]?.url
+    || '';
+  const isVideo = node.is_video === true
+    || node.media_type === 2
+    || (Array.isArray(node.video_versions) && node.video_versions.length > 0);
 
   return {
-    id: node.shortcode,
-    permalink: `https://www.instagram.com/p/${node.shortcode}/`,
+    id: shortcode,
+    permalink: `https://www.instagram.com/p/${shortcode}/`,
     imageUrl: toProxiedImageUrl(imageUrl),
     caption,
-    isVideo: node.is_video === true,
-    timestamp: node.taken_at_timestamp || null,
+    isVideo,
+    timestamp: node.taken_at_timestamp || node.taken_at || null,
   };
 }
 
-export async function fetchInstagramPosts(username = DEFAULT_USERNAME, limit = 4) {
-  const profileUrl = `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(username)}`;
+async function fetchInstagramPostsGraphql(username, limit) {
+  const variables = {
+    data: {
+      count: Math.max(limit, 12),
+      include_relationship_info: true,
+      latest_besties_reel_media: true,
+      latest_reel_media: true,
+    },
+    username,
+    __relay_internal__pv__PolarisFeedShareMenurelayprovider: false,
+  };
 
-  const response = await fetch(profileUrl, {
-    headers: INSTAGRAM_HEADERS,
+  const url = `https://www.instagram.com/graphql/query/?doc_id=${INSTAGRAM_TIMELINE_DOC_ID}&variables=${encodeURIComponent(JSON.stringify(variables))}`;
+  const response = await fetch(url, {
+    headers: buildInstagramHeaders(username),
   });
 
   if (!response.ok) {
-    throw new Error(`Instagram profile request failed (${response.status})`);
+    throw new Error(`Instagram timeline request failed (${response.status})`);
   }
 
   const payload = await response.json();
-  const edges = payload?.data?.user?.edge_owner_to_timeline_media?.edges || [];
+  const edges = payload?.data?.xdt_api__v1__feed__user_timeline_graphql_connection?.edges || [];
 
   return edges
     .map((edge) => edge.node)
-    .filter((node) => node?.shortcode && !isPinnedPost(node))
-    .sort((a, b) => (b.taken_at_timestamp || 0) - (a.taken_at_timestamp || 0))
     .map((node) => normalizePost(node))
     .filter(Boolean)
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, limit);
+}
+
+async function resolveInstagramUserId(username) {
+  const response = await fetch(`https://www.instagram.com/${encodeURIComponent(username)}/`, {
+    headers: buildInstagramHeaders(username),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Instagram profile page request failed (${response.status})`);
+  }
+
+  const html = await response.text();
+  const match = html.match(/"profilePage_(\d+)"/) || html.match(/profilePage_(\d+)/);
+  if (!match?.[1]) {
+    throw new Error('Instagram user id not found');
+  }
+
+  return match[1];
+}
+
+async function fetchInstagramPostsFeedUser(username, limit) {
+  const userId = await resolveInstagramUserId(username);
+  const response = await fetch(`https://www.instagram.com/api/v1/feed/user/${userId}/`, {
+    headers: buildInstagramHeaders(username),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Instagram feed request failed (${response.status})`);
+  }
+
+  const payload = await response.json();
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+
+  return items
+    .map((node) => normalizePost(node))
+    .filter(Boolean)
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+    .slice(0, limit);
+}
+
+export async function fetchInstagramPosts(username = DEFAULT_USERNAME, limit = 4) {
+  try {
+    return await fetchInstagramPostsGraphql(username, limit);
+  } catch (graphqlError) {
+    return fetchInstagramPostsFeedUser(username, limit);
+  }
 }
 
 export function jsonResponse(data, { status = 200, cacheSeconds = CACHE_TTL_SECONDS } = {}) {
@@ -120,7 +198,7 @@ export async function handleInstagramImageRequest(request) {
   const upstream = await fetch(sourceUrl, {
     headers: {
       Referer: 'https://www.instagram.com/',
-      'User-Agent': INSTAGRAM_HEADERS['User-Agent'],
+      'User-Agent': INSTAGRAM_USER_AGENT,
       Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
     },
   });

@@ -53,19 +53,6 @@ export default function BlogCommentItem({
             {formatCommentDateTime(comment)}
             {comment.isEdited && ' · upraveno'}
           </time>
-
-          {canEdit && !editing && (
-            <div className="blog-comment__actions">
-              <button
-                type="button"
-                className="blog-comment__action"
-                aria-label="Upravit komentář"
-                onClick={() => setEditing(true)}
-              >
-                <EditIcon />
-              </button>
-            </div>
-          )}
         </div>
 
         {editing ? (
@@ -88,10 +75,22 @@ export default function BlogCommentItem({
             </div>
           </div>
         ) : (
-          <>
+          <div className="blog-comment__body-row">
             <p className="blog-comment__body">{comment.body}</p>
+            {canEdit && (
+              <div className="blog-comment__actions">
+                <button
+                  type="button"
+                  className="blog-comment__action"
+                  aria-label="Upravit komentář"
+                  onClick={() => setEditing(true)}
+                >
+                  <EditIcon />
+                </button>
+              </div>
+            )}
             {error && <p className="admin-error">{error}</p>}
-          </>
+          </div>
         )}
       </div>
     </article>

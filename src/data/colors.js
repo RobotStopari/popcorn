@@ -7,18 +7,18 @@ export const DEFAULT_COLORS = {
   orangePale: '#ffbe3d',
   red: '#d62839',
   redLight: '#e8354a',
-  redPale: '#ffd0d5',
+  redPale: '#ea4659',
   blue: '#3d85c6',
   blueLight: '#5a9ee0',
-  bluePale: '#d0e6f9',
+  bluePale: '#68a6e3',
   green: '#3da865',
   greenLight: '#52c47e',
-  greenPale: '#d3f0df',
+  greenPale: '#61c989',
   teal: '#289e8f',
   tealLight: '#3bb8a8',
-  tealPale: '#caeee9',
+  tealPale: '#4cbeaf',
   yellow: '#f5d020',
-  yellowPale: '#fff3b0',
+  yellowPale: '#f6d433',
   black: '#111111',
   white: '#ffffff',
   offWhite: '#faf9f7',
@@ -28,6 +28,17 @@ export const DEFAULT_COLORS = {
 
 export const COLOR_KEYS = Object.keys(DEFAULT_COLORS);
 export const SITE_COLORS_DOC_ID = 'config';
+
+/** Previous default pale values — migrated automatically in admin. */
+export const LEGACY_PALE_COLORS = {
+  redPale: '#ffd0d5',
+  bluePale: '#d0e6f9',
+  greenPale: '#d3f0df',
+  tealPale: '#caeee9',
+  yellowPale: '#fff3b0',
+};
+
+export const PALE_COLOR_MIGRATION_KEYS = Object.keys(LEGACY_PALE_COLORS);
 
 export const COLOR_CATEGORIES = [
   {

@@ -1,4 +1,6 @@
-import { PAGE_TYPES } from '../data/pages';
+import { COMING_SOON_PAGE_ID, NOT_FOUND_PAGE_ID, PAGE_TYPES, isStandaloneContentPage } from '../data/pages';
+import { normalizePageBlockButtonColor } from './page-block-button-color';
+import { SITE } from '../data/site';
 import {
   PAGE_BLOCK_ALIGNMENTS,
   PAGE_BLOCK_TYPES,
@@ -150,10 +152,9 @@ function normalizeImageTextBlock(raw = {}) {
 }
 
 function normalizeReferenceBlock(raw = {}) {
-  const name = (
-    (typeof raw.name === 'string' ? raw.name : '')
-    || (typeof raw.imageAlt === 'string' ? raw.imageAlt : '')
-  ).trim();
+  const name = typeof raw.name === 'string'
+    ? raw.name
+    : (typeof raw.imageAlt === 'string' ? raw.imageAlt : '');
 
   return {
     text: typeof raw.text === 'string' ? raw.text : '',
@@ -281,6 +282,7 @@ function normalizePageBlockButton(raw = {}) {
     label: typeof raw.label === 'string' ? raw.label : '',
     href: typeof raw.href === 'string' ? raw.href : '',
     openInNewTab: Boolean(raw.openInNewTab),
+    color: normalizePageBlockButtonColor(raw.color),
   };
 }
 
@@ -706,7 +708,7 @@ export function applyHomeIntroToBlocks(blocks = [], introText = '') {
 }
 
 export function hasLockedPageTitleBlock(page) {
-  return page?.type === PAGE_TYPES.content;
+  return page?.type === PAGE_TYPES.content && !isStandaloneContentPage(page);
 }
 
 export function isLockedPageTitleBlock(page, block, index) {
@@ -743,10 +745,50 @@ export function getDefaultContentBlocks(title = '') {
   ];
 }
 
+export function getDefaultComingSoonBlocks() {
+  const contactEmail = SITE.footer.contactEmail;
+
+  return [
+    createBlock(PAGE_BLOCK_TYPES.h1, { text: 'Již brzy' }),
+    createBlock(PAGE_BLOCK_TYPES.citation, {
+      text: 'Na webu právě pracujeme. Brzy tu najdeš všechny informace o Popcornu, jeho akcích a dalších aktivitách.',
+    }),
+    createBlock(PAGE_BLOCK_TYPES.paragraph, {
+      html: '<p>Mezitím nás můžeš sledovat na sociálních sítích.</p>',
+      align: 'center',
+    }),
+    createBlock(PAGE_BLOCK_TYPES.socials),
+    createBlock(PAGE_BLOCK_TYPES.button, {
+      label: contactEmail,
+      href: `mailto:${contactEmail}`,
+    }),
+  ];
+}
+
+export function getDefaultNotFoundBlocks() {
+  return [
+    createBlock(PAGE_BLOCK_TYPES.h1, { text: 'Stránka nenalezena' }),
+    createBlock(PAGE_BLOCK_TYPES.paragraph, {
+      html: '<p>Tato stránka neexistuje nebo byla přesunuta.</p>',
+      align: 'center',
+    }),
+    createBlock(PAGE_BLOCK_TYPES.button, {
+      label: 'Zpět na hlavní stránku',
+      href: '/',
+    }),
+  ];
+}
+
 export function getBlocksForPage(page, { heroQuote } = {}) {
   if (!page?.blocks?.length) {
     if (page?.type === PAGE_TYPES.home) {
       return getDefaultHomeBlocks(heroQuote);
+    }
+    if (page?.id === COMING_SOON_PAGE_ID) {
+      return getDefaultComingSoonBlocks();
+    }
+    if (page?.id === NOT_FOUND_PAGE_ID) {
+      return getDefaultNotFoundBlocks();
     }
     if (page?.type === PAGE_TYPES.content) {
       return getDefaultContentBlocks(page.title);
@@ -814,6 +856,10 @@ export function validatePageBlocks(blocks, page, { pageTitle } = {}) {
 
   const validated = normalizePageBlocks(blocks, { maxBlocks: limit })
     .filter((block) => isBlockAllowedForPage(page, block.type));
+
+  if (isStandaloneContentPage(page)) {
+    return validated;
+  }
 
   return ensureLockedPageTitleBlock(validated, pageTitle ?? page?.title ?? '', page);
 }

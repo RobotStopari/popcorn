@@ -125,7 +125,7 @@ export default defineConfig(({ mode }) => {
                 data: payload.data,
                 route: payload.route,
               });
-              res.statusCode = 200;
+              res.statusCode = payload.notFound ? 404 : 200;
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
               res.end(html);
             } catch (error) {

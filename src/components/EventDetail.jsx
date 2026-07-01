@@ -5,6 +5,7 @@ import { buildGoogleCalendarUrl } from '../utils/google-calendar';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import EventCategoryLabel from './EventCategoryLabel';
 import EventGallery from './EventGallery';
+import NotFoundPage from './NotFoundPage';
 import PersonContactLink from './PersonContactLink';
 
 const FIELD_ICONS = {
@@ -247,16 +248,6 @@ function BackLink({ className = 'event-detail__back' }) {
   return <a href="/" className={`${className} reveal`}>← Zpět</a>;
 }
 
-function NotFound() {
-  return (
-    <div className="event-detail__not-found reveal">
-      <h1 className="event-detail__title">Akce nenalezena</h1>
-      <p className="event-detail__date">Tato akce neexistuje nebo byla odstraněna.</p>
-      <a href="/" className="btn btn--primary">Zpět na hlavní stránku</a>
-    </div>
-  );
-}
-
 export default function EventDetail({ slug }) {
   const { getEventBySlugOrId, loading } = useEvents();
   const result = slug ? getEventBySlugOrId(slug) : null;
@@ -270,11 +261,7 @@ export default function EventDetail({ slug }) {
   }
 
   if (!result) {
-    return (
-      <article className="event-detail container">
-        <NotFound />
-      </article>
-    );
+    return <NotFoundPage />;
   }
 
   const { event, past } = result;

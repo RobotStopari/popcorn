@@ -28,6 +28,7 @@
   line-height: 1.35;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-align: center;
   padding: 0.55rem 1.25rem 0.5rem;
   background-color: var(--orange);
   color: var(--black);

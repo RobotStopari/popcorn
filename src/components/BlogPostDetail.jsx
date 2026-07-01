@@ -10,6 +10,7 @@ import AdminDeleteBlogPostDialog from './AdminDeleteBlogPostDialog';
 import BlogAuthor from './BlogAuthor';
 import BlogPostEngagement from './BlogPostEngagement';
 import EventGallery from './EventGallery';
+import NotFoundPage from './NotFoundPage';
 
 function EditIcon() {
   return (
@@ -63,18 +64,6 @@ function BlogPostCover({ post }) {
   );
 }
 
-function NotFound() {
-  return (
-    <section className="section blog-detail">
-      <div className="container blog-detail__container">
-        <h1 className="blog-detail__title">Příspěvek nenalezen</h1>
-        <p className="blog-detail__lead">Tento blogový příspěvek neexistuje nebo byl odstraněn.</p>
-        <Link to="/blog" className="btn btn--primary">Zpět na blog</Link>
-      </div>
-    </section>
-  );
-}
-
 export default function BlogPostDetail({ slug }) {
   const navigate = useNavigate();
   const { getPostBySlug, loading } = useBlogPosts();
@@ -116,7 +105,7 @@ export default function BlogPostDetail({ slug }) {
     );
   }
 
-  if (!post) return <NotFound />;
+  if (!post) return <NotFoundPage />;
 
   return (
     <article className="section blog-detail">

@@ -470,6 +470,7 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
                 label={block.label}
                 href={block.href}
                 openInNewTab={block.openInNewTab}
+                color={block.color}
                 large
               />
             </div>
@@ -493,6 +494,7 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
                   label={button.label}
                   href={button.href}
                   openInNewTab={button.openInNewTab}
+                  color={button.color}
                 />
               ))}
             </div>

@@ -26,6 +26,16 @@ const PRESET_ENV_KEYS = {
   siteLogo: ['VITE_CLOUDINARY_PRESET_SITE_LOGO'],
 };
 
+/** Documented unsigned upload preset names — safe to use when env vars are unset. */
+const PRESET_DEFAULTS = {
+  cover: 'popcorn_event_cover',
+  promo: 'popcorn_event_pr',
+  gallery: 'popcorn_event_gallery',
+  post: 'popcorn_post_cover',
+  postGallery: 'popcorn_post_gallery',
+  siteLogo: 'popcorn_site_logo',
+};
+
 function getCloudName() {
   return import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
 }
@@ -47,11 +57,15 @@ function getUploadPreset(type) {
     if (value) return value;
   }
 
-  return '';
+  return PRESET_DEFAULTS[type] || PRESET_DEFAULTS.cover || '';
 }
 
 export function isCloudinaryConfigured(type = 'cover') {
   return Boolean(getCloudName() && getUploadPreset(type));
+}
+
+export function isCloudinaryCloudNameConfigured() {
+  return Boolean(getCloudName());
 }
 
 function getFileExtension(file) {
