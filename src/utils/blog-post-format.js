@@ -97,6 +97,43 @@ export function getAuthorNameParts(author) {
   return { name: author?.label?.trim() || 'Autor', nick: '' };
 }
 
+export function getAuthorPageKey(author) {
+  if (!author?.uid) return '';
+
+  if (author.uid === EXTERNAL_BLOG_AUTHOR_UID) {
+    const label = author.name?.trim() || author.label?.trim() || 'autor';
+    return `ext-${slugifyTitle(label)}`;
+  }
+
+  return author.uid;
+}
+
+export function blogAuthorUrl(author) {
+  const key = getAuthorPageKey(author);
+  return key ? `/blog/autor/${encodeURIComponent(key)}` : '';
+}
+
+export function postMatchesAuthorKey(post, authorKey) {
+  if (!post?.author || !authorKey) return false;
+
+  if (authorKey.startsWith('ext-')) {
+    return post.author.uid === EXTERNAL_BLOG_AUTHOR_UID
+      && getAuthorPageKey(post.author) === authorKey;
+  }
+
+  return post.author.uid === authorKey;
+}
+
+export function filterPostsByAuthor(posts, authorKey) {
+  if (!authorKey) return posts;
+  return posts.filter((post) => postMatchesAuthorKey(post, authorKey));
+}
+
+export function resolveAuthorFromPosts(posts, authorKey) {
+  const match = posts.find((post) => postMatchesAuthorKey(post, authorKey));
+  return match?.author || null;
+}
+
 export function enrichAuthor(author, userRecord = null) {
   if (!author) return author;
   if (!userRecord) return author;

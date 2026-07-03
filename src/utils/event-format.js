@@ -16,6 +16,7 @@ import {
 } from '../data/event-categories';
 import { deriveEventSlug } from '../data/events';
 import { siteText } from './admin-text';
+import { buildMapyCzPointUrl, normalizePlaceCoords } from './mapy-cz';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -113,6 +114,8 @@ export function normalizeEvent(raw) {
     .map((item) => (typeof item === 'string' ? item : item.name)?.trim())
     .filter(Boolean);
 
+  const placeCoords = normalizePlaceCoords(raw.placeLat, raw.placeLng);
+
   const event = {
     id: raw.id,
     slug: raw.slug?.trim() || deriveEventSlug({ id: raw.id, title: raw.title, slug: '' }),
@@ -122,6 +125,8 @@ export function normalizeEvent(raw) {
     dateEnd: raw.dateEnd || '',
     timeEnd: raw.timeEnd || '',
     place: raw.place?.trim() || '',
+    placeLat: placeCoords?.lat ?? null,
+    placeLng: placeCoords?.lng ?? null,
     price: raw.price ?? '',
     description: raw.description || '',
     organisers,
@@ -160,6 +165,7 @@ export function normalizeEvent(raw) {
     sraz: formatSchedulePart(event.dateStart, event.timeStart),
     navrat: formatSchedulePart(event.dateEnd, event.timeEnd),
     misto: event.place,
+    placeMapUrl: placeCoords ? buildMapyCzPointUrl(placeCoords.lat, placeCoords.lng) : '',
     cena: formatPrice(event.price),
     registerHref: event.registrationLink,
     galleryDriveHref: event.galleryLink,
@@ -180,6 +186,7 @@ export function normalizeEvent(raw) {
     hasDescription: hasText(event.description),
     hasReport: hasText(event.report),
     hasPlace: Boolean(event.place),
+    hasPlaceMap: Boolean(placeCoords),
     hasPrice: formatPrice(event.price) !== '',
     hasParticipants: participants.length > 0,
     hasRegistration: Boolean(event.registrationLink),
@@ -242,6 +249,8 @@ export function eventToFormState(event) {
       dateEnd: '',
       timeEnd: '',
       place: '',
+      placeLat: '',
+      placeLng: '',
       price: '',
       description: '',
       organisers: [],
@@ -268,6 +277,8 @@ export function eventToFormState(event) {
     dateEnd: event.dateEnd || '',
     timeEnd: event.timeEnd || '',
     place: event.place || '',
+    placeLat: event.placeLat ?? '',
+    placeLng: event.placeLng ?? '',
     price: event.price === '' || event.price === null ? '' : String(event.price),
     description: event.description || '',
     organisers: event.organisers?.length ? event.organisers : [],
@@ -296,6 +307,8 @@ export function formStateToPayload(form) {
     && isValidHttpsUrl(externalPageUrl)
     && form.calendarOnly === true;
 
+  const placeCoords = normalizePlaceCoords(form.placeLat, form.placeLng);
+
   return {
     title: form.title.trim(),
     slug: form.slug?.trim() || '',
@@ -304,6 +317,8 @@ export function formStateToPayload(form) {
     dateEnd: form.dateEnd,
     timeEnd: form.timeEnd,
     place: form.place.trim(),
+    placeLat: placeCoords?.lat ?? null,
+    placeLng: placeCoords?.lng ?? null,
     price: form.price.trim(),
     description: form.description,
     organisers: form.organisers

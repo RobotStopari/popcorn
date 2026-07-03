@@ -261,7 +261,7 @@ export default function AdminPageBuilder({
   onClose,
   onSave,
 }) {
-  const [form, setForm] = useState({ title: '', slug: '' });
+  const [form, setForm] = useState({ title: '', slug: '', seoTitle: '', seoDescription: '' });
   const [homeIntro, setHomeIntro] = useState('');
   const [blocks, setBlocks] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -276,6 +276,7 @@ export default function AdminPageBuilder({
   const editingBlockIdRef = useRef(null);
   const blocksRef = useRef([]);
   const paletteOpenRef = useRef(null);
+  const metaOpenRef = useRef(false);
   const blockToDeleteRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const previewWindowRef = useRef(null);
@@ -284,6 +285,7 @@ export default function AdminPageBuilder({
   blocksRef.current = blocks;
   editingBlockIdRef.current = editingBlockId;
   paletteOpenRef.current = paletteOpen;
+  metaOpenRef.current = metaOpen;
   blockToDeleteRef.current = blockToDelete;
   onCloseRef.current = onClose;
 
@@ -304,7 +306,12 @@ export default function AdminPageBuilder({
 
     const nextBlocks = hasBlocks ? getBlocksForPage(page) : [];
     blocksRef.current = nextBlocks;
-    setForm({ title: getPageAdminListTitle(page), slug: page.slug });
+    setForm({
+      title: getPageAdminListTitle(page),
+      slug: page.slug,
+      seoTitle: page.seoTitle || '',
+      seoDescription: page.seoDescription || '',
+    });
     setHomeIntro(page?.id === 'home' ? getHomeIntroFromBlocks(nextBlocks) : '');
     setBlocks(nextBlocks);
     setSaving(false);
@@ -375,6 +382,10 @@ export default function AdminPageBuilder({
       }
       if (paletteOpenRef.current) {
         setPaletteOpen(false);
+        return;
+      }
+      if (metaOpenRef.current) {
+        setMetaOpen(false);
         return;
       }
       onCloseRef.current();
@@ -526,6 +537,8 @@ export default function AdminPageBuilder({
       await onSave({
         title: resolvedTitle,
         slug: pageHasPublicUrl(page) ? form.slug : page.slug,
+        seoTitle: form.seoTitle,
+        seoDescription: form.seoDescription,
         blocks: hasBlocks
           ? validatePageBlocks(currentBlocks, page, { pageTitle: form.title })
           : undefined,
@@ -596,62 +609,132 @@ export default function AdminPageBuilder({
       </header>
 
       {metaOpen && (
-        <section className="admin-page-builder__meta-bar">
-          <div className={`admin-page-builder__meta-field${showUrlField ? '' : ' admin-page-builder__meta-field--wide'}`}>
-            <label className="admin-page-builder__meta-label" htmlFor="builder-page-title">{adminText('pages.builder.metaName')}</label>
-            <input
-              id="builder-page-title"
-              className="admin-form__input admin-page-meta-control"
-              value={form.title}
-              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              disabled={lockTitle}
-              required
-            />
-          </div>
-          {showUrlField && (
-          <div className="admin-page-builder__meta-field">
-            <label className="admin-page-builder__meta-label" htmlFor="builder-page-slug">{adminText('pages.builder.metaUrl')}</label>
-            {lockSlug ? (
-              <div className="admin-page-dialog__url-fixed admin-page-meta-control" id="builder-page-slug">
-                {page.type === PAGE_TYPES.home ? '/' : pagePath(page)}
+        <>
+          <button
+            type="button"
+            className="admin-page-builder__settings-overlay"
+            aria-label={adminText('pages.builder.closeSettings')}
+            onClick={() => setMetaOpen(false)}
+          />
+          <section
+            className="admin-page-builder__settings-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-page-builder-settings-title"
+          >
+            <header className="admin-page-builder__settings-head">
+              <div>
+                <p className="admin-page-builder__settings-eyebrow">{adminText('pages.form.settingsEyebrow')}</p>
+                <h3 id="admin-page-builder-settings-title" className="admin-page-builder__settings-title">
+                  {adminText('common.settings')}
+                </h3>
               </div>
-            ) : (
-              <div className="admin-page-dialog__url admin-page-meta-control">
-                <span className="admin-page-dialog__url-prefix">/</span>
+              <button
+                type="button"
+                className="admin-page-builder__settings-close"
+                aria-label={adminText('pages.builder.closeSettings')}
+                onClick={() => setMetaOpen(false)}
+              >
+                <CloseIcon />
+              </button>
+            </header>
+
+            <div className="admin-page-builder__settings-body">
+              <div className={`admin-page-builder__meta-field${showUrlField ? '' : ' admin-page-builder__meta-field--wide'}`}>
+                <label className="admin-page-builder__meta-label" htmlFor="builder-page-title">{adminText('pages.builder.metaName')}</label>
                 <input
-                  id="builder-page-slug"
-                  className="admin-form__input admin-page-dialog__url-input"
-                  value={form.slug}
-                  onChange={(e) => setForm((prev) => ({
-                    ...prev,
-                    slug: e.target.value.trim().toLowerCase(),
-                  }))}
+                  id="builder-page-title"
+                  className="admin-form__input admin-page-meta-control"
+                  value={form.title}
+                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                  disabled={lockTitle}
                   required
-                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                  spellCheck={false}
-                  autoCapitalize="none"
                 />
               </div>
-            )}
-          </div>
-          )}
-          {page?.id === 'home' && (
-            <div className="admin-page-builder__meta-field admin-page-builder__meta-field--wide">
-              <label className="admin-page-builder__meta-label" htmlFor="builder-page-intro">
-                {getPageIntroFieldCopy(page)?.label}
-              </label>
-              <textarea
-                id="builder-page-intro"
-                className="admin-form__input"
-                rows={3}
-                value={homeIntro}
-                onChange={(e) => setHomeIntro(e.target.value)}
-                required
-              />
-              <p className="admin-form__hint">{getPageIntroFieldCopy(page)?.hint}</p>
+              {showUrlField && (
+              <div className="admin-page-builder__meta-field">
+                <label className="admin-page-builder__meta-label" htmlFor="builder-page-slug">{adminText('pages.builder.metaUrl')}</label>
+                {lockSlug ? (
+                  <div className="admin-page-dialog__url-fixed admin-page-meta-control" id="builder-page-slug">
+                    {page.type === PAGE_TYPES.home ? '/' : pagePath(page)}
+                  </div>
+                ) : (
+                  <div className="admin-page-dialog__url admin-page-meta-control">
+                    <span className="admin-page-dialog__url-prefix">/</span>
+                    <input
+                      id="builder-page-slug"
+                      className="admin-form__input admin-page-dialog__url-input"
+                      value={form.slug}
+                      onChange={(e) => setForm((prev) => ({
+                        ...prev,
+                        slug: e.target.value.trim().toLowerCase(),
+                      }))}
+                      required
+                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                      spellCheck={false}
+                      autoCapitalize="none"
+                    />
+                  </div>
+                )}
+              </div>
+              )}
+              {page?.id === 'home' && (
+                <div className="admin-page-builder__meta-field admin-page-builder__meta-field--wide">
+                  <label className="admin-page-builder__meta-label" htmlFor="builder-page-intro">
+                    {getPageIntroFieldCopy(page)?.label}
+                  </label>
+                  <textarea
+                    id="builder-page-intro"
+                    className="admin-form__input"
+                    rows={3}
+                    value={homeIntro}
+                    onChange={(e) => setHomeIntro(e.target.value)}
+                    required
+                  />
+                  <p className="admin-form__hint">{getPageIntroFieldCopy(page)?.hint}</p>
+                </div>
+              )}
+              <div className="admin-page-builder__meta-field admin-page-builder__meta-field--wide">
+                <label className="admin-page-builder__meta-label" htmlFor="builder-page-seo-title">
+                  {adminText('pages.form.seoMetaTitleLabel')}
+                </label>
+                <input
+                  id="builder-page-seo-title"
+                  className="admin-form__input admin-page-meta-control"
+                  value={form.seoTitle}
+                  onChange={(e) => setForm((prev) => ({ ...prev, seoTitle: e.target.value }))}
+                  placeholder={form.title || adminText('pages.form.seoMetaTitlePlaceholder')}
+                  maxLength={120}
+                />
+              </div>
+              <div className="admin-page-builder__meta-field admin-page-builder__meta-field--wide">
+                <label className="admin-page-builder__meta-label" htmlFor="builder-page-seo-description">
+                  {adminText('pages.form.seoMetaDescriptionLabel')}
+                </label>
+                <textarea
+                  id="builder-page-seo-description"
+                  className="admin-form__input"
+                  rows={3}
+                  value={form.seoDescription}
+                  onChange={(e) => setForm((prev) => ({ ...prev, seoDescription: e.target.value }))}
+                  placeholder={adminText('pages.form.seoMetaDescriptionPlaceholder')}
+                  maxLength={320}
+                />
+                <p className="admin-form__hint">{adminText('pages.form.seoHint')}</p>
+              </div>
             </div>
-          )}
-        </section>
+
+            <footer className="admin-page-builder__settings-footer">
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => setMetaOpen(false)}
+              >
+                {adminText('common.done')}
+              </button>
+            </footer>
+          </section>
+        </>
       )}
 
       <form id="admin-page-builder-form" className="admin-page-builder__body" onSubmit={handleSubmit}>

@@ -19,6 +19,8 @@ const EMPTY_FORM = {
   title: '',
   slug: '',
   intro: '',
+  seoTitle: '',
+  seoDescription: '',
 };
 
 export default function AdminPageFormModal({
@@ -48,6 +50,8 @@ export default function AdminPageFormModal({
         title: page.title,
         slug: page.slug,
         intro: getPageIntro(page),
+        seoTitle: page.seoTitle || '',
+        seoDescription: page.seoDescription || '',
       });
       setSlugTouched(true);
     } else {
@@ -102,6 +106,8 @@ export default function AdminPageFormModal({
         title: form.title,
         slug: form.slug,
         intro: showIntro ? form.intro : undefined,
+        seoTitle: form.seoTitle,
+        seoDescription: form.seoDescription,
       });
       onClose();
     } catch (err) {
@@ -227,6 +233,48 @@ export default function AdminPageFormModal({
                 }}
                 required
               />
+            </section>
+          )}
+
+          {!isCreate && (
+            <section className="admin-page-form-modal__section">
+              <div className="admin-page-form-modal__section-head">
+                <h3 className="admin-page-form-modal__section-title">{adminText('pages.form.seoTitle')}</h3>
+                <p className="admin-page-form-modal__section-hint">{adminText('pages.form.seoHint')}</p>
+              </div>
+              <div className="admin-page-form-modal__field">
+                <label className="admin-page-form-modal__label" htmlFor="page-seo-title">
+                  {adminText('pages.form.seoMetaTitleLabel')}
+                </label>
+                <input
+                  id="page-seo-title"
+                  className="admin-form__input admin-page-meta-control"
+                  value={form.seoTitle}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, seoTitle: e.target.value }));
+                    setError('');
+                  }}
+                  placeholder={form.title || adminText('pages.form.seoMetaTitlePlaceholder')}
+                  maxLength={120}
+                />
+              </div>
+              <div className="admin-page-form-modal__field">
+                <label className="admin-page-form-modal__label" htmlFor="page-seo-description">
+                  {adminText('pages.form.seoMetaDescriptionLabel')}
+                </label>
+                <textarea
+                  id="page-seo-description"
+                  className="admin-form__input admin-page-form-modal__intro"
+                  rows={3}
+                  value={form.seoDescription}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, seoDescription: e.target.value }));
+                    setError('');
+                  }}
+                  placeholder={adminText('pages.form.seoMetaDescriptionPlaceholder')}
+                  maxLength={320}
+                />
+              </div>
             </section>
           )}
         </form>

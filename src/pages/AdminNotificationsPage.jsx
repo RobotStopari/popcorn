@@ -21,6 +21,7 @@ import {
   sortNotificationsByStart,
 } from '../utils/notification-format';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 
 function TrashIcon() {
   return (
@@ -51,6 +52,7 @@ function getColorMeta(colorId) {
 
 export default function AdminNotificationsPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const { notifications, loading: notificationsLoading, error: notificationsError } = useNotifications();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -143,8 +145,20 @@ export default function AdminNotificationsPage() {
     try {
       if (editingNotification?.id) {
         await updateNotification(editingNotification.id, payload);
+        await logActivity({
+          action: 'update',
+          targetType: 'notification',
+          targetId: editingNotification.id,
+          summary: `Upraveno upozornění „${payload.title}“`,
+        });
       } else {
-        await createNotification(payload);
+        const newId = await createNotification(payload);
+        await logActivity({
+          action: 'create',
+          targetType: 'notification',
+          targetId: newId,
+          summary: `Vytvořeno upozornění „${payload.title}“`,
+        });
       }
       return true;
     } catch (err) {
@@ -156,6 +170,12 @@ export default function AdminNotificationsPage() {
   const handleToggleManual = async (notification) => {
     try {
       await setNotificationManualActive(notification.id, !notification.manualActive);
+      await logActivity({
+        action: 'update',
+        targetType: 'notification',
+        targetId: notification.id,
+        summary: `Změněn stav upozornění „${notification.title}“`,
+      });
     } catch (err) {
       setSaveError(err.message || adminText('notifications.list.saveFailed'));
     }
@@ -163,7 +183,14 @@ export default function AdminNotificationsPage() {
 
   const handleConfirmDelete = async (notificationId) => {
     try {
+      const title = notificationToDelete?.title || 'upozornění';
       await deleteNotification(notificationId);
+      await logActivity({
+        action: 'delete',
+        targetType: 'notification',
+        targetId: notificationId,
+        summary: `Smazáno upozornění „${title}“`,
+      });
       return true;
     } catch {
       return false;

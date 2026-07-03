@@ -79,6 +79,11 @@ export function matchPublicRoute(pathname) {
   if (path === '/probehle') return { type: 'events-past' };
   if (path === '/blog') return { type: 'blog-list' };
 
+  const blogAuthorMatch = path.match(/^\/blog\/autor\/([^/]+)$/);
+  if (blogAuthorMatch) {
+    return { type: 'blog-author', authorKey: decodeURIComponent(blogAuthorMatch[1]) };
+  }
+
   const blogMatch = path.match(/^\/blog\/([^/]+)$/);
   if (blogMatch) return { type: 'blog-post', slug: decodeURIComponent(blogMatch[1]) };
 
@@ -380,9 +385,11 @@ function buildMeta({ route, siteUrl, data, pathname }) {
   if (page?.title) {
     const intro = trimMetaDescription(stripHtml(page.intro || ''), 160);
     const isHomePage = page.slug === '' || page.type === 'home';
+    const customTitle = page.seoTitle?.trim();
+    const customDescription = page.seoDescription?.trim();
     return {
-      title: isHomePage ? SITE_NAME : `${page.title} — ${SITE_NAME}`,
-      description: isHomePage ? buildHomeMetaDescription(data.siteTexts) : (intro || defaultDescription),
+      title: customTitle || (isHomePage ? SITE_NAME : `${page.title} — ${SITE_NAME}`),
+      description: customDescription || (isHomePage ? buildHomeMetaDescription(data.siteTexts) : (intro || defaultDescription)),
       keywords: isHomePage ? buildHomeMetaKeywords() : formatMetaKeywords([page.title, 'Popcorn', page.slug]),
       canonical,
       ogType: 'website',
@@ -390,10 +397,33 @@ function buildMeta({ route, siteUrl, data, pathname }) {
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebPage',
-        name: page.title,
-        description: intro || defaultDescription,
+        name: customTitle || page.title,
+        description: customDescription || intro || defaultDescription,
         url: canonical,
       },
+    };
+  }
+
+  if (route.type === 'blog-author' && data.blogPosts?.length) {
+    const authorKey = route.authorKey;
+    const authorPost = data.blogPosts.find((post) => {
+      if (!post?.author) return false;
+      if (authorKey.startsWith('ext-')) {
+        return post.author.uid === 'external';
+      }
+      return post.author.uid === authorKey;
+    });
+    const authorName = authorPost?.author?.name?.trim()
+      || authorPost?.author?.label?.trim()
+      || 'Autor';
+
+    return {
+      title: `${authorName} — Blog — ${SITE_NAME}`,
+      description: `Příspěvky autora ${authorName} na blogu Komunity Popcorn.`,
+      canonical,
+      ogType: 'profile',
+      ogImage: authorPost?.author?.photoURL || data.siteSettings?.logoUrl || '',
+      jsonLd: null,
     };
   }
 

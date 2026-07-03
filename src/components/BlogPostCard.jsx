@@ -57,7 +57,7 @@ function BlogPostCover({ post }) {
   );
 }
 
-function BlogCardContent({ post }) {
+function BlogCardContent({ post, authorLinkable = true }) {
   return (
     <div className="blog-card__content">
       <div className="blog-card__meta">
@@ -65,6 +65,7 @@ function BlogCardContent({ post }) {
           author={post.author}
           size="small"
           className={post.isExternal ? 'blog-author--flat' : ''}
+          linkable={authorLinkable}
         />
         <time className="blog-card__date" dateTime={post.publishedDate}>
           {post.dateTimeLabel}
@@ -105,6 +106,7 @@ export default function BlogPostCard({
   canManage = false,
   onEdit,
   onDelete,
+  authorLinkable = true,
 }) {
   const delayClass = ` reveal--delay-${(index % 4) + 1}`;
   const visibleClass = initiallyVisible ? ' reveal--visible' : '';
@@ -142,7 +144,7 @@ export default function BlogPostCard({
           onClick={() => trackOutboundClick(post.externalUrl, post.title)}
         >
           <BlogPostCover post={post} />
-          <BlogCardContent post={post} />
+          <BlogCardContent post={post} authorLinkable={authorLinkable} />
         </a>
       ) : (
         <a
@@ -151,7 +153,7 @@ export default function BlogPostCard({
           onClick={() => trackNavClick(blogPostUrl(post.slug), post.title)}
         >
           <BlogPostCover post={post} />
-          <BlogCardContent post={post} />
+          <BlogCardContent post={post} authorLinkable={authorLinkable} />
         </a>
       )}
     </article>

@@ -15,6 +15,7 @@ import {
   sortPublicationsByTitle,
 } from '../utils/publication-format';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 
 function TrashIcon() {
   return (
@@ -34,6 +35,7 @@ function EditIcon() {
 
 export default function AdminPublicationsPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const [publications, setPublications] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
@@ -104,8 +106,20 @@ export default function AdminPublicationsPage() {
     try {
       if (editingPublication?.id) {
         await updatePublication(editingPublication.id, payload);
+        await logActivity({
+          action: 'update',
+          targetType: 'publication',
+          targetId: editingPublication.id,
+          summary: `Upravena publikace „${payload.title}“`,
+        });
       } else {
-        await createPublication(payload);
+        const newId = await createPublication(payload);
+        await logActivity({
+          action: 'create',
+          targetType: 'publication',
+          targetId: newId,
+          summary: `Vytvořena publikace „${payload.title}“`,
+        });
       }
       return true;
     } catch (err) {
@@ -116,7 +130,14 @@ export default function AdminPublicationsPage() {
 
   const handleConfirmDelete = async (publicationId) => {
     try {
+      const title = publicationToDelete?.title || 'publikace';
       await deletePublication(publicationId);
+      await logActivity({
+        action: 'delete',
+        targetType: 'publication',
+        targetId: publicationId,
+        summary: `Smazána publikace „${title}“`,
+      });
       return true;
     } catch {
       return false;

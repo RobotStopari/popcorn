@@ -35,6 +35,7 @@ export const ADMIN_TEXTS = {
         texts: 'Texty',
         settings: 'Nastavení',
         colors: 'Barvy',
+        historie: 'Historie správy',
       },
     },
     navbar: {
@@ -458,6 +459,14 @@ export const ADMIN_TEXTS = {
     },
   },
 
+  historyPage: {
+    title: 'Historie správy',
+    subtitle: 'Přehled změn provedených v administraci.',
+    loading: 'Načítám historii…',
+    loadFailed: 'Historii se nepodařilo načíst.',
+    empty: 'Zatím žádné záznamy.',
+  },
+
   usefulLinks: {
     list: {
       title: 'Odkazy',
@@ -577,6 +586,12 @@ export const ADMIN_TEXTS = {
       homeUrlHint: 'Hlavní stránka je vždy na kořenové adrese /.',
       urlHint: 'Jen malá písmena, čísla a pomlčky.',
       createButton: 'Vytvořit',
+      seoTitle: 'SEO',
+      seoHint: 'Volitelné přepsání meta tagů pro vyhledávače a sdílení na sociálních sítích.',
+      seoMetaTitleLabel: 'Meta titulek',
+      seoMetaTitlePlaceholder: 'Vlastní titulek stránky',
+      seoMetaDescriptionLabel: 'Meta popis',
+      seoMetaDescriptionPlaceholder: 'Krátký popis stránky pro Google a sociální sítě',
     },
     deleteDialog: {
       title: 'Smazat stránku?',
@@ -600,6 +615,7 @@ export const ADMIN_TEXTS = {
       removeBlock: 'Odstranit prvek {label}',
       metaName: 'Název',
       metaUrl: 'URL',
+      closeSettings: 'Zavřít nastavení',
       saved: 'Změny uloženy',
       livePreview: 'Živý náhled',
       livePreviewAria: 'Otevřít náhled stránky v novém okně',
@@ -905,6 +921,14 @@ export const SITE_UI_TEXTS = {
     stats: {
       ariaLabel: '{likeCount} lajků, {commentCount} komentářů',
     },
+    author: {
+      heading: 'Autor',
+      pageTitle: 'Příspěvky — {name}',
+      postCount: '{count} příspěvků',
+      empty: 'Tento autor zatím nemá žádné příspěvky.',
+      notFound: 'Autor nebyl nalezen.',
+      backToBlog: 'Zpět na blog',
+    },
     profile: {
       completeCta: 'Dokončit profil',
       menuAriaLabel: 'Profil: {label}',
@@ -1113,5 +1137,8 @@ export const ADMIN_NAV_GROUPS = [
     { to: '/admin/settings', itemKey: 'settings' },
     { to: '/admin/colors', itemKey: 'colors' },
     { to: '/admin/texts', itemKey: 'texts' },
+  ],
+  [
+    { to: '/admin/historie', itemKey: 'historie' },
   ],
 ];

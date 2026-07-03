@@ -29,6 +29,7 @@ import {
   subscribeOrganiserPresets,
 } from '../services/organiser-presets';
 import RichTextEditor from './RichTextEditor';
+import AdminPlaceMapPicker from './AdminPlaceMapPicker';
 import EventCategorySelect from './EventCategorySelect';
 import { isExternalEventCategory } from '../data/event-categories';
 import SortableParticipantList from './SortableParticipantList';
@@ -850,6 +851,20 @@ export default function AdminEventFormModal({
                       />
                     </FieldGroup>
                   </div>
+                  <FieldGroup label="Bod na mapě (volitelné)">
+                    <AdminPlaceMapPicker
+                      lat={form.placeLat}
+                      lng={form.placeLng}
+                      disabled={saving}
+                      onChange={(coords) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          placeLat: coords?.lat ?? '',
+                          placeLng: coords?.lng ?? '',
+                        }));
+                      }}
+                    />
+                  </FieldGroup>
                 </TabBlock>
 
                 <TabBlock title="Popis" hint="Text pro nadcházející akce — formátování, odkazy a seznamy včetně vnořených úrovní.">

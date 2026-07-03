@@ -11,6 +11,7 @@ import { useEvents } from '../contexts/EventsContext';
 import { formatEventDateLabel, isEventPast, partitionAdminEventList, sortPastEvents, sortUpcomingEvents } from '../utils/event-dates';
 import { getAdminEventTitle, normalizeEvent } from '../utils/event-format';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 
 function TrashIcon() {
   return (
@@ -36,6 +37,7 @@ const FILTERS = [
 
 export default function AdminEventsPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const { events, loading: eventsLoading, error: eventsError } = useEvents();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -136,13 +138,25 @@ export default function AdminEventsPage() {
 
       if (targetId) {
         await updateEvent(targetId, fullPayload);
+        await logActivity({
+          action: 'update',
+          targetType: 'event',
+          targetId,
+          summary: `Upravena akce „${fullPayload.title}“`,
+        });
         setEditingEvent((current) => (
           current?.id === targetId
             ? normalizeEvent({ ...current, ...fullPayload, id: targetId })
             : current
         ));
       } else {
-        await createEvent(fullPayload);
+        const newId = await createEvent(fullPayload);
+        await logActivity({
+          action: 'create',
+          targetType: 'event',
+          targetId: newId,
+          summary: `Vytvořena akce „${fullPayload.title}“`,
+        });
       }
       return true;
     } catch (err) {
@@ -162,7 +176,14 @@ export default function AdminEventsPage() {
 
   const handleConfirmDelete = async (eventId) => {
     try {
+      const title = eventToDelete?.title || getAdminEventTitle(eventToDelete) || 'akce';
       await deleteEvent(eventId);
+      await logActivity({
+        action: 'delete',
+        targetType: 'event',
+        targetId: eventId,
+        summary: `Smazána akce „${title}“`,
+      });
       return true;
     } catch {
       return false;

@@ -77,6 +77,8 @@ function normalizePage(raw, fallback = null) {
     type,
     blocks,
     intro: typeof raw.intro === 'string' ? raw.intro : '',
+    seoTitle: typeof raw.seoTitle === 'string' ? raw.seoTitle.trim() : '',
+    seoDescription: typeof raw.seoDescription === 'string' ? raw.seoDescription.trim() : '',
     noDelete: flags.noDelete || false,
     lockName: flags.lockName || false,
     lockSlug: flags.lockSlug || false,
@@ -113,6 +115,8 @@ export function applyLocalPagePatch(pages, pageId, patch = {}) {
       title: patch.title !== undefined ? patch.title : page.title,
       blocks: patch.blocks !== undefined ? patch.blocks : page.blocks,
       intro: patch.intro !== undefined ? patch.intro : page.intro,
+      seoTitle: patch.seoTitle !== undefined ? patch.seoTitle : page.seoTitle,
+      seoDescription: patch.seoDescription !== undefined ? patch.seoDescription : page.seoDescription,
     });
   });
 
@@ -240,7 +244,7 @@ export async function createPage(pages, { title, slug }) {
   return docRef.id;
 }
 
-export async function updatePage(pages, page, { title, slug, blocks, intro }) {
+export async function updatePage(pages, page, { title, slug, blocks, intro, seoTitle, seoDescription }) {
   if (!canEditPageTitle(page) && title.trim() !== page.title) {
     throw new Error('Název této stránky nelze měnit.');
   }
@@ -286,6 +290,14 @@ export async function updatePage(pages, page, { title, slug, blocks, intro }) {
 
   if (intro !== undefined) {
     payload.intro = typeof intro === 'string' ? intro.trim() : '';
+  }
+
+  if (seoTitle !== undefined) {
+    payload.seoTitle = typeof seoTitle === 'string' ? seoTitle.trim() : '';
+  }
+
+  if (seoDescription !== undefined) {
+    payload.seoDescription = typeof seoDescription === 'string' ? seoDescription.trim() : '';
   }
 
   await updateDoc(doc(db, 'pages', page.id), payload);

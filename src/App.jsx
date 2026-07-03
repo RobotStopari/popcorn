@@ -7,6 +7,7 @@ import SlugRoute from './components/SlugRoute';
 import EventPage, { EventLegacyIdRedirect } from './pages/EventPage';
 import EventShareEditPage from './pages/EventShareEditPage';
 import BlogPostPage from './pages/BlogPostPage';
+import BlogAuthorPage from './pages/BlogAuthorPage';
 import AdminPage from './pages/AdminPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminEventsPage from './pages/AdminEventsPage';
@@ -18,6 +19,7 @@ import AdminMenuPage from './pages/AdminMenuPage';
 import AdminColorsPage from './pages/AdminColorsPage';
 import AdminTextsPage from './pages/AdminTextsPage';
 import AdminStatistikyPage from './pages/AdminStatistikyPage';
+import AdminHistoryPage from './pages/AdminHistoryPage';
 import AdminUsefulLinksPage from './pages/AdminUsefulLinksPage';
 import AdminPublicationsPage from './pages/AdminPublicationsPage';
 import { EventsProvider } from './contexts/EventsContext';
@@ -70,6 +72,7 @@ function AppRoutes() {
         {LEGACY_REDIRECTS.map(({ from, to }) => (
           <Route key={from} path={from} element={<Navigate to={to} replace />} />
         ))}
+        <Route path="blog/autor/:authorKey" element={<BlogAuthorPage />} />
         <Route path="blog/:postSlug" element={<BlogPostPage />} />
         <Route path="akce/:eventSlug" element={<EventPage />} />
         <Route path="event/:legacyId" element={<EventLegacyIdRedirect />} />
@@ -90,6 +93,7 @@ function AppRoutes() {
         <Route path="colors" element={<AdminColorsPage />} />
         <Route path="texts" element={<AdminTextsPage />} />
         <Route path="statistiky" element={<AdminStatistikyPage />} />
+        <Route path="historie" element={<AdminHistoryPage />} />
       </Route>
     </Routes>
   );

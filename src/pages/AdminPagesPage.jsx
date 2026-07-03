@@ -22,6 +22,7 @@ import {
 } from '../services/pages';
 import { canPageHaveBlocks } from '../utils/page-blocks';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 
 function EditIcon() {
   return (
@@ -75,6 +76,7 @@ function PageRow({ page, onEdit, onDelete }) {
 
 export default function AdminPagesPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const { pages, loading: pagesLoading, error: pagesError, upsertPage } = usePages();
   const [seedLoading, setSeedLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -163,10 +165,22 @@ export default function AdminPagesPage() {
     if (editingPage) {
       await updatePage(pages, editingPage, payload);
       upsertPage(editingPage.id, payload);
+      await logActivity({
+        action: 'update',
+        targetType: 'page',
+        targetId: editingPage.id,
+        summary: `Upravena stránka „${payload.title || editingPage.title}“`,
+      });
       return;
     }
 
-    await createPage(pages, payload);
+    const newId = await createPage(pages, payload);
+    await logActivity({
+      action: 'create',
+      targetType: 'page',
+      targetId: newId,
+      summary: `Vytvořena stránka „${payload.title}“`,
+    });
   };
 
   const handleBuilderSave = async (payload) => {
@@ -178,6 +192,12 @@ export default function AdminPagesPage() {
     const page = pages.find((item) => item.id === pageId);
     if (!page) return;
     await deletePage(page);
+    await logActivity({
+      action: 'delete',
+      targetType: 'page',
+      targetId: pageId,
+      summary: `Smazána stránka „${page.title}“`,
+    });
   };
 
   const listLoading = seedLoading || pagesLoading;

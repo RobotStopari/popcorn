@@ -19,6 +19,7 @@ import {
   updateBlogPost,
 } from '../services/blog-posts';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 
 function TrashIcon() {
   return (
@@ -44,6 +45,7 @@ export default function AdminBlogPostsPage() {
     user,
     fetchAllUsers,
   } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const { posts, loading: postsLoading, error: postsError } = useBlogPosts();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
@@ -158,11 +160,23 @@ export default function AdminBlogPostsPage() {
           ...payload,
           author,
         });
+        await logActivity({
+          action: 'update',
+          targetType: 'blogPost',
+          targetId: editingPost.id,
+          summary: `Upraven příspěvek „${payload.title}“`,
+        });
       } else {
-        await createBlogPost({
+        const newId = await createBlogPost({
           ...payload,
           ...getPublishTimestamp(),
           author,
+        });
+        await logActivity({
+          action: 'create',
+          targetType: 'blogPost',
+          targetId: newId,
+          summary: `Vytvořen příspěvek „${payload.title}“`,
         });
       }
       return true;
@@ -174,7 +188,14 @@ export default function AdminBlogPostsPage() {
 
   const handleConfirmDelete = async (postId) => {
     try {
+      const title = postToDelete?.title || 'příspěvek';
       await deleteBlogPost(postId);
+      await logActivity({
+        action: 'delete',
+        targetType: 'blogPost',
+        targetId: postId,
+        summary: `Smazán příspěvek „${title}“`,
+      });
       return true;
     } catch {
       return false;

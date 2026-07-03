@@ -15,6 +15,7 @@ import {
   usefulLinkMatchesSearch,
 } from '../utils/useful-link-format';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 
 function TrashIcon() {
   return (
@@ -34,6 +35,7 @@ function EditIcon() {
 
 export default function AdminUsefulLinksPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const [links, setLinks] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
@@ -104,8 +106,20 @@ export default function AdminUsefulLinksPage() {
     try {
       if (editingLink?.id) {
         await updateUsefulLink(editingLink.id, payload);
+        await logActivity({
+          action: 'update',
+          targetType: 'usefulLink',
+          targetId: editingLink.id,
+          summary: `Upraven odkaz „${payload.title}“`,
+        });
       } else {
-        await createUsefulLink(payload);
+        const newId = await createUsefulLink(payload);
+        await logActivity({
+          action: 'create',
+          targetType: 'usefulLink',
+          targetId: newId,
+          summary: `Vytvořen odkaz „${payload.title}“`,
+        });
       }
       return true;
     } catch (err) {
@@ -116,7 +130,14 @@ export default function AdminUsefulLinksPage() {
 
   const handleConfirmDelete = async (linkId) => {
     try {
+      const title = linkToDelete?.title || 'odkaz';
       await deleteUsefulLink(linkId);
+      await logActivity({
+        action: 'delete',
+        targetType: 'usefulLink',
+        targetId: linkId,
+        summary: `Smazán odkaz „${title}“`,
+      });
       return true;
     } catch {
       return false;

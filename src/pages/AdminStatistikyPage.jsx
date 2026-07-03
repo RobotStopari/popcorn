@@ -35,33 +35,13 @@ const TOOLTIP_WRAPPER_STYLE = {
   maxWidth: 'min(240px, calc(100vw - 2.5rem))',
 };
 
-function statisticsTooltipPosition(point, tooltipWidth, tooltipHeight, viewBox) {
-  const padding = 8;
-  const width = tooltipWidth || 196;
-  const height = tooltipHeight || 72;
-  const boxWidth = viewBox?.width ?? 320;
-  const boxHeight = viewBox?.height ?? 300;
-
-  let x = point.x + 10;
-  let y = point.y - height / 2;
-
-  if (x + width + padding > boxWidth) {
-    x = point.x - width - 10;
-  }
-
-  x = Math.max(padding, Math.min(x, boxWidth - width - padding));
-  y = Math.max(padding, Math.min(y, boxHeight - height - padding));
-
-  return { x, y };
-}
-
 function chartTooltipProps(cursor) {
   return {
     isAnimationActive: false,
     wrapperStyle: TOOLTIP_WRAPPER_STYLE,
     wrapperClassName: 'admin-statistiky__tooltip-wrapper',
-    allowEscapeViewBox: { x: true, y: true },
-    position: statisticsTooltipPosition,
+    allowEscapeViewBox: { x: false, y: false },
+    offset: 12,
     ...(cursor ? { cursor } : {}),
   };
 }

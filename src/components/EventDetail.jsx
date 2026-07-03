@@ -21,7 +21,7 @@ function eventFieldLabel(fieldKey) {
   return siteText(`events.detail.fields.${fieldKey}`);
 }
 
-function InfoField({ fieldKey, value }) {
+function InfoField({ fieldKey, value, href }) {
   const icon = FIELD_ICONS[fieldKey];
   const label = eventFieldLabel(fieldKey);
 
@@ -33,7 +33,19 @@ function InfoField({ fieldKey, value }) {
         )}
         <div className="event-detail__field-copy">
           <dt className="event-detail__field-label">{label}</dt>
-          <dd className="event-detail__field-value">{value}</dd>
+          <dd className="event-detail__field-value">
+            {href ? (
+              <a
+                href={href}
+                className="event-detail__place-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackOutboundClick(href, value)}
+              >
+                {value}
+              </a>
+            ) : value}
+          </dd>
         </div>
       </div>
     </div>
@@ -194,7 +206,13 @@ function UpcomingDetail({ event }) {
               showDescription
             />
             <ScheduleRow event={event} />
-            {event.hasPlace && <InfoField fieldKey="place" value={event.misto} />}
+            {event.hasPlace && (
+              <InfoField
+                fieldKey="place"
+                value={event.misto}
+                href={event.hasPlaceMap ? event.placeMapUrl : undefined}
+              />
+            )}
             {event.hasPrice && <InfoField fieldKey="price" value={event.cena} />}
           </div>
         </aside>

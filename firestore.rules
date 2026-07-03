@@ -71,6 +71,8 @@ service cloud.firestore {
           'dateEnd',
           'timeEnd',
           'place',
+          'placeLat',
+          'placeLng',
           'price',
           'description',
           'organisers',
@@ -456,7 +458,9 @@ service cloud.firestore {
         && (data.type != 'home' || data.slug == '')
         && (data.type == 'home' || data.slug.size() > 0)
         && (!data.keys().hasAny(['blocks']) || validPageBlocks(data.blocks))
-        && (!data.keys().hasAny(['intro']) || data.intro is string);
+        && (!data.keys().hasAny(['intro']) || data.intro is string)
+        && (!data.keys().hasAny(['seoTitle']) || data.seoTitle is string)
+        && (!data.keys().hasAny(['seoDescription']) || data.seoDescription is string);
     }
 
     function validSiteSettingsFooterSlot(slot) {
@@ -805,6 +809,26 @@ service cloud.firestore {
     match /analyticsEvents/{eventId} {
       allow read: if isAdmin();
       allow create: if validAnalyticsEventData(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    function validAdminActivityLogData(data) {
+      return data.keys().hasAll(['actorUid', 'actorName', 'summary', 'createdAt'])
+        && data.actorUid is string
+        && data.actorUid.size() > 0
+        && data.actorName is string
+        && data.actorName.size() > 0
+        && data.summary is string
+        && data.summary.size() > 0
+        && data.summary.size() <= 500
+        && (!data.keys().hasAny(['action']) || data.action is string)
+        && (!data.keys().hasAny(['targetType']) || data.targetType is string)
+        && (!data.keys().hasAny(['targetId']) || data.targetId is string);
+    }
+
+    match /adminActivityLog/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && validAdminActivityLogData(request.resource.data);
       allow update, delete: if false;
     }
   }
