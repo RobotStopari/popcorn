@@ -17,3 +17,4 @@ export const ADMIN_SIDEBAR_ICONS = {
   texts: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" ${stroke} aria-hidden="true"><path d="M4 7V4.5h16V7"/><path d="M9 19.5h6"/><path d="M12 4.5v15"/></svg>`,
   historie: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" ${stroke} aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>`,
 };
+
