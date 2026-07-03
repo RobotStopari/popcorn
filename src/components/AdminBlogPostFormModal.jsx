@@ -5,14 +5,16 @@ import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import {
   blogPostToFormState,
   buildAuthorSnapshot,
+  buildExternalAuthorSnapshot,
   formStateToBlogPayload,
   suggestSlugFromTitle,
   validateBlogForm,
 } from '../utils/blog-post-format';
+import { adminText } from '../utils/admin-text';
 import AdminBlogPostCommentsSection from './AdminBlogPostCommentsSection';
 import AdminModalPanel from './AdminModalPanel';
 import BlogAuthor from './BlogAuthor';
-import BlogCoverUpload from './BlogCoverUpload';
+import BlogCoverUpload, { createCoverPatternSeed } from './BlogCoverUpload';
 import EventImageUploadList from './EventImageUploadList';
 import RichTextEditor from './RichTextEditor';
 import UserCombobox from './UserCombobox';
@@ -37,7 +39,9 @@ export default function AdminBlogPostFormModal({
   post,
   author,
   allowAuthorPick = false,
+  allowExternalPosts = false,
   users = [],
+  posts = [],
   defaultAuthorUid = '',
   onClose,
   onSave,
@@ -48,6 +52,7 @@ export default function AdminBlogPostFormModal({
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [coverPatternSeed, setCoverPatternSeed] = useState(createCoverPatternSeed);
   const { mounted, visible } = useAnimatedPresence(open, 240);
 
   const eligibleUsers = useMemo(
@@ -56,6 +61,10 @@ export default function AdminBlogPostFormModal({
   );
 
   const previewAuthor = useMemo(() => {
+    if (form.isExternal) {
+      return buildExternalAuthorSnapshot(form.externalAuthorName);
+    }
+
     if (allowAuthorPick && authorUid) {
       const picked = eligibleUsers.find((user) => (user.id || user.uid) === authorUid);
       if (picked) {
@@ -68,13 +77,14 @@ export default function AdminBlogPostFormModal({
       }
     }
     return author;
-  }, [allowAuthorPick, author, authorUid, eligibleUsers]);
+  }, [allowAuthorPick, author, authorUid, eligibleUsers, form.externalAuthorName, form.isExternal]);
 
   useEffect(() => {
     if (!open) return;
     setForm(blogPostToFormState(post));
     setAuthorUid(post?.author?.uid || defaultAuthorUid || '');
     setSlugTouched(Boolean(post?.slug));
+    setCoverPatternSeed(post?.id || createCoverPatternSeed());
     setError('');
     setSaving(false);
   }, [open, post?.id, defaultAuthorUid]);
@@ -101,7 +111,7 @@ export default function AdminBlogPostFormModal({
     setForm((prev) => {
       const next = { ...prev, [field]: value };
 
-      if (field === 'title' && !slugTouched) {
+      if (field === 'title' && !slugTouched && !prev.isExternal) {
         next.slug = suggestSlugFromTitle(value);
       }
 
@@ -109,31 +119,62 @@ export default function AdminBlogPostFormModal({
     });
   };
 
+  const toggleExternal = (enabled) => {
+    setForm((prev) => ({
+      ...prev,
+      isExternal: enabled,
+      ...(enabled
+        ? {
+          galleryImages: [],
+          externalAuthorName: prev.externalAuthorName || prev.title ? '' : prev.externalAuthorName,
+        }
+        : {
+          externalUrl: '',
+          externalAuthorName: '',
+        }),
+    }));
+  };
+
   const handleSubmit = async (submitEvent) => {
     submitEvent.preventDefault();
 
-    const validationError = validateBlogForm(form);
+    const validationError = validateBlogForm(form, { allowExternal: allowExternalPosts });
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    if (allowAuthorPick && !authorUid) {
-      setError('Vyberte autora příspěvku.');
+    if (!form.isExternal && allowAuthorPick && !authorUid) {
+      setError(adminText('blog.form.pickAuthor'));
       return;
     }
 
     setSaving(true);
     setError('');
 
+    let resolvedAuthor = previewAuthor;
+    if (form.isExternal) {
+      resolvedAuthor = buildExternalAuthorSnapshot(form.externalAuthorName);
+    }
+
+    const payload = formStateToBlogPayload(form, {
+      author: resolvedAuthor,
+      posts,
+      excludeId: post?.id || null,
+    });
+
     const ok = await onSave(
-      formStateToBlogPayload(form),
-      allowAuthorPick ? { authorUid } : undefined,
+      payload,
+      form.isExternal
+        ? { isExternal: true }
+        : (allowAuthorPick ? { authorUid } : undefined),
     );
     setSaving(false);
 
     if (ok) onClose();
   };
+
+  const isExternal = form.isExternal && allowExternalPosts;
 
   return createPortal(
     <div
@@ -146,50 +187,91 @@ export default function AdminBlogPostFormModal({
       <AdminModalPanel className="admin-modal__panel--wide">
         <header className="admin-event-modal__header">
           <div>
-            <p className="admin-event-modal__eyebrow">{post ? 'Úprava příspěvku' : 'Nový příspěvek'}</p>
+            <p className="admin-event-modal__eyebrow">
+              {post ? adminText('blog.form.editEyebrow') : adminText('blog.form.newEyebrow')}
+            </p>
             <h2 id="admin-blog-post-form-title" className="admin-modal__title admin-event-modal__title">
-              {post ? 'Upravit blogový příspěvek' : 'Nový blogový příspěvek'}
+              {post ? adminText('blog.form.editTitle') : adminText('blog.form.newTitle')}
             </h2>
           </div>
         </header>
 
         <form className="admin-form admin-form--event" onSubmit={handleSubmit}>
           <div className="admin-event-tab">
-            <FieldGroup label="Název příspěvku" required>
+            {allowExternalPosts && (
+              <div className="admin-blog-form__toggles">
+                <label className="admin-toggle">
+                  <input
+                    type="checkbox"
+                    checked={form.isExternal}
+                    onChange={(event) => toggleExternal(event.target.checked)}
+                  />
+                  <span className="admin-toggle__track" aria-hidden="true">
+                    <span className="admin-toggle__thumb" />
+                  </span>
+                  <span className="admin-toggle__label">{adminText('blog.form.externalToggle')}</span>
+                </label>
+                {isExternal && (
+                  <p className="admin-form__hint">
+                    {adminText('blog.form.externalHint')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <FieldGroup label={adminText('blog.form.titleLabel')} required>
               <input
                 type="text"
                 className="admin-form__input"
                 value={form.title}
                 maxLength={200}
                 onChange={(event) => updateField('title', event.target.value)}
-                placeholder="Např. Jak jsme prožili letní setkání"
+                placeholder={adminText('blog.form.titlePlaceholder')}
                 required
               />
             </FieldGroup>
 
-            <FieldGroup
-              label="URL příspěvku"
-              hint="Adresa pod /blog/… — jen malá písmena, čísla a pomlčky."
-              required
-            >
-              <input
-                type="text"
-                className="admin-form__input"
-                value={form.slug}
-                onChange={(event) => {
-                  setSlugTouched(true);
-                  updateField('slug', event.target.value);
-                }}
-                placeholder="jak-jsme-prozili-letni-setkani"
+            {isExternal ? (
+              <FieldGroup
+                label={adminText('blog.form.externalUrlLabel')}
+                hint={adminText('blog.form.externalUrlHint')}
                 required
-              />
-            </FieldGroup>
+              >
+                <input
+                  type="url"
+                  className="admin-form__input"
+                  value={form.externalUrl}
+                  onChange={(event) => updateField('externalUrl', event.target.value)}
+                  placeholder={adminText('blog.form.externalUrlPlaceholder')}
+                  required
+                />
+              </FieldGroup>
+            ) : (
+              <FieldGroup
+                label={adminText('blog.form.slugLabel')}
+                hint={adminText('blog.form.slugHint')}
+                required
+              >
+                <input
+                  type="text"
+                  className="admin-form__input"
+                  value={form.slug}
+                  onChange={(event) => {
+                    setSlugTouched(true);
+                    updateField('slug', event.target.value);
+                  }}
+                  placeholder={adminText('blog.form.slugPlaceholder')}
+                  required
+                />
+              </FieldGroup>
+            )}
 
-            <FieldGroup label="Titulní fotka">
+            <FieldGroup label={adminText('blog.form.coverLabel')}>
               <BlogCoverUpload
                 coverImage={form.coverImage}
                 coverPublicId={form.coverPublicId}
-                previewSeed={post?.id || form.slug || form.title || 'blog-post-draft'}
+                previewSeed={coverPatternSeed}
+                onPreviewSeedChange={setCoverPatternSeed}
                 disabled={saving}
                 onChange={({ coverImage, coverPublicId }) => {
                   setForm((prev) => ({
@@ -202,29 +284,46 @@ export default function AdminBlogPostFormModal({
             </FieldGroup>
 
             <FieldGroup
-              label="Klíčová slova"
-              hint="Volitelné, oddělená čárkou. Maximálně 15."
+              label={adminText('blog.form.keywordsLabel')}
+              hint={adminText('blog.form.keywordsHint')}
             >
               <input
                 type="text"
                 className="admin-form__input"
                 value={form.keywordsInput}
                 onChange={(event) => updateField('keywordsInput', event.target.value)}
-                placeholder="komunita, setkání, inspirace"
+                placeholder={adminText('blog.form.keywordsPlaceholder')}
               />
             </FieldGroup>
 
-            <FieldGroup label="Text příspěvku" required>
+            <FieldGroup
+              label={isExternal ? adminText('blog.form.shortBodyLabel') : adminText('blog.form.bodyLabel')}
+              required={!isExternal}
+            >
               <RichTextEditor
                 id={post ? `blog-post-body-${post.id}` : 'blog-post-body-new'}
                 value={form.body}
                 onChange={(value) => updateField('body', value)}
                 tone="content"
               />
+              {isExternal && (
+                <p className="admin-form__hint">{adminText('blog.form.shortBodyHint')}</p>
+              )}
             </FieldGroup>
 
-            {allowAuthorPick ? (
-              <FieldGroup label="Autor příspěvku" required>
+            {isExternal ? (
+              <FieldGroup label={adminText('blog.form.authorLabel')} required>
+                <input
+                  type="text"
+                  className="admin-form__input"
+                  value={form.externalAuthorName}
+                  onChange={(event) => updateField('externalAuthorName', event.target.value)}
+                  placeholder={adminText('blog.form.authorPlaceholder')}
+                  required
+                />
+              </FieldGroup>
+            ) : allowAuthorPick ? (
+              <FieldGroup label={adminText('blog.form.authorLabel')} required>
                 <UserCombobox
                   id={post ? `blog-post-author-${post.id}` : 'blog-post-author-new'}
                   users={eligibleUsers}
@@ -235,28 +334,30 @@ export default function AdminBlogPostFormModal({
               </FieldGroup>
             ) : (
               previewAuthor && (
-                <FieldGroup label={post ? 'Autor' : 'Autor příspěvku'}>
+                <FieldGroup label={post ? adminText('blog.form.authorShort') : adminText('blog.form.authorLabel')}>
                   <BlogAuthor author={previewAuthor} size="medium" className="admin-blog-form__author" />
                 </FieldGroup>
               )
             )}
 
-            <FieldGroup label="Galerie fotek">
-              <EventImageUploadList
-                images={form.galleryImages}
-                maxCount={BLOG_GALLERY_MAX}
-                uploadLabel="Nahrát fotky do galerie"
-                hint={BLOG_GALLERY_UPLOAD_HINT}
-                presetType="postGallery"
-                disabled={saving}
-                onChange={(galleryImages) => {
-                  setForm((prev) => ({ ...prev, galleryImages }));
-                }}
-              />
-            </FieldGroup>
+            {!isExternal && (
+              <FieldGroup label={adminText('blog.form.galleryLabel')}>
+                <EventImageUploadList
+                  images={form.galleryImages}
+                  maxCount={BLOG_GALLERY_MAX}
+                  uploadLabel={adminText('blog.form.galleryUpload')}
+                  hint={BLOG_GALLERY_UPLOAD_HINT}
+                  presetType="postGallery"
+                  disabled={saving}
+                  onChange={(galleryImages) => {
+                    setForm((prev) => ({ ...prev, galleryImages }));
+                  }}
+                />
+              </FieldGroup>
+            )}
           </div>
 
-          {post && allowAuthorPick && (
+          {post && allowAuthorPick && !isExternal && (
             <AdminBlogPostCommentsSection post={post} />
           )}
 
@@ -264,10 +365,12 @@ export default function AdminBlogPostFormModal({
 
           <div className="admin-modal__actions admin-event-modal__actions">
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
-              Zrušit
+              {adminText('common.cancel')}
             </button>
             <button type="submit" className="btn btn--primary" disabled={saving}>
-              {saving ? 'Ukládám…' : post ? 'Uložit změny' : 'Vytvořit příspěvek'}
+              {saving
+                ? adminText('common.saving')
+                : (post ? adminText('common.saveChanges') : adminText('blog.form.createButton'))}
             </button>
           </div>
         </form>

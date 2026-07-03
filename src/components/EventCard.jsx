@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { eventUrl } from '../data/events';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { siteText } from '../utils/admin-text';
+import { trackNavClick, trackOutboundClick } from '../utils/analytics-track';
 import EventCategoryLabel from './EventCategoryLabel';
 
 function EventCardPlaceholder({ seed, past }) {
@@ -39,11 +41,15 @@ export default function EventCard({ event, index, past = false }) {
   const noImageClass = hasCover ? '' : ' event-card--no-image';
   const delayClass = ` reveal--delay-${index + 1}`;
   const href = eventUrl(event);
-  const actionLabel = past ? 'Přečíst o akci' : 'Více informací';
+  const actionLabel = past ? siteText('events.card.readPast') : siteText('events.card.moreInfo');
 
   return (
     <article className={`event-card-wrap${delayClass} reveal`}>
-      <a href={href} className={`event-card shine-parent${pastClass}${noImageClass}`}>
+      <a
+        href={href}
+        className={`event-card shine-parent${pastClass}${noImageClass}`}
+        onClick={() => trackNavClick(href, event.name)}
+      >
         {hasCover ? (
           <EventCardImage event={event} />
         ) : (

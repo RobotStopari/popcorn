@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { siteText } from '../utils/admin-text';
 import Lightbox from './Lightbox';
 
 function GalleryThumb({ image, index, onOpen }) {
@@ -7,7 +8,9 @@ function GalleryThumb({ image, index, onOpen }) {
       type="button"
       className="event-detail__figure img-frame"
       onClick={() => onOpen(index)}
-      aria-label={image.alt ? `Otevřít obrázek: ${image.alt}` : `Otevřít obrázek ${index + 1}`}
+      aria-label={image.alt
+        ? siteText('events.gallery.openImageWithAlt', { alt: image.alt })
+        : siteText('events.gallery.openImage', { index: index + 1 })}
     >
       <img
         src={image.src}

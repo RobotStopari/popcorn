@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { MAX_COMMENT_LENGTH } from '../utils/blog-comment-format';
+import { siteText } from '../utils/admin-text';
 import BlogCommentItem from './BlogCommentItem';
 import BlogCompleteProfileModal from './BlogCompleteProfileModal';
 import { HeartIcon, CommentBubbleIcon } from './BlogEngagementIcons';
 import { useBlogCompleteProfile } from '../hooks/useBlogCompleteProfile';
 import { usePostEngagement } from '../hooks/usePostEngagement';
+import { trackBlogComment, trackBlogLike } from '../utils/analytics-track';
 
 export default function BlogPostEngagement({ post }) {
   const {
@@ -38,13 +40,23 @@ export default function BlogPostEngagement({ post }) {
   const likeCount = post.likeCount ?? 0;
   const commentCount = post.commentCount ?? comments.length;
 
+  const handleLike = async () => {
+    const liked = await toggleLike();
+    if (liked && !hasLiked) {
+      trackBlogLike(post.id, post.title || post.slug || '');
+    }
+  };
+
   const handleSubmitComment = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     setActionError('');
     const ok = await addComment(commentBody);
     setSubmitting(false);
-    if (ok) setCommentBody('');
+    if (ok) {
+      trackBlogComment(post.id, post.title || post.slug || '');
+      setCommentBody('');
+    }
   };
 
   const handleSignIn = async () => {
@@ -54,15 +66,17 @@ export default function BlogPostEngagement({ post }) {
   };
 
   return (
-    <section className="blog-engagement reveal" aria-label="Reakce na příspěvek">
+    <section className="blog-engagement reveal" aria-label={siteText('blog.engagement.sectionAriaLabel')}>
       <div className="blog-engagement__toolbar">
         <button
           type="button"
           className={`blog-engagement__like${hasLiked ? ' blog-engagement__like--active' : ''}`}
-          onClick={toggleLike}
+          onClick={handleLike}
           disabled={likeLoading}
           aria-pressed={hasLiked}
-          aria-label={hasLiked ? 'Odebrat like' : 'Lajknout příspěvek'}
+          aria-label={hasLiked
+            ? siteText('blog.engagement.unlikeAriaLabel')
+            : siteText('blog.engagement.likeAriaLabel')}
         >
           <HeartIcon filled={hasLiked} size={18} />
           <span>{likeCount}</span>
@@ -77,10 +91,10 @@ export default function BlogPostEngagement({ post }) {
       {likeError && <p className="admin-error blog-engagement__error">{likeError}</p>}
 
       <div className="blog-engagement__comments">
-        <h2 className="blog-engagement__title">Komentáře</h2>
+        <h2 className="blog-engagement__title">{siteText('blog.engagement.commentsTitle')}</h2>
 
         {commentsLoading ? (
-          <p className="section__empty">Načítám komentáře…</p>
+          <p className="section__empty">{siteText('blog.engagement.commentsLoading')}</p>
         ) : commentsError ? (
           <p className="admin-error">{commentsError}</p>
         ) : comments.length > 0 ? (
@@ -96,13 +110,13 @@ export default function BlogPostEngagement({ post }) {
             ))}
           </ul>
         ) : (
-          <p className="blog-engagement__empty">Zatím žádné komentáře.</p>
+          <p className="blog-engagement__empty">{siteText('blog.engagement.commentsEmpty')}</p>
         )}
 
         {canComment ? (
           <form className="blog-engagement__form" onSubmit={handleSubmitComment}>
             <label className="admin-form__label" htmlFor={`comment-body-${post.id}`}>
-              Napsat komentář
+              {siteText('blog.engagement.commentLabel')}
             </label>
             <textarea
               id={`comment-body-${post.id}`}
@@ -110,7 +124,7 @@ export default function BlogPostEngagement({ post }) {
               value={commentBody}
               maxLength={MAX_COMMENT_LENGTH}
               rows={3}
-              placeholder="Napište komentář…"
+              placeholder={siteText('blog.engagement.commentPlaceholder')}
               onChange={(event) => setCommentBody(event.target.value)}
             />
             {actionError && <p className="admin-error">{actionError}</p>}
@@ -119,30 +133,30 @@ export default function BlogPostEngagement({ post }) {
               className="btn btn--primary btn--small"
               disabled={submitting || !commentBody.trim()}
             >
-              {submitting ? 'Odesílám…' : 'Odeslat komentář'}
+              {submitting ? siteText('common.submitting') : siteText('blog.engagement.submit')}
             </button>
           </form>
         ) : user && !profileComplete ? (
           <div className="blog-engagement__login-prompt">
-            <p>Než budete komentovat, dokončete svůj profil.</p>
+            <p>{siteText('blog.engagement.completeProfilePrompt')}</p>
             <button
               type="button"
               className="btn btn--primary btn--small"
               onClick={openCompleteProfile}
             >
-              Dokončit profil
+              {siteText('blog.profile.completeCta')}
             </button>
           </div>
         ) : (
           <div className="blog-engagement__login-prompt">
-            <p>Pro komentování se musíte přihlásit.</p>
+            <p>{siteText('blog.engagement.signInPrompt')}</p>
             <button
               type="button"
               className="btn btn--outline btn--small"
               onClick={handleSignIn}
               disabled={signingIn}
             >
-              {signingIn ? 'Přihlašuji…' : 'Přihlásit se'}
+              {signingIn ? siteText('auth.signingIn') : siteText('auth.signIn')}
             </button>
           </div>
         )}

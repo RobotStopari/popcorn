@@ -1,17 +1,15 @@
 /**
- * Central copy for the Popcorn admin UI.
+ * Central copy for the Popcorn admin UI and fixed public-site UI strings.
  *
  * Edit headings, labels, placeholders, hints, buttons, and messages here.
- * Use adminText('section.key') in components via src/utils/admin-text.js.
+ * - Admin: adminText('section.key') via src/utils/admin-text.js
+ * - Public site (non-editable): siteText('section.key') via the same module
  *
  * Categories:
- * - shell: sidebar, navbar, brand, document titles
- * - common: shared buttons, loading states, table columns
- * - auth / profile: login gate and profile modal
- * - users, blog, events, pages, menu, siteTextsPage, colors: list pages
- * - pageBlocks: block palette labels, descriptions, builder summaries
+ * - ADMIN_TEXTS: shell, common, auth, users, blog, events, pages, menu, …
+ * - SITE_UI_TEXTS: blog, events, comments, calendar, nav, notFound, instagram, …
  *
- * Site text field labels (public copy editor) remain in src/data/site-texts.js.
+ * Editable public copy (site texts panel) remains in src/data/site-texts.js.
  * Event/blog upload hints remain in src/data/event-images.js and blog-images.js.
  */
 export const ADMIN_TEXTS = {
@@ -29,8 +27,11 @@ export const ADMIN_TEXTS = {
         events: 'Akce',
         blog: 'Blog',
         notifications: 'Upozornění',
+        statistiky: 'Statistiky',
         pages: 'Stránky',
         menu: 'Menu',
+        odkazy: 'Odkazy',
+        publikace: 'Publikace',
         texts: 'Texty',
         settings: 'Nastavení',
         colors: 'Barvy',
@@ -120,6 +121,22 @@ export const ADMIN_TEXTS = {
         admin: 'Admin',
       },
       deleteAria: 'Smazat uživatele {name}',
+      notifyEmailsButton: 'E-maily při novém příspěvku',
+    },
+    notifyEmails: {
+      title: 'E-maily při novém blogovém příspěvku',
+      eyebrow: 'Upozornění',
+      description: 'Tyto adresy dostanou e-mail vždy, když někdo vytvoří nový blogový příspěvek na webu.',
+      recipientsHeading: 'Příjemci',
+      empty: 'Zatím žádné e-mailové adresy. Přidejte je výše nebo použijte tlačítko pro administrátory.',
+      inputPlaceholder: 'např. admin@gmail.com',
+      addAdminsButton: 'Přidat všechny administrátory',
+      removeAria: 'Odebrat {email}',
+      invalidEmail: 'Zadejte platnou e-mailovou adresu.',
+      duplicateEmail: 'Tato adresa už je v seznamu.',
+      limitReached: 'Seznam může mít maximálně 50 adres.',
+      saveFailed: 'Uložení se nezdařilo.',
+      loadFailed: 'Načtení e-mailů se nezdařilo.',
     },
     deleteDialog: {
       title: 'Smazat uživatele?',
@@ -163,16 +180,37 @@ export const ADMIN_TEXTS = {
       slugHint: 'Adresa pod /blog/… — jen malá písmena, čísla a pomlčky.',
       slugPlaceholder: 'jak-jsme-prozili-letni-setkani',
       coverLabel: 'Titulní fotka',
+      coverPatternRefresh: 'Nový vzor',
+      coverPatternRefreshAria: 'Vygenerovat nový náhodný vzor titulní fotky',
       keywordsLabel: 'Klíčová slova',
       keywordsHint: 'Volitelné, oddělená čárkou. Maximálně 15.',
       keywordsPlaceholder: 'komunita, setkání, inspirace',
       bodyLabel: 'Text příspěvku',
+      shortBodyLabel: 'Krátký text',
+      shortBodyHint: 'Volitelné. Zobrazí se jen začátek textu v kartě příspěvku.',
       authorLabel: 'Autor příspěvku',
       authorShort: 'Autor',
+      authorPlaceholder: 'Jméno autora',
       galleryLabel: 'Galerie fotek',
       galleryUpload: 'Nahrát fotky do galerie',
       createButton: 'Vytvořit příspěvek',
       pickAuthor: 'Vyberte autora příspěvku.',
+      externalToggle: 'Externí příspěvek',
+      externalHint: 'Odkazuje na článek mimo web. Nemá vlastní stránku na blogu, jen kartu s odkazem ven.',
+      externalUrlLabel: 'Odkaz na původní příspěvek',
+      externalUrlHint: 'Povinná HTTPS adresa článku mimo tento web.',
+      externalUrlPlaceholder: 'https://example.com/clanek',
+      errors: {
+        titleRequired: 'Název příspěvku je povinný.',
+        titleTooLong: 'Název může mít maximálně 200 znaků.',
+        keywordsTooMany: 'Příspěvek může mít maximálně {max} klíčových slov.',
+        externalUrlRequired: 'Odkaz na původní příspěvek je povinný.',
+        externalUrlInvalid: 'Odkaz na původní příspěvek musí být platná HTTPS adresa.',
+        externalAuthorRequired: 'Jméno autora je povinné.',
+        slugRequired: 'URL příspěvku je povinná.',
+        slugInvalid: 'URL smí obsahovat jen malá písmena, čísla a pomlčky.',
+        bodyRequired: 'Text příspěvku je povinný.',
+      },
     },
     comments: {
       title: 'Reakce na příspěvek',
@@ -316,6 +354,203 @@ export const ADMIN_TEXTS = {
     },
   },
 
+  statistikyPage: {
+    title: 'Statistiky',
+    subtitle: 'Přehled návštěvnosti, interakcí, zařízení, stránek, blogu a akcí.',
+    loading: 'Načítám statistiky…',
+    loadFailed: 'Statistiky se nepodařilo načíst.',
+    empty: 'Pro zvolené období zatím nejsou žádná data.',
+    kpis: {
+      pageViews: 'Zobrazení stránek',
+      pageViewsDesc: 'Kolikrát se za období otevřela libovolná stránka webu.',
+      sessions: 'Relace',
+      sessionsDesc: 'Počet samostatných návštěv (jedna návštěva = jeden příchod).',
+      avgTime: 'Průměrný čas na webu',
+      avgTimeDesc: 'Průměrná doba, kterou návštěvník stráví za jednu návštěvu.',
+      mobileShare: 'Mobil + tablet',
+      mobileShareHint: 'Podíl zobrazení z telefonu a tabletu',
+      totalClicks: 'Celkem kliknutí',
+      totalClicksDesc: 'Součet všech sledovaných interakcí (menu, sociální sítě, odkazy…).',
+      socialClicks: 'Sociální sítě',
+      socialClicksDesc: 'Kliknutí na ikony sociálních sítí ve footeru, pásu a blocích.',
+      outboundClicks: 'Externí odkazy',
+      outboundClicksDesc: 'Otevření odkazů mimo web (registrace, galerie, tlačítka…).',
+      navClicks: 'Navigace a menu',
+      navClicksDesc: 'Kliknutí na položky menu, karty a interní odkazy.',
+    },
+    charts: {
+      viewsOverTime: 'Návštěvnost v čase',
+      viewsOverTimeDesc: 'Počet zobrazení stránek po jednotlivých dnech.',
+      pageViewsOverTime: 'Konkrétní stránky v čase',
+      pageViewsOverTimeDesc: 'Vyberte stránky a porovnejte jejich návštěvnost po dnech.',
+      viewsByHour: 'Návštěvnost podle hodiny',
+      viewsByHourDesc: 'V kolik hodin návštěvníci nejčastěji otevírají stránky.',
+      devices: 'Zařízení',
+      devicesDesc: 'Z jakých typů zařízení návštěvníci web otevírají.',
+      topPages: 'Nejnavštěvovanější stránky',
+      topPagesDesc: 'Které podstránky mají nejvíce zobrazení.',
+      engagementByPage: 'Čas na stránkách',
+      engagementByPageDesc: 'Odhadovaný čas strávený na jednotlivých stránkách.',
+      socialClicks: 'Kliknutí na sociální sítě',
+      socialClicksDesc: 'Které sociální sítě návštěvníci otevírají nejčastěji.',
+      os: 'Operační systémy',
+      osDesc: 'Rozdělení zobrazení podle systému (Windows, iOS, Android…).',
+      browsers: 'Prohlížeče',
+      browsersDesc: 'Rozdělení zobrazení podle použitého prohlížeče.',
+    },
+    pagePicker: {
+      label: 'Zobrazené stránky',
+      hint: 'Vyberte až 5 stránek pro porovnání v grafu.',
+      maxReached: 'Maximum 5 stránek — nejdřív některou odeberte.',
+    },
+    axes: {
+      date: 'Datum',
+      views: 'Počet zobrazení',
+      clicks: 'Počet kliknutí',
+      hour: 'Hodina',
+      time: 'Čas na stránce',
+      os: 'Operační systém',
+      browser: 'Prohlížeč',
+      page: 'Stránka',
+    },
+    tables: {
+      topPages: 'Přehled stránek',
+      topPagesDesc: 'Úplný seznam navštívených stránek a počet jejich zobrazení.',
+      entryPages: 'Vstupní stránky',
+      entryPagesDesc: 'Na které stránce návštěvníci nejčastěji začínají.',
+      exitPages: 'Odchozí stránky',
+      exitPagesDesc: 'Poslední stránka před opuštěním webu.',
+      articles: 'Nejčtenější blogové příspěvky',
+      articlesDesc: 'Které blogové články si návštěvníci otevřeli nejčastěji.',
+      events: 'Nejnavštěvovanější akce',
+      eventsDesc: 'Které stránky akcí měly nejvíce návštěv.',
+      socialClicks: 'Sociální sítě',
+      socialClicksDesc: 'Kliknutí na jednotlivé sociální sítě.',
+      navClicks: 'Navigace a menu',
+      navClicksDesc: 'Kliknutí na položky hlavního menu a interní odkazy.',
+      outboundClicks: 'Externí odkazy',
+      outboundClicksDesc: 'Odkazy vedoucí mimo web (registrace, kalendář, tlačítka bloků…).',
+      notificationClicks: 'Oznámení na webu',
+      notificationClicksDesc: 'Kliknutí na tlačítka v popup oznámeních.',
+      contactClicks: 'Kontakty',
+      contactClicksDesc: 'Kliknutí na e-mail, telefon a kontakty pořadatelů.',
+      blogLikes: 'Lajky blogu',
+      blogLikesDesc: 'Které příspěvky dostaly nejvíce lajků.',
+      blogComments: 'Komentáře blogu',
+      blogCommentsDesc: 'Počet odeslaných komentářů podle příspěvků.',
+      sessions: 'Poslední relace návštěvníků',
+      sessionsDesc: 'Detail nejnovějších návštěv včetně zařízení a průběhu.',
+    },
+    columns: {
+      path: 'Stránka',
+      views: 'Zobrazení',
+      clicks: 'Kliknutí',
+      article: 'Příspěvek',
+      event: 'Akce',
+      target: 'Cíl',
+      started: 'Začátek',
+      device: 'Zařízení',
+      os: 'Systém',
+      browser: 'Prohlížeč',
+      pages: 'Stránky',
+      time: 'Čas na webu',
+      journey: 'Průběh návštěvy',
+    },
+  },
+
+  usefulLinks: {
+    list: {
+      title: 'Odkazy',
+      subtitle: 'Správa užitečných odkazů zobrazených na webu.',
+      newLink: 'Nový odkaz',
+      searchPlaceholder: 'Hledat podle názvu, URL, popisu nebo klíčových slov…',
+      loading: 'Načítám odkazy…',
+      loadFailed: 'Odkazy se nepodařilo načíst.',
+      saveFailed: 'Uložení odkazu se nezdařilo.',
+      empty: 'Zatím žádné odkazy.',
+      emptySearch: 'Žádný odkaz neodpovídá hledání.',
+      editAria: 'Upravit odkaz {title}',
+      deleteAria: 'Smazat odkaz {title}',
+      columns: {
+        description: 'Popis',
+      },
+    },
+    form: {
+      newTitle: 'Nový odkaz',
+      editTitle: 'Upravit odkaz',
+      titleLabel: 'Název',
+      titlePlaceholder: 'Např. Komunitní kalendář',
+      urlLabel: 'Odkaz',
+      urlHint: 'Odkaz se vždy otevře v novém okně.',
+      descriptionLabel: 'Popis',
+      descriptionPlaceholder: 'Krátký popis odkazu…',
+      keywordsLabel: 'Klíčová slova',
+      keywordsHint: 'Volitelné, oddělená čárkou. Maximálně {max}.',
+      keywordsPlaceholder: 'např. inspirace, komunita',
+      validationFailed: 'Zkontrolujte vyplněné údaje.',
+      errors: {
+        titleRequired: 'Název je povinný.',
+        titleTooLong: 'Název je příliš dlouhý.',
+        urlRequired: 'Odkaz je povinný.',
+        urlInvalid: 'Zadejte platnou adresu začínající http:// nebo https://.',
+        urlTooLong: 'Odkaz je příliš dlouhý.',
+        descriptionTooLong: 'Popis může mít maximálně {max} znaků.',
+        keywordsTooMany: 'Maximálně {max} klíčových slov.',
+      },
+    },
+    deleteDialog: {
+      title: 'Smazat odkaz?',
+      body: 'Opravdu chcete smazat odkaz „{title}“?',
+      failed: 'Smazání odkazu se nezdařilo.',
+    },
+  },
+
+  publications: {
+    list: {
+      title: 'Publikace',
+      subtitle: 'Správa knih a publikací zobrazených na webu.',
+      newPublication: 'Nová publikace',
+      searchPlaceholder: 'Hledat podle názvu, autora, popisu nebo klíčových slov…',
+      loading: 'Načítám publikace…',
+      loadFailed: 'Publikace se nepodařilo načíst.',
+      saveFailed: 'Uložení publikace se nezdařilo.',
+      empty: 'Zatím žádné publikace.',
+      emptySearch: 'Žádná publikace neodpovídá hledání.',
+      editAria: 'Upravit publikaci {title}',
+      deleteAria: 'Smazat publikaci {title}',
+      columns: {
+        author: 'Autor',
+        description: 'Popis',
+      },
+    },
+    form: {
+      newTitle: 'Nová publikace',
+      editTitle: 'Upravit publikaci',
+      titleLabel: 'Název',
+      titlePlaceholder: 'Např. Název knihy',
+      authorLabel: 'Autor',
+      authorPlaceholder: 'Např. Jan Novák',
+      descriptionLabel: 'Popis',
+      descriptionPlaceholder: 'Krátký popis publikace…',
+      keywordsLabel: 'Klíčová slova',
+      keywordsHint: 'Volitelné, oddělená čárkou. Maximálně {max}.',
+      keywordsPlaceholder: 'např. komunita, facilitace',
+      validationFailed: 'Zkontrolujte vyplněné údaje.',
+      errors: {
+        titleRequired: 'Název je povinný.',
+        titleTooLong: 'Název je příliš dlouhý.',
+        authorTooLong: 'Autor je příliš dlouhý.',
+        descriptionTooLong: 'Popis může mít maximálně {max} znaků.',
+        keywordsTooMany: 'Maximálně {max} klíčových slov.',
+      },
+    },
+    deleteDialog: {
+      title: 'Smazat publikaci?',
+      body: 'Opravdu chcete smazat publikaci „{title}“?',
+      failed: 'Smazání publikace se nezdařilo.',
+    },
+  },
+
   pages: {
     list: {
       title: 'Stránky',
@@ -408,13 +643,36 @@ export const ADMIN_TEXTS = {
   },
 
   siteTextsPage: {
-    title: 'Texty',
+    title: 'Texty webu',
     subtitle: 'Úprava textů zobrazených na veřejném webu',
     save: 'Uložit změny',
     loading: 'Načítám texty…',
     allRequired: 'Všechna pole musí být vyplněná.',
     saved: 'Uloženo.',
     saveFailed: 'Nepodařilo se uložit texty.',
+  },
+
+  uiTextsPage: {
+    title: 'Texty',
+    subtitle: 'Úprava všech textů administrace a veřejného webu',
+    save: 'Uložit změny',
+    loading: 'Načítám texty…',
+    saved: 'Uloženo.',
+    saveFailed: 'Nepodařilo se uložit texty.',
+    searchPlaceholder: 'Hledat podle hodnoty, názvu pole nebo popisu…',
+    searchAriaLabel: 'Hledat texty',
+    emptySearch: 'Žádný text neodpovídá hledání.',
+    emptyModified: 'Žádná pole nejsou upravena.',
+    showModifiedOnly: 'Jen upravené',
+    showModifiedOnlyAria: 'Zobrazit jen upravená pole',
+    resetField: 'Obnovit výchozí',
+    resetFieldAria: 'Obnovit výchozí hodnotu pro {path}',
+    fieldPath: 'Název pole',
+    defaultHint: 'Výchozí hodnota',
+    modifiedBadge: 'Upraveno',
+    categoryAdmin: 'Administrace',
+    categorySite: 'Veřejný web',
+    toggleSectionAria: 'Přepnout sekci {title}',
   },
 
   settingsPage: {
@@ -480,6 +738,9 @@ export const ADMIN_TEXTS = {
       citationSmall: 'Malá citace',
       reference: 'Reference',
       medallions: 'Medailonky',
+      cardCarousel: 'Karusel karet',
+      randomLink: 'Náhodný odkaz',
+      randomBook: 'Náhodná publikace',
     },
     descriptions: {
       paragraph: 'Textový odstavec s formátováním',
@@ -504,6 +765,9 @@ export const ADMIN_TEXTS = {
       citationSmall: 'Menší citace v šířce odstavce',
       reference: 'Kulatá fotka a citace — jako by to řekla daná osoba',
       medallions: 'Profilové karty lidí s kontakty',
+      cardCarousel: 'Horizontální karusel s kartami s odkazem',
+      randomLink: 'Náhodně vybraný odkaz z administrace',
+      randomBook: 'Náhodně vybraná publikace z administrace',
     },
     paletteGroups: {
       text: 'Text',
@@ -537,6 +801,9 @@ export const ADMIN_TEXTS = {
       emptyYoutube: 'Prázdné video',
       spaceHeight: 'Výška {height} rem',
       medallionsCount: '{count} {unit}',
+      cardCarouselCount: '{count} {unit}',
+      randomLink: 'Náhodný odkaz a odkaz na seznam všech',
+      randomBook: 'Náhodná publikace a odkaz na seznam všech',
       medallions: 'Medailonky',
       person: 'osoba',
       peopleFew: 'osoby',
@@ -556,6 +823,273 @@ export const ADMIN_TEXTS = {
   },
 };
 
+/** Fixed public-site UI copy (not editable in admin settings or page blocks). */
+export const SITE_UI_TEXTS = {
+  common: {
+    loading: 'Načítání…',
+    pageLoading: 'Načítám stránku…',
+    saving: 'Ukládám…',
+    submitting: 'Odesílám…',
+    save: 'Uložit',
+    cancel: 'Zrušit',
+    close: 'Zavřít',
+    continue: 'Pokračovat',
+    edit: 'Upravit',
+    delete: 'Smazat',
+    saveFailed: 'Uložení se nezdařilo.',
+    documentTitleSuffix: 'Komunita Popcorn',
+    loaderAriaLabel: 'Načítání stránky',
+    contact: {
+      email: 'E-mail',
+      phone: 'Telefon',
+      instagram: 'Instagram',
+      facebook: 'Facebook',
+    },
+  },
+
+  auth: {
+    signIn: 'Přihlásit se',
+    signingIn: 'Přihlašuji…',
+    signOut: 'Odhlásit se',
+  },
+
+  nav: {
+    openMenuAriaLabel: 'Otevřít menu',
+    mainAriaLabel: 'Hlavní navigace',
+    loading: 'Načítám menu…',
+  },
+
+  notFound: {
+    title: 'Stránka nenalezena',
+    message: 'Tato stránka neexistuje nebo byla přesunuta.',
+  },
+
+  notifications: {
+    closeBackdropAriaLabel: 'Zavřít upozornění',
+  },
+
+  blog: {
+    list: {
+      searchPlaceholder: 'Hledat podle názvu, klíčových slov, autora, data nebo textu…',
+      searchAriaLabel: 'Hledat v blogu',
+      keywordFilterAriaLabel: 'Filtrovat podle klíčových slov',
+      keywordFilterTitle: 'Klíčová slova',
+      keywordFilterClear: 'Zrušit výběr',
+      keywordFilterEmpty: 'Zatím žádná klíčová slova.',
+      keywordFilterSearchPlaceholder: 'Hledat klíčové slovo…',
+      keywordFilterSearchAriaLabel: 'Hledat v seznamu klíčových slov',
+      keywordFilterNoMatch: 'Žádné klíčové slovo neodpovídá hledání.',
+      loading: 'Načítám příspěvky…',
+      empty: 'Zatím žádné blogové příspěvky.',
+      emptySearch: 'Žádné příspěvky neodpovídají hledání.',
+    },
+    toolbar: {
+      newPost: 'Nový příspěvek',
+    },
+    card: {
+      readCta: 'Číst příspěvek',
+      editAriaLabel: 'Upravit příspěvek {title}',
+      deleteAriaLabel: 'Smazat příspěvek {title}',
+      externalLinkTitle: 'Otevřít původní příspěvek',
+      externalLinkAriaLabel: 'Otevřít původní příspěvek {title} na jiném webu',
+    },
+    detail: {
+      loading: 'Načítám příspěvek…',
+      backLink: '← Zpět na blog',
+      edit: 'Upravit',
+      delete: 'Smazat',
+      editAriaLabel: 'Upravit příspěvek {title}',
+      deleteAriaLabel: 'Smazat příspěvek {title}',
+      keywordsAriaLabel: 'Klíčová slova',
+    },
+    stats: {
+      ariaLabel: '{likeCount} lajků, {commentCount} komentářů',
+    },
+    profile: {
+      completeCta: 'Dokončit profil',
+      menuAriaLabel: 'Profil: {label}',
+      edit: 'Upravit profil',
+      modalTitle: 'Dokončete profil',
+      modalIntro: 'Než začnete psát na blog, vyplňte své jméno. Přezdívka je dobrovolná.',
+      nameLabel: 'Jméno',
+      nickLabel: 'Přezdívka',
+      nickHint: 'Přezdívka je dobrovolná.',
+      saveError: 'Uložení profilu se nezdařilo.',
+    },
+    authoring: {
+      profileRequired: 'Pro publikování dokončete profil a přihlaste se.',
+      createDisabled: 'Zakládání příspěvků je momentálně dostupné jen pro administrátory.',
+      slugTaken: 'URL příspěvku už používá jiný příspěvek.',
+      editOwnOnly: 'Můžete upravovat jen vlastní příspěvky.',
+      saveError: 'Uložení příspěvku se nezdařilo.',
+    },
+    engagement: {
+      sectionAriaLabel: 'Reakce na příspěvek',
+      unlikeAriaLabel: 'Odebrat like',
+      likeAriaLabel: 'Lajknout příspěvek',
+      commentsTitle: 'Komentáře',
+      commentsLoading: 'Načítám komentáře…',
+      commentsEmpty: 'Zatím žádné komentáře.',
+      commentLabel: 'Napsat komentář',
+      commentPlaceholder: 'Napište komentář…',
+      submit: 'Odeslat komentář',
+      completeProfilePrompt: 'Než budete komentovat, dokončete svůj profil.',
+      signInPrompt: 'Pro komentování se musíte přihlásit.',
+      loadCommentsError: 'Nepodařilo se načíst komentáře.',
+      anonymousLikesDisabled: 'Lajkování bez přihlášení je vypnuté.',
+      likeError: 'Like se nepodařilo uložit.',
+      addCommentError: 'Komentář se nepodařilo uložit.',
+      editCommentError: 'Komentář se nepodařilo upravit.',
+      deleteCommentError: 'Komentář se nepodařilo smazat.',
+    },
+    comment: {
+      edited: ' · upraveno',
+      editAriaLabel: 'Upravit komentář',
+      emptyError: 'Komentář nemůže být prázdný.',
+      maxLengthError: 'Komentář může mít maximálně {max} znaků.',
+    },
+  },
+
+  events: {
+    card: {
+      readPast: 'Přečíst o akci',
+      moreInfo: 'Více informací',
+    },
+    list: {
+      loading: 'Načítám akce…',
+      emptyUpcoming: 'Zatím žádné nadcházející akce.',
+      emptyPast: 'Zatím žádné proběhlé akce.',
+    },
+    upcoming: {
+      fallbackTitle: 'VyPUKne',
+      viewAll: 'Všechny nadcházející akce',
+    },
+    past: {
+      fallbackTitle: 'Proběhlé akce',
+      viewAll: 'Všechny proběhlé akce',
+      organizeCta: 'Uspořádej akci!',
+    },
+    pagination: {
+      navAriaLabel: 'Stránkování akcí',
+      prevAriaLabel: 'Předchozí stránka',
+      nextAriaLabel: 'Další stránka',
+      status: 'Strana {page} z {totalPages}',
+    },
+    detail: {
+      loading: 'Načítám akci…',
+      back: '← Zpět',
+      externalPage: 'Webová stránka akce',
+      organisersTitle: 'Organizátoři',
+      participantsTitle: 'Přihlášení účastníci',
+      descriptionTitle: 'Popis:',
+      register: 'Přihlásit se',
+      reportTitle: 'Zápis z akce',
+      galleryIntro: 'Výběr nejlepších fotek z galerie akce.',
+      allPhotos: 'Všechny fotky z akce',
+      addToCalendar: 'Přidat do kalendáře',
+      fields: {
+        departure: 'Sraz',
+        return: 'Návrat',
+        place: 'Místo',
+        price: 'Cena',
+      },
+    },
+    gallery: {
+      openImageWithAlt: 'Otevřít obrázek: {alt}',
+      openImage: 'Otevřít obrázek {index}',
+    },
+  },
+
+  usefulLinks: {
+    list: {
+      searchPlaceholder: 'Hledat podle názvu, URL, popisu nebo klíčových slov…',
+      searchAriaLabel: 'Hledat v odkazech',
+      keywordFilterAriaLabel: 'Filtrovat podle klíčových slov',
+      keywordFilterTitle: 'Klíčová slova',
+      keywordFilterClear: 'Zrušit výběr',
+      keywordFilterEmpty: 'Zatím žádná klíčová slova.',
+      keywordFilterSearchPlaceholder: 'Hledat klíčové slovo…',
+      keywordFilterSearchAriaLabel: 'Hledat v seznamu klíčových slov',
+      keywordFilterNoMatch: 'Žádné klíčové slovo neodpovídá hledání.',
+      loading: 'Načítám odkazy…',
+      empty: 'Zatím žádné odkazy.',
+      emptySearch: 'Žádný odkaz neodpovídá hledání.',
+    },
+    random: {
+      badge: 'Náhodný zajímavý odkaz',
+      fallbackTitle: 'Odkazy',
+      loading: 'Načítám odkaz…',
+      empty: 'Zatím žádné odkazy k zobrazení.',
+      viewAll: 'Zobrazit všechny {title}',
+    },
+    card: {
+      keywordsAriaLabel: 'Klíčová slova',
+    },
+  },
+
+  publications: {
+    list: {
+      searchPlaceholder: 'Hledat podle názvu, autora, popisu nebo klíčových slov…',
+      searchAriaLabel: 'Hledat v publikacích',
+      keywordFilterAriaLabel: 'Filtrovat podle klíčových slov',
+      keywordFilterTitle: 'Klíčová slova',
+      keywordFilterClear: 'Zrušit výběr',
+      keywordFilterEmpty: 'Zatím žádná klíčová slova.',
+      keywordFilterSearchPlaceholder: 'Hledat klíčové slovo…',
+      keywordFilterSearchAriaLabel: 'Hledat v seznamu klíčových slov',
+      keywordFilterNoMatch: 'Žádné klíčové slovo neodpovídá hledání.',
+      loading: 'Načítám publikace…',
+      empty: 'Zatím žádné publikace.',
+      emptySearch: 'Žádná publikace neodpovídá hledání.',
+    },
+    random: {
+      badge: 'Náhodně vybraná zajímavá publikace',
+      fallbackTitle: 'Publikace',
+      loading: 'Načítám publikaci…',
+      empty: 'Zatím žádné publikace k zobrazení.',
+      viewAll: 'Zobrazit všechny {title}',
+    },
+    card: {
+      keywordsAriaLabel: 'Klíčová slova',
+    },
+  },
+
+  calendar: {
+    prevMonthAriaLabel: 'Předchozí měsíc',
+    nextMonthAriaLabel: 'Další měsíc',
+    today: 'Dnes',
+    agendaAriaLabel: 'Akce v tomto měsíci',
+    legendAriaLabel: 'Legenda kategorií akcí',
+    months: [
+      'leden', 'únor', 'březen', 'duben', 'květen', 'červen',
+      'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec',
+    ],
+    weekdays: ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'],
+  },
+
+  instagram: {
+    postAriaLabel: 'Příspěvek na Instagramu',
+    followLabel: 'Sleduj nás na Instagramu',
+    loadingAriaLabel: 'Načítám Instagram',
+    loadError: 'Nepodařilo se načíst příspěvky z Instagramu.',
+    fallbackError: 'Příspěvky se teď nepodařilo načíst. Zkuste to později, nebo nás sledujte přímo na Instagramu.',
+    fallbackEmpty: 'Zatím tu nejsou žádné příspěvky k zobrazení.',
+    openProfile: 'Otevřít profil {handle}',
+  },
+
+  medallion: {
+    contactSection: 'Kontakt',
+    aboutSection: 'O osobě',
+    closeBackdropAriaLabel: 'Zavřít medailonek',
+  },
+};
+
+/** Calendar month/weekday labels (shared with src/data/events.js). */
+export const CALENDAR_LOCALE = {
+  months: SITE_UI_TEXTS.calendar.months,
+  weekdays: SITE_UI_TEXTS.calendar.weekdays,
+};
+
 /** Sidebar navigation groups (paths + text keys under shell.sidebar.items). */
 export const ADMIN_NAV_GROUPS = [
   [{ to: '/admin/users', itemKey: 'users' }],
@@ -569,7 +1103,15 @@ export const ADMIN_NAV_GROUPS = [
     { to: '/admin/menu', itemKey: 'menu' },
   ],
   [
+    { to: '/admin/odkazy', itemKey: 'odkazy' },
+    { to: '/admin/publikace', itemKey: 'publikace' },
+  ],
+  [
+    { to: '/admin/statistiky', itemKey: 'statistiky' },
+  ],
+  [
     { to: '/admin/settings', itemKey: 'settings' },
     { to: '/admin/colors', itemKey: 'colors' },
+    { to: '/admin/texts', itemKey: 'texts' },
   ],
 ];

@@ -1,4 +1,6 @@
 /** Build a Google Calendar event URL from structured event data */
+import { siteText } from './admin-text';
+
 export function buildGoogleCalendarUrl(event) {
   const start = formatGoogleDateTime(event.dateStart, event.timeStart);
   const end = formatGoogleDateTime(event.dateEnd, event.timeEnd);
@@ -29,14 +31,15 @@ function buildCalendarDetails(event) {
   const lines = [];
 
   if (event.description) lines.push(stripHtml(event.description));
-  if (event.sraz) lines.push(`Sraz: ${event.sraz}`);
-  if (event.navrat) lines.push(`Návrat: ${event.navrat}`);
-  if (event.misto || event.place) lines.push(`Místo: ${event.misto || event.place}`);
-  if (event.cena) lines.push(`Cena: ${event.cena}`);
+  if (event.sraz) lines.push(`${siteText('events.detail.fields.departure')}: ${event.sraz}`);
+  if (event.navrat) lines.push(`${siteText('events.detail.fields.return')}: ${event.navrat}`);
+  if (event.misto || event.place) lines.push(`${siteText('events.detail.fields.place')}: ${event.misto || event.place}`);
+  if (event.cena) lines.push(`${siteText('events.detail.fields.price')}: ${event.cena}`);
 
+  const organisersTitle = siteText('events.detail.organisersTitle');
   const organisers = event.organisersBlock || event.organisers;
   if (organisers?.contacts?.length) {
-    lines.push('', `${organisers.label || 'Organizátoři'}:`);
+    lines.push('', `${organisers.label || organisersTitle}:`);
     organisers.contacts.forEach((contact) => {
       const parts = [contact.name];
       if (contact.email) parts.push(contact.email);
@@ -44,7 +47,7 @@ function buildCalendarDetails(event) {
       lines.push(parts.join(' · '));
     });
   } else if (Array.isArray(organisers) && organisers.length) {
-    lines.push('', 'Organizátoři:');
+    lines.push('', `${organisersTitle}:`);
     organisers.forEach((contact) => {
       const parts = [contact.name];
       if (contact.email) parts.push(contact.email);

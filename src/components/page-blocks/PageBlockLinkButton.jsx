@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ICONS } from '../../data/icons';
 import { getPageBlockButtonColorStyle } from '../../utils/page-block-button-color';
+import { trackNavClick, trackOutboundClick } from '../../utils/analytics-track';
 
 function isInternalHref(href) {
   return href.startsWith('/') && !href.startsWith('//');
@@ -27,6 +28,14 @@ export default function PageBlockLinkButton({
 
   const style = getPageBlockButtonColorStyle(color);
 
+  const handleClick = () => {
+    if (openInNewTab || !isInternalHref(trimmedHref)) {
+      trackOutboundClick(trimmedHref, trimmedLabel);
+    } else {
+      trackNavClick(trimmedHref, trimmedLabel);
+    }
+  };
+
   const content = (
     <>
       <span className="page-block__link-btn-label">{trimmedLabel}</span>
@@ -42,7 +51,7 @@ export default function PageBlockLinkButton({
 
   if (!openInNewTab && isInternalHref(trimmedHref)) {
     return (
-      <Link to={trimmedHref} className={className} style={style}>
+      <Link to={trimmedHref} className={className} style={style} onClick={handleClick}>
         {content}
       </Link>
     );
@@ -55,6 +64,7 @@ export default function PageBlockLinkButton({
       style={style}
       target={openInNewTab ? '_blank' : undefined}
       rel={openInNewTab ? 'noopener noreferrer' : undefined}
+      onClick={handleClick}
     >
       {content}
     </a>

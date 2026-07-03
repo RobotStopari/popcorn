@@ -28,6 +28,7 @@ import {
   PAGE_BLOCK_WIDE_IMAGE_WIDTH_MIN,
 } from '../data/page-blocks';
 import AdminMedallionsEditor from './AdminMedallionsEditor';
+import AdminCarouselCardsEditor from './AdminCarouselCardsEditor';
 import AdminPageBlockButtonFields from './AdminPageBlockButtonFields';
 import AdminParallaxBandFields from './AdminParallaxBandFields';
 import AdminSocialLinksEditor from './AdminSocialLinksEditor';
@@ -873,6 +874,22 @@ export default function AdminPageBlockEditor({
         >
           <AdminMedallionsEditor
             people={block.people}
+            onChange={update}
+          />
+        </BlockEditorSection>
+      </div>
+    );
+  }
+
+  if (block.type === PAGE_BLOCK_TYPES.cardCarousel) {
+    return (
+      <div className="admin-page-block-editor">
+        <BlockEditorSection
+          title="Karty karuselu"
+          hint="Minimálně 2 a maximálně 20 karet. Každá má obrázek, nadpis, krátký popis a odkaz."
+        >
+          <AdminCarouselCardsEditor
+            cards={block.cards}
             onChange={update}
           />
         </BlockEditorSection>

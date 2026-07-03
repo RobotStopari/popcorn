@@ -15,6 +15,7 @@ import {
   normalizeEventCategory,
 } from '../data/event-categories';
 import { deriveEventSlug } from '../data/events';
+import { siteText } from './admin-text';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -164,7 +165,7 @@ export function normalizeEvent(raw) {
     galleryDriveHref: event.galleryLink,
     organisersBlock: organisers.length
       ? {
-          label: 'Organizátoři',
+          label: siteText('events.detail.organisersTitle'),
           contacts: organisers.map((contact) => ({
             ...contact,
             instagramHref: contact.instagram

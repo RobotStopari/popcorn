@@ -16,12 +16,19 @@ import AdminSettingsPage from './pages/AdminSettingsPage';
 import AdminPagesPage from './pages/AdminPagesPage';
 import AdminMenuPage from './pages/AdminMenuPage';
 import AdminColorsPage from './pages/AdminColorsPage';
+import AdminTextsPage from './pages/AdminTextsPage';
+import AdminStatistikyPage from './pages/AdminStatistikyPage';
+import AdminUsefulLinksPage from './pages/AdminUsefulLinksPage';
+import AdminPublicationsPage from './pages/AdminPublicationsPage';
 import { EventsProvider } from './contexts/EventsContext';
 import { BlogPostsProvider } from './contexts/BlogPostsContext';
+import { UsefulLinksProvider } from './contexts/UsefulLinksContext';
+import { PublicationsProvider } from './contexts/PublicationsContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
 import { SiteSettingsProvider } from './contexts/SiteSettingsContext';
 import { SiteMenuProvider } from './contexts/SiteMenuContext';
 import { SiteColorsProvider } from './contexts/SiteColorsContext';
+import { AppTextsProvider, getInitialAppTextsState } from './contexts/AppTextsContext';
 import { PagesProvider } from './contexts/PagesContext';
 import { usePageTransition } from './hooks/usePageTransition';
 import { useScrollRestore } from './hooks/useScrollRestore';
@@ -78,30 +85,42 @@ function AppRoutes() {
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="pages" element={<AdminPagesPage />} />
         <Route path="menu" element={<AdminMenuPage />} />
+        <Route path="odkazy" element={<AdminUsefulLinksPage />} />
+        <Route path="publikace" element={<AdminPublicationsPage />} />
         <Route path="colors" element={<AdminColorsPage />} />
+        <Route path="texts" element={<AdminTextsPage />} />
+        <Route path="statistiky" element={<AdminStatistikyPage />} />
       </Route>
     </Routes>
   );
 }
 
 export default function App({ ssrData = null }) {
+  const initialAppTextOverrides = getInitialAppTextsState(ssrData);
+
   return (
     <AdminAuthProvider>
-      <SiteColorsProvider initialColors={ssrData?.siteColors}>
-        <SiteSettingsProvider initialSettings={ssrData?.siteSettings}>
-          <PagesProvider initialPages={ssrData?.pages}>
-            <SiteMenuProvider initialMenu={ssrData?.siteMenu}>
-              <EventsProvider initialEvents={ssrData?.events}>
-                <BlogPostsProvider initialPosts={ssrData?.blogPosts}>
-                  <NotificationsProvider initialNotifications={ssrData?.notifications}>
-                    <AppRoutes />
-                  </NotificationsProvider>
-                </BlogPostsProvider>
-              </EventsProvider>
-            </SiteMenuProvider>
-          </PagesProvider>
-        </SiteSettingsProvider>
-      </SiteColorsProvider>
+      <AppTextsProvider initialOverrides={initialAppTextOverrides}>
+        <SiteColorsProvider initialColors={ssrData?.siteColors}>
+          <SiteSettingsProvider initialSettings={ssrData?.siteSettings}>
+            <PagesProvider initialPages={ssrData?.pages}>
+              <SiteMenuProvider initialMenu={ssrData?.siteMenu}>
+                <EventsProvider initialEvents={ssrData?.events}>
+                  <BlogPostsProvider initialPosts={ssrData?.blogPosts}>
+                    <UsefulLinksProvider initialLinks={ssrData?.usefulLinks}>
+                      <PublicationsProvider initialPublications={ssrData?.publications}>
+                        <NotificationsProvider initialNotifications={ssrData?.notifications}>
+                          <AppRoutes />
+                        </NotificationsProvider>
+                      </PublicationsProvider>
+                    </UsefulLinksProvider>
+                  </BlogPostsProvider>
+                </EventsProvider>
+              </SiteMenuProvider>
+            </PagesProvider>
+          </SiteSettingsProvider>
+        </SiteColorsProvider>
+      </AppTextsProvider>
     </AdminAuthProvider>
   );
 }

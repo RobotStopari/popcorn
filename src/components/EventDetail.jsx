@@ -3,20 +3,27 @@ import { useEvents } from '../contexts/EventsContext';
 import { ICONS } from '../data/icons';
 import { buildGoogleCalendarUrl } from '../utils/google-calendar';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
+import { siteText } from '../utils/admin-text';
+import { trackOutboundClick } from '../utils/analytics-track';
 import EventCategoryLabel from './EventCategoryLabel';
 import EventGallery from './EventGallery';
 import NotFoundPage from './NotFoundPage';
 import PersonContactLink from './PersonContactLink';
 
 const FIELD_ICONS = {
-  Sraz: ICONS.eventSraz,
-  Návrat: ICONS.eventNavrat,
-  Místo: ICONS.eventMisto,
-  Cena: ICONS.eventCena,
+  departure: ICONS.eventSraz,
+  return: ICONS.eventNavrat,
+  place: ICONS.eventMisto,
+  price: ICONS.eventCena,
 };
 
-function InfoField({ label, value }) {
-  const icon = FIELD_ICONS[label];
+function eventFieldLabel(fieldKey) {
+  return siteText(`events.detail.fields.${fieldKey}`);
+}
+
+function InfoField({ fieldKey, value }) {
+  const icon = FIELD_ICONS[fieldKey];
+  const label = eventFieldLabel(fieldKey);
 
   return (
     <div className="event-detail__field">
@@ -33,8 +40,9 @@ function InfoField({ label, value }) {
   );
 }
 
-function FieldPart({ label, value }) {
-  const icon = FIELD_ICONS[label];
+function FieldPart({ fieldKey, value }) {
+  const icon = FIELD_ICONS[fieldKey];
+  const label = eventFieldLabel(fieldKey);
 
   return (
     <div className="event-detail__field-part">
@@ -57,18 +65,19 @@ function ScheduleRow({ event }) {
   return (
     <div className="event-detail__schedule-row">
       <div className="event-detail__field event-detail__field--combined">
-        <FieldPart label="Sraz" value={event.sraz} />
+        <FieldPart fieldKey="departure" value={event.sraz} />
         <div className="event-detail__field-divider" aria-hidden="true" />
-        <FieldPart label="Návrat" value={event.navrat} />
+        <FieldPart fieldKey="return" value={event.navrat} />
       </div>
       <a
         href={calendarUrl}
         className="event-detail__calendar-btn btn btn--outline"
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => trackOutboundClick(calendarUrl, siteText('events.detail.addToCalendar'))}
       >
         <span className="event-detail__calendar-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ICONS.eventCalendar }} />
-        <span className="event-detail__calendar-label">Přidat do kalendáře</span>
+        <span className="event-detail__calendar-label">{siteText('events.detail.addToCalendar')}</span>
       </a>
     </div>
   );
@@ -114,14 +123,14 @@ function Organisers({ organisers }) {
               <PersonContactLink
                 type="instagram"
                 href={contact.instagramHref}
-                label="Instagram"
+                label={siteText('common.contact.instagram')}
                 tooltip={contact.instagram}
                 external
               />
               <PersonContactLink
                 type="facebook"
                 href={contact.facebookHref}
-                label="Facebook"
+                label={siteText('common.contact.facebook')}
                 tooltip={contact.facebook}
                 external
               />
@@ -136,7 +145,7 @@ function Organisers({ organisers }) {
 function Participants({ participants }) {
   return (
     <section className="event-detail__block reveal">
-      <h2 className="event-detail__block-title">Přihlášení účastníci</h2>
+      <h2 className="event-detail__block-title">{siteText('events.detail.participantsTitle')}</h2>
       <ul className="event-detail__participants">
         {participants.map((name) => (
           <li key={name}>{name}</li>
@@ -170,7 +179,7 @@ function UpcomingDetail({ event }) {
         {hasMainContent && (
           <div className="event-detail__main reveal">
             {event.hasDescription && (
-              <RichTextBlock title="Popis:" html={event.description} />
+              <RichTextBlock title={siteText('events.detail.descriptionTitle')} html={event.description} />
             )}
             {event.organisersBlock && <Organisers organisers={event.organisersBlock} />}
           </div>
@@ -185,8 +194,8 @@ function UpcomingDetail({ event }) {
               showDescription
             />
             <ScheduleRow event={event} />
-            {event.hasPlace && <InfoField label="Místo" value={event.misto} />}
-            {event.hasPrice && <InfoField label="Cena" value={event.cena} />}
+            {event.hasPlace && <InfoField fieldKey="place" value={event.misto} />}
+            {event.hasPrice && <InfoField fieldKey="price" value={event.cena} />}
           </div>
         </aside>
       </div>
@@ -195,8 +204,14 @@ function UpcomingDetail({ event }) {
 
       {event.hasRegistration && (
         <div className="event-detail__register reveal">
-          <a href={event.registerHref} className="btn btn--primary btn--large" target="_blank" rel="noopener noreferrer">
-            Přihlásit se
+          <a
+            href={event.registerHref}
+            className="btn btn--primary btn--large"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackOutboundClick(event.registerHref, siteText('events.detail.register'))}
+          >
+            {siteText('events.detail.register')}
           </a>
         </div>
       )}
@@ -218,7 +233,7 @@ function PastDetail({ event }) {
     <>
       {event.hasReport && reportHtml && (
         <section className="event-detail__report reveal">
-          <h2 className="event-detail__report-title">Zápis z akce</h2>
+          <h2 className="event-detail__report-title">{siteText('events.detail.reportTitle')}</h2>
           <div
             className="event-detail__report-body event-detail__description--rich"
             dangerouslySetInnerHTML={{ __html: reportHtml }}
@@ -229,14 +244,20 @@ function PastDetail({ event }) {
       {event.pastGalleryImages.length > 0 && (
         <EventGallery
           images={event.pastGalleryImages}
-          intro="Výběr nejlepších fotek z galerie akce."
+          intro={siteText('events.detail.galleryIntro')}
         />
       )}
 
       {event.hasGalleryLink && (
         <div className="event-detail__gallery-link reveal">
-          <a href={event.galleryDriveHref} className="btn btn--outline" target="_blank" rel="noopener noreferrer">
-            Všechny fotky z akce
+          <a
+            href={event.galleryDriveHref}
+            className="btn btn--outline"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackOutboundClick(event.galleryDriveHref, siteText('events.detail.allPhotos'))}
+          >
+            {siteText('events.detail.allPhotos')}
           </a>
         </div>
       )}
@@ -245,7 +266,7 @@ function PastDetail({ event }) {
 }
 
 function BackLink({ className = 'event-detail__back' }) {
-  return <a href="/" className={`${className} reveal`}>← Zpět</a>;
+  return <a href="/" className={`${className} reveal`}>{siteText('events.detail.back')}</a>;
 }
 
 export default function EventDetail({ slug }) {
@@ -255,7 +276,7 @@ export default function EventDetail({ slug }) {
   if (loading) {
     return (
       <article className="event-detail container">
-        <p className="event-detail__loading">Načítám akci…</p>
+        <p className="event-detail__loading">{siteText('events.detail.loading')}</p>
       </article>
     );
   }
@@ -290,8 +311,9 @@ export default function EventDetail({ slug }) {
             className={`btn btn--external btn--large${past ? ' btn--external--past' : ''}`}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackOutboundClick(event.externalPageUrl, siteText('events.detail.externalPage'))}
           >
-            Webová stránka akce
+            {siteText('events.detail.externalPage')}
           </a>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { resolveSiteBranding } from '../utils/site-branding';
+import { siteText } from '../utils/admin-text';
 import NavMenu from './NavMenu';
 
 export default function Navbar({ minimal = false }) {
@@ -19,7 +20,7 @@ export default function Navbar({ minimal = false }) {
 
         {!minimal && (
           <>
-            <button className="navbar__toggle" id="navToggle" type="button" aria-label="Otevřít menu" aria-expanded="false">
+            <button className="navbar__toggle" id="navToggle" type="button" aria-label={siteText('nav.openMenuAriaLabel')} aria-expanded="false">
               <span /><span /><span />
             </button>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { siteText } from '../utils/admin-text';
 import AdminAvatar from './AdminAvatar';
 import AdminModalPanel from './AdminModalPanel';
 
@@ -55,7 +56,7 @@ export default function BlogCompleteProfileModal({ open, onClose }) {
     setSaving(false);
 
     if (ok) onClose();
-    else setError(authError || 'Uložení profilu se nezdařilo.');
+    else setError(authError || siteText('blog.profile.saveError'));
   };
 
   return createPortal(
@@ -68,14 +69,14 @@ export default function BlogCompleteProfileModal({ open, onClose }) {
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
       <AdminModalPanel>
         <AdminAvatar photoURL={photoURL} name={name} email={user.email} />
-        <h2 id="blog-complete-profile-title" className="admin-modal__title">Dokončete profil</h2>
+        <h2 id="blog-complete-profile-title" className="admin-modal__title">{siteText('blog.profile.modalTitle')}</h2>
         <p className="admin-modal__text">
-          Než začnete psát na blog, vyplňte své jméno. Přezdívka je dobrovolná.
+          {siteText('blog.profile.modalIntro')}
         </p>
 
         <form className="admin-form" onSubmit={handleSubmit}>
           <label className="admin-form__label" htmlFor="blog-profile-name">
-            Jméno
+            {siteText('blog.profile.nameLabel')}
           </label>
           <input
             id="blog-profile-name"
@@ -88,7 +89,7 @@ export default function BlogCompleteProfileModal({ open, onClose }) {
           />
 
           <label className="admin-form__label" htmlFor="blog-profile-nick">
-            Přezdívka
+            {siteText('blog.profile.nickLabel')}
           </label>
           <input
             id="blog-profile-nick"
@@ -98,16 +99,16 @@ export default function BlogCompleteProfileModal({ open, onClose }) {
             onChange={(event) => setNick(event.target.value)}
             autoComplete="nickname"
           />
-          <p className="admin-form__hint">Přezdívka je dobrovolná.</p>
+          <p className="admin-form__hint">{siteText('blog.profile.nickHint')}</p>
 
           {error && <p className="admin-error">{error}</p>}
 
           <div className="admin-modal__actions">
             <button type="button" className="btn btn--outline" onClick={signOutUser}>
-              Odhlásit se
+              {siteText('auth.signOut')}
             </button>
             <button type="submit" className="btn btn--primary" disabled={saving || !name.trim()}>
-              {saving ? 'Ukládám…' : 'Pokračovat'}
+              {saving ? siteText('common.saving') : siteText('common.continue')}
             </button>
           </div>
         </form>

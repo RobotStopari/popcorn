@@ -1,12 +1,13 @@
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { resolveSiteBranding } from '../utils/site-branding';
+import { siteText } from '../utils/admin-text';
 
 export default function Loader() {
   const { settings } = useSiteSettings();
   const branding = resolveSiteBranding(settings);
 
   return (
-    <div id="pageLoader" className="loader" role="status" aria-live="polite" aria-label="Načítání stránky">
+    <div id="pageLoader" className="loader" role="status" aria-live="polite" aria-label={siteText('common.loaderAriaLabel')}>
       <div className="loader__inner">
         <div className="loader__burst" aria-hidden="true">
           <span /><span /><span /><span /><span /><span />

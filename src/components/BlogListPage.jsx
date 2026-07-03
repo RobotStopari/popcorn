@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { pagePath, getPageIntro } from '../data/pages';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
 import AdminDeleteBlogPostDialog from './AdminDeleteBlogPostDialog';
+import BlogKeywordFilter from './BlogKeywordFilter';
 import BlogPageToolbar from './BlogPageToolbar';
 import BlogPostCard from './BlogPostCard';
 import EventsPagination from './EventsPagination';
@@ -10,6 +11,7 @@ import SectionLabel from './SectionLabel';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
 import { filterPostsBySearch } from '../utils/blog-post-format';
+import { siteDocumentTitle, siteText } from '../utils/admin-text';
 
 const PAGE_SIZE = 20;
 
@@ -24,6 +26,7 @@ export default function BlogListPage({ page }) {
   const {
     canAuthor,
     canManagePost,
+    allowExternalPosts,
     formOpen,
     editingPost,
     postToDelete,
@@ -62,7 +65,7 @@ export default function BlogListPage({ page }) {
 
   useEffect(() => {
     if (!page?.title) return;
-    document.title = `${page.title} — Komunita Popcorn`;
+    document.title = siteDocumentTitle(page.title);
   }, [page?.title]);
 
   useEffect(() => {
@@ -104,19 +107,14 @@ export default function BlogListPage({ page }) {
 
         <p className="events-list__intro reveal">{intro}</p>
 
-        <div className="blog-list__search reveal">
-          <input
-            type="search"
-            className="blog-list__search-input"
-            placeholder="Hledat podle názvu, klíčových slov, autora, data nebo textu…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            aria-label="Hledat v blogu"
-          />
-        </div>
+        <BlogKeywordFilter
+          posts={posts}
+          search={search}
+          onSearchChange={setSearch}
+        />
 
         {loading ? (
-          <p className="section__empty">Načítám příspěvky…</p>
+          <p className="section__empty">{siteText('blog.list.loading')}</p>
         ) : pagePosts.length > 0 ? (
           <div className="blog-grid reveal-stagger">
             {pagePosts.map((post, index) => (
@@ -134,8 +132,8 @@ export default function BlogListPage({ page }) {
         ) : (
           <p className="section__empty">
             {search.trim()
-              ? 'Žádné příspěvky neodpovídají hledání.'
-              : 'Zatím žádné blogové příspěvky.'}
+              ? siteText('blog.list.emptySearch')
+              : siteText('blog.list.empty')}
           </p>
         )}
 
@@ -152,6 +150,8 @@ export default function BlogListPage({ page }) {
         open={formOpen}
         post={editingPost}
         author={formAuthor}
+        allowExternalPosts={allowExternalPosts}
+        posts={posts}
         onClose={closeForm}
         onSave={handleSave}
         saveError={saveError}

@@ -4,13 +4,14 @@ import { useEvents } from '../contexts/EventsContext';
 import { usePages } from '../contexts/PagesContext';
 import EventCard from './EventCard';
 import SectionLabel from './SectionLabel';
+import { siteText } from '../utils/admin-text';
 
 export default function PastEvents() {
   const { pastTop, loading } = useEvents();
   const { getEventsPastPage, getPageById } = usePages();
   const listPage = getEventsPastPage();
   const organizePage = getPageById('usporadej');
-  const label = listPage?.title || 'Proběhlé akce';
+  const label = listPage?.title || siteText('events.past.fallbackTitle');
   const pastHref = listPage ? pagePath(listPage) : '/probehle';
   const organizeHref = organizePage ? pagePath(organizePage) : '/usporadej';
 
@@ -19,7 +20,7 @@ export default function PastEvents() {
       <div className="container">
         <SectionLabel label={label} />
         {loading ? (
-          <p className="section__empty">Načítám akce…</p>
+          <p className="section__empty">{siteText('events.list.loading')}</p>
         ) : (
           <div className="cards-grid reveal-stagger">
             {pastTop.map((event, index) => (
@@ -28,14 +29,14 @@ export default function PastEvents() {
           </div>
         )}
         {!loading && !pastTop.length && (
-          <p className="section__empty">Zatím žádné proběhlé akce.</p>
+          <p className="section__empty">{siteText('events.list.emptyPast')}</p>
         )}
         <div className="section__cta section__cta--double reveal-stagger">
           <Link to={pastHref} className="btn btn--primary reveal">
-            Všechny proběhlé akce
+            {siteText('events.past.viewAll')}
           </Link>
           <Link to={organizeHref} className="btn btn--secondary reveal">
-            Uspořádej akci!
+            {siteText('events.past.organizeCta')}
           </Link>
         </div>
       </div>

@@ -12,6 +12,9 @@ import { getEventCoverStyle } from '../../utils/event-cover-pattern';
 import { getImageTextGridStyle, getImageTripletBlockStyle, getNegativeSpaceBlockStyle, getReferenceGridStyle, getSpaceBlockStyle, getWideImageBlockStyle, isReferenceWideLayout } from '../../utils/page-blocks';
 import { buildYoutubeEmbedHtml, transformRichTextForDisplay } from '../../utils/rich-text-embeds';
 import MedallionsBlock from './MedallionsBlock';
+import CardCarouselBlock from './CardCarouselBlock';
+import RandomLinkBlock from './RandomLinkBlock';
+import RandomBookBlock from './RandomBookBlock';
 import PageBlockLinkButton from './PageBlockLinkButton';
 
 function CitationBlock({ block }) {
@@ -540,6 +543,15 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
 
     case PAGE_BLOCK_TYPES.medallions:
       return <MedallionsBlock block={block} />;
+
+    case PAGE_BLOCK_TYPES.cardCarousel:
+      return <CardCarouselBlock block={block} />;
+
+    case PAGE_BLOCK_TYPES.randomLink:
+      return <RandomLinkBlock />;
+
+    case PAGE_BLOCK_TYPES.randomBook:
+      return <RandomBookBlock />;
 
     default:
       return null;

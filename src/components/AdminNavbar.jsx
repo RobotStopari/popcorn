@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAdminShell } from '../contexts/AdminShellContext';
+import { useAppTexts } from '../contexts/AppTextsContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { adminText } from '../utils/admin-text';
 import AdminAvatar from './AdminAvatar';
@@ -18,6 +19,8 @@ export default function AdminNavbar() {
   } = useAdminAuth();
 
   const { toggleSidebar } = useAdminShell();
+  // Subscribe to text overrides so navbar labels refresh after admin edits.
+  const { revision } = useAppTexts();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const menuRef = useRef(null);
@@ -47,8 +50,8 @@ export default function AdminNavbar() {
 
   return (
     <>
-      <header className={`navbar admin-navbar${canAccessAdmin ? ' admin-navbar--compact' : ''}`} id="adminNavbar">
-        <div className="admin-navbar__main container">
+      <header className={`navbar admin-navbar${canAccessAdmin ? ' admin-navbar--compact' : ''}`} id="adminNavbar" data-text-revision={revision}>
+        <div className="admin-navbar__main">
           {canAccessAdmin && (
             <button
               type="button"

@@ -12,6 +12,7 @@ import {
   togglePostLike,
   updatePostComment,
 } from '../services/blog-engagement';
+import { siteText } from '../utils/admin-text';
 
 export function usePostEngagement(postId) {
   const { user, profile, profileComplete, signInWithGoogle } = useAdminAuth();
@@ -44,7 +45,7 @@ export function usePostEngagement(postId) {
         setCommentsError('');
       },
       (err) => {
-        setCommentsError(err.message || 'Nepodařilo se načíst komentáře.');
+        setCommentsError(err.message || siteText('blog.engagement.loadCommentsError'));
         setCommentsLoading(false);
       },
     );
@@ -75,7 +76,7 @@ export function usePostEngagement(postId) {
   const toggleLike = useCallback(async () => {
     if (!postId || likeLoading || !canLike) {
       if (!canLike && !user?.uid) {
-        setLikeError('Lajkování bez přihlášení je vypnuté.');
+        setLikeError(siteText('blog.engagement.anonymousLikesDisabled'));
       }
       return false;
     }
@@ -88,7 +89,7 @@ export function usePostEngagement(postId) {
       setHasLiked((prev) => !prev);
       return true;
     } catch (err) {
-      setLikeError(err.message || 'Like se nepodařilo uložit.');
+      setLikeError(err.message || siteText('blog.engagement.likeError'));
       return false;
     } finally {
       setLikeLoading(false);
@@ -110,7 +111,7 @@ export function usePostEngagement(postId) {
       await createPostComment(postId, { body, profile, user });
       return true;
     } catch (err) {
-      setActionError(err.message || 'Komentář se nepodařilo uložit.');
+      setActionError(err.message || siteText('blog.engagement.addCommentError'));
       return false;
     }
   }, [canComment, postId, profile, user]);
@@ -130,7 +131,7 @@ export function usePostEngagement(postId) {
       await updatePostComment(postId, commentId, body);
       return true;
     } catch (err) {
-      setActionError(err.message || 'Komentář se nepodařilo upravit.');
+      setActionError(err.message || siteText('blog.engagement.editCommentError'));
       return false;
     }
   }, [postId]);
@@ -144,7 +145,7 @@ export function usePostEngagement(postId) {
       await deletePostComment(postId, commentId);
       return true;
     } catch (err) {
-      setActionError(err.message || 'Komentář se nepodařilo smazat.');
+      setActionError(err.message || siteText('blog.engagement.deleteCommentError'));
       return false;
     }
   }, [postId]);

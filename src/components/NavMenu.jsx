@@ -3,6 +3,8 @@ import { ICONS } from '../data/icons';
 import { MENU_ITEM_TYPES } from '../data/site-menu';
 import { useSiteMenu } from '../contexts/SiteMenuContext';
 import { closeMobileNav } from '../hooks/useNavbar';
+import { siteText } from '../utils/admin-text';
+import { trackNavClick, trackOutboundClick } from '../utils/analytics-track';
 
 function NavLinkContent({ link }) {
   return (
@@ -19,13 +21,23 @@ function NavLinkContent({ link }) {
   );
 }
 
+function handleNavLinkClick(link) {
+  const isInternal = link.href.startsWith('/') && !link.href.startsWith('//');
+  if (link.external || !isInternal) {
+    trackOutboundClick(link.href, link.label);
+  } else {
+    trackNavClick(link.href, link.label);
+  }
+  closeMobileNav();
+}
+
 function NavLink({ link, topLevel = false }) {
   const className = topLevel ? 'nav-btn nav-link' : 'nav-link';
   const isInternal = link.href.startsWith('/') && !link.href.startsWith('//');
 
   if (isInternal && !link.external) {
     return (
-      <Link to={link.href} className={className} onClick={closeMobileNav}>
+      <Link to={link.href} className={className} onClick={() => handleNavLinkClick(link)}>
         <NavLinkContent link={link} />
       </Link>
     );
@@ -37,7 +49,7 @@ function NavLink({ link, topLevel = false }) {
       className={className}
       target={link.external ? '_blank' : undefined}
       rel={link.external ? 'noopener noreferrer' : undefined}
-      onClick={closeMobileNav}
+      onClick={() => handleNavLinkClick(link)}
     >
       <NavLinkContent link={link} />
     </a>
@@ -67,14 +79,14 @@ export default function NavMenu() {
 
   if (loading) {
     return (
-      <nav className="navbar__nav" id="navMenu" aria-label="Hlavní navigace">
-        <span className="navbar__nav-loading">Načítám menu…</span>
+      <nav className="navbar__nav" id="navMenu" aria-label={siteText('nav.mainAriaLabel')}>
+        <span className="navbar__nav-loading">{siteText('nav.loading')}</span>
       </nav>
     );
   }
 
   return (
-    <nav className="navbar__nav" id="navMenu" aria-label="Hlavní navigace">
+    <nav className="navbar__nav" id="navMenu" aria-label={siteText('nav.mainAriaLabel')}>
       {menu.map((item) => (
         item.type === MENU_ITEM_TYPES.dropdown
           ? <NavDropdown key={item.id} item={item} />

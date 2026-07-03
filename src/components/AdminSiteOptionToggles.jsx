@@ -60,6 +60,10 @@ export default function AdminSiteOptionToggles({ settings, onChange }) {
   const requestToggle = (option) => {
     const nextValue = !settings[option.id];
     const confirmCopy = nextValue ? option.confirmOn : option.confirmOff;
+    if (!confirmCopy) {
+      onChange({ [option.id]: nextValue });
+      return;
+    }
     setPendingToggle({
       optionId: option.id,
       nextValue,
@@ -78,6 +82,8 @@ export default function AdminSiteOptionToggles({ settings, onChange }) {
     <>
       <div className="admin-site-options">
         {SITE_OPTION_TOGGLES.map((option) => {
+          if (option.showWhen && !settings[option.showWhen]) return null;
+
           const enabled = Boolean(settings[option.id]);
 
           return (

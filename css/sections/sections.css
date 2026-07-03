@@ -60,6 +60,21 @@ h2.section__label-text {
   border: 2px solid var(--black);
 }
 
+.section__label-line--blue {
+  background: var(--blue);
+  border: 2px solid var(--black);
+}
+
+.section__label-text--blue {
+  background-color: var(--blue);
+  color: var(--white);
+}
+
+.section__label-text--red {
+  background-color: var(--red);
+  color: var(--white);
+}
+
 .section__cta {
   display: flex;
   justify-content: center;

@@ -4,6 +4,7 @@ import { bindFrameImage } from '../hooks/useImageFrames';
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { getInstagramProfileUrl, getInstagramUsername } from '../data/site-settings';
 import { fetchInstagramPosts } from '../services/instagram';
+import { siteText } from '../utils/admin-text';
 
 function InstagramPost({ post, index }) {
   const handleImageReady = (event) => {
@@ -18,7 +19,7 @@ function InstagramPost({ post, index }) {
         className="instagram-feed__item shine-parent"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={post.caption || 'Příspěvek na Instagramu'}
+        aria-label={post.caption || siteText('instagram.postAriaLabel')}
       >
         <div className="instagram-feed__media img-frame shine-hover">
           <img
@@ -62,7 +63,7 @@ export default function InstagramFeed() {
       .catch(() => {
         if (!cancelled) {
           setPosts([]);
-          setLoadError('Nepodařilo se načíst příspěvky z Instagramu.');
+          setLoadError(siteText('instagram.loadError'));
         }
       })
       .finally(() => {
@@ -100,14 +101,14 @@ export default function InstagramFeed() {
               dangerouslySetInnerHTML={{ __html: ICONS.instagram }}
             />
             <span className="instagram-feed__profile-copy">
-              <span className="instagram-feed__profile-label">Sleduj nás na Instagramu</span>
+              <span className="instagram-feed__profile-label">{siteText('instagram.followLabel')}</span>
               <span className="instagram-feed__profile-handle">{profileHandle}</span>
             </span>
           </a>
         </div>
 
         {loading ? (
-          <div className="instagram-feed reveal reveal--delay-1" aria-busy="true" aria-label="Načítám Instagram">
+          <div className="instagram-feed reveal reveal--delay-1" aria-busy="true" aria-label={siteText('instagram.loadingAriaLabel')}>
             {Array.from({ length: 4 }, (_, index) => (
               <div key={index} className="instagram-feed__item-wrap">
                 <div className="instagram-feed__item instagram-feed__item--placeholder" />
@@ -124,8 +125,8 @@ export default function InstagramFeed() {
           <div className="instagram-feed__fallback reveal reveal--delay-1">
             <p className="instagram-feed__fallback-text">
               {loadError
-                ? 'Příspěvky se teď nepodařilo načíst. Zkuste to později, nebo nás sledujte přímo na Instagramu.'
-                : 'Zatím tu nejsou žádné příspěvky k zobrazení.'}
+                ? siteText('instagram.fallbackError')
+                : siteText('instagram.fallbackEmpty')}
             </p>
             <a
               href={profileUrl}
@@ -133,7 +134,7 @@ export default function InstagramFeed() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Otevřít profil {profileHandle}
+              {siteText('instagram.openProfile', { handle: profileHandle })}
             </a>
           </div>
         )}

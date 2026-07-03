@@ -15,6 +15,7 @@ import {
   isSlugTaken,
   updateBlogPost,
 } from '../services/blog-posts';
+import { siteText } from '../utils/admin-text';
 
 export function useBlogAuthoring() {
   const { user, profile, profileComplete, canAccessAdmin } = useAdminAuth();
@@ -31,8 +32,15 @@ export function useBlogAuthoring() {
   const canAuthor = canCreatePosts;
 
   const canManagePost = useCallback(
-    (post) => Boolean(user && profileComplete && post?.author?.uid === user.uid),
-    [user, profileComplete],
+    (post) => Boolean(
+      user
+      && profileComplete
+      && (
+        (post?.author?.uid && post.author.uid === user.uid)
+        || (canAccessAdmin && post?.isExternal)
+      ),
+    ),
+    [user, profileComplete, canAccessAdmin],
   );
 
   const openCreate = useCallback(() => {
@@ -67,30 +75,33 @@ export function useBlogAuthoring() {
     setSaveError('');
 
     if (!user || !profileComplete) {
-      setSaveError('Pro publikování dokončete profil a přihlaste se.');
+      setSaveError(siteText('blog.authoring.profileRequired'));
       return false;
     }
 
     if (!editingPost && !canCreatePosts) {
-      setSaveError('Zakládání příspěvků je momentálně dostupné jen pro administrátory.');
+      setSaveError(siteText('blog.authoring.createDisabled'));
       return false;
     }
 
-    if (isSlugTaken(posts, payload.slug, editingPost?.id)) {
-      setSaveError('URL příspěvku už používá jiný příspěvek.');
+    if (!payload.isExternal && isSlugTaken(posts, payload.slug, editingPost?.id)) {
+      setSaveError(siteText('blog.authoring.slugTaken'));
       return false;
     }
 
     try {
       if (editingPost) {
         if (!canManagePost(editingPost)) {
-          setSaveError('Můžete upravovat jen vlastní příspěvky.');
+          setSaveError(siteText('blog.authoring.editOwnOnly'));
           return false;
         }
 
-        const author = editingPost.author?.uid
-          ? await fetchAuthorSnapshot(editingPost.author.uid) || editingPost.author
-          : buildAuthorSnapshot(profile, user);
+        let author = payload.author;
+        if (!payload.isExternal) {
+          author = editingPost.author?.uid
+            ? await fetchAuthorSnapshot(editingPost.author.uid) || editingPost.author
+            : buildAuthorSnapshot(profile, user);
+        }
 
         await updateBlogPost(editingPost.id, {
           ...payload,
@@ -98,7 +109,9 @@ export function useBlogAuthoring() {
         });
       } else {
         const publishMeta = getPublishTimestamp();
-        const author = buildAuthorSnapshot(profile, user);
+        const author = payload.isExternal
+          ? payload.author
+          : buildAuthorSnapshot(profile, user);
         const id = await createBlogPost({
           ...payload,
           ...publishMeta,
@@ -120,7 +133,7 @@ export function useBlogAuthoring() {
 
       return true;
     } catch (err) {
-      setSaveError(err.message || 'Uložení příspěvku se nezdařilo.');
+      setSaveError(err.message || siteText('blog.authoring.saveError'));
       return false;
     }
   }, [
@@ -153,6 +166,7 @@ export function useBlogAuthoring() {
     canAuthor,
     canCreatePosts,
     canManagePost,
+    allowExternalPosts: canAccessAdmin,
     formOpen,
     editingPost,
     postToDelete,

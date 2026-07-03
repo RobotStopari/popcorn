@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AdminAvatar from './AdminAvatar';
 import { formatAuthorDisplayName } from '../utils/blog-post-format';
 import { formatCommentDateTime, MAX_COMMENT_LENGTH } from '../utils/blog-comment-format';
+import { siteText } from '../utils/admin-text';
 
 function EditIcon() {
   return (
@@ -33,7 +34,7 @@ export default function BlogCommentItem({
     const ok = await onEdit(comment.id, body);
     setSaving(false);
     if (ok) setEditing(false);
-    else setError('Uložení se nezdařilo.');
+    else setError(siteText('common.saveFailed'));
   };
 
   return (
@@ -51,7 +52,7 @@ export default function BlogCommentItem({
           <span className="blog-comment__author">{formatAuthorDisplayName(comment.author)}</span>
           <time className="blog-comment__date">
             {formatCommentDateTime(comment)}
-            {comment.isEdited && ' · upraveno'}
+            {comment.isEdited && siteText('blog.comment.edited')}
           </time>
         </div>
 
@@ -67,10 +68,10 @@ export default function BlogCommentItem({
             {error && <p className="admin-error">{error}</p>}
             <div className="blog-comment__edit-actions">
               <button type="button" className="btn btn--outline btn--small" onClick={() => setEditing(false)} disabled={saving}>
-                Zrušit
+                {siteText('common.cancel')}
               </button>
               <button type="button" className="btn btn--primary btn--small" onClick={handleSave} disabled={saving || !body.trim()}>
-                {saving ? 'Ukládám…' : 'Uložit'}
+                {saving ? siteText('common.saving') : siteText('common.save')}
               </button>
             </div>
           </div>
@@ -82,7 +83,7 @@ export default function BlogCommentItem({
                 <button
                   type="button"
                   className="blog-comment__action"
-                  aria-label="Upravit komentář"
+                  aria-label={siteText('blog.comment.editAriaLabel')}
                   onClick={() => setEditing(true)}
                 >
                   <EditIcon />

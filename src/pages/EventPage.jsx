@@ -5,6 +5,7 @@ import EventDetail from '../components/EventDetail';
 import { useEvents } from '../contexts/EventsContext';
 import { useImageFrames } from '../hooks/useImageFrames';
 import { deriveEventSlug } from '../data/events';
+import { siteDocumentTitle, siteText } from '../utils/admin-text';
 
 export default function EventPage() {
   const { eventSlug } = useParams();
@@ -18,7 +19,7 @@ export default function EventPage() {
     if (loading) return;
     if (!result) return;
 
-    document.title = `${result.event.name} — Komunita Popcorn`;
+    document.title = siteDocumentTitle(result.event.name);
   }, [eventSlug, loading, result]);
 
   return <EventDetail slug={eventSlug} />;
@@ -31,7 +32,7 @@ export function EventLegacyIdRedirect() {
   if (loading) {
     return (
       <article className="event-detail container">
-        <p className="event-detail__loading">Načítám akci…</p>
+        <p className="event-detail__loading">{siteText('events.detail.loading')}</p>
       </article>
     );
   }

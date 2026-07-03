@@ -39,8 +39,10 @@ export const DEFAULT_SITE_SETTINGS = {
   brandLinks: { ...DEFAULT_BRAND_LINKS },
   footerSocialSlots: DEFAULT_FOOTER_SOCIAL_SLOTS.map((slot) => ({ ...slot })),
   comingSoonEnabled: false,
+  comingSoonBypassLocalhost: true,
   anonymousBlogLikesEnabled: true,
   membersCanCreateBlogPosts: true,
+  blogNotifyEmails: [],
   eventCategoryPublicLabel: EVENT_CATEGORIES.public.label,
   eventCategoryPublicDescription: EVENT_CATEGORIES.public.description,
   eventCategoryPrivateLabel: EVENT_CATEGORIES.private.label,
@@ -138,17 +140,25 @@ export const SITE_OPTION_TOGGLES = [
   {
     id: 'comingSoonEnabled',
     label: 'Zobrazit „Již brzy“ místo celého webu',
-    hint: 'Administrace zůstane dostupná. Veřejný web ukáže jednoduchou stránku s očekáváním.',
+    hint: 'Platí jen na komunitapopcorn.cz. Administrace zůstane dostupná. Na localhostu lze web upravovat díky nastavení níže.',
     icon: 'clock',
     defaultValue: false,
     confirmOn: {
       title: 'Zapnout režim „Již brzy“?',
-      text: 'Veřejný web se nahradí stránkou s očekáváním. Administrace zůstane dostupná.',
+      text: 'Na komunitapopcorn.cz se zobrazí stránka s očekáváním. Administrace zůstane dostupná.',
     },
     confirmOff: {
       title: 'Zveřejnit celý web?',
       text: 'Režim „Již brzy“ se vypne a návštěvníci uvidí běžný web.',
     },
+  },
+  {
+    id: 'comingSoonBypassLocalhost',
+    label: 'Na localhostu obcházet režim „Již brzy“',
+    hint: 'Výchozí zapnuto — na localhostu upravujete celý web. Vypněte, pokud chcete náhled stránky Již brzy i lokálně.',
+    icon: 'monitor',
+    defaultValue: true,
+    showWhen: 'comingSoonEnabled',
   },
 ];
 
@@ -162,6 +172,16 @@ export function normalizeFooterSocialSlots(rawSlots) {
       enabled: Boolean(slot.enabled),
     };
   });
+}
+
+export function normalizeBlogNotifyEmails(raw) {
+  if (!Array.isArray(raw)) return [];
+
+  return [...new Set(
+    raw
+      .map((entry) => String(entry || '').trim().toLowerCase())
+      .filter((entry) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)),
+  )].slice(0, 50);
 }
 
 export function normalizeBrandLinks(raw = {}) {

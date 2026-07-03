@@ -6,8 +6,25 @@ import {
   BLOG_COVER_WIDTH,
 } from '../data/blog-images';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { adminText } from '../utils/admin-text';
 import { isCloudinaryConfigured, uploadBlogPostCover } from '../services/cloudinary';
 import { setUploadBusy } from '../utils/upload-busy';
+
+export function createCoverPatternSeed() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `blog-cover-${crypto.randomUUID()}`;
+  }
+  return `blog-cover-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </svg>
+  );
+}
 
 export default function BlogCoverUpload({
   coverImage = '',
@@ -15,6 +32,7 @@ export default function BlogCoverUpload({
   previewSeed = 'blog-post',
   disabled = false,
   onChange,
+  onPreviewSeedChange,
 }) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
@@ -78,11 +96,25 @@ export default function BlogCoverUpload({
             className="admin-event-cover__image"
           />
         ) : (
-          <div
-            className="admin-event-cover__pattern"
-            style={patternStyle}
-            aria-hidden="true"
-          />
+          <>
+            <div
+              className="admin-event-cover__pattern"
+              style={patternStyle}
+              aria-hidden="true"
+            />
+            {onPreviewSeedChange && (
+              <button
+                type="button"
+                className="admin-event-cover__pattern-refresh"
+                onClick={() => onPreviewSeedChange(createCoverPatternSeed())}
+                disabled={disabled || uploading}
+                aria-label={adminText('blog.form.coverPatternRefreshAria')}
+              >
+                <RefreshIcon />
+                <span>{adminText('blog.form.coverPatternRefresh')}</span>
+              </button>
+            )}
+          </>
         )}
         <span className="admin-event-cover__ratio">{BLOG_COVER_ASPECT_RATIO}</span>
       </div>

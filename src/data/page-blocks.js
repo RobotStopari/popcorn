@@ -25,7 +25,14 @@ export const PAGE_BLOCK_TYPES = {
   citationSmall: 'citationSmall',
   reference: 'reference',
   medallions: 'medallions',
+  cardCarousel: 'cardCarousel',
+  randomLink: 'randomLink',
+  randomBook: 'randomBook',
 };
+
+export const CARD_CAROUSEL_MIN_CARDS = 2;
+export const CARD_CAROUSEL_MAX_CARDS = 20;
+export const CARD_CAROUSEL_DESCRIPTION_MAX = 300;
 
 export const PAGE_BLOCK_SPACE_HEIGHT_DEFAULT = 3;
 export const PAGE_BLOCK_SPACE_HEIGHT_MIN = 0.5;
@@ -94,6 +101,9 @@ export const PAGE_BLOCK_LABELS = {
   [PAGE_BLOCK_TYPES.citationSmall]: PAGE_BLOCK_COPY.labels.citationSmall,
   [PAGE_BLOCK_TYPES.reference]: PAGE_BLOCK_COPY.labels.reference,
   [PAGE_BLOCK_TYPES.medallions]: PAGE_BLOCK_COPY.labels.medallions,
+  [PAGE_BLOCK_TYPES.cardCarousel]: PAGE_BLOCK_COPY.labels.cardCarousel,
+  [PAGE_BLOCK_TYPES.randomLink]: PAGE_BLOCK_COPY.labels.randomLink,
+  [PAGE_BLOCK_TYPES.randomBook]: PAGE_BLOCK_COPY.labels.randomBook,
 };
 
 /** Short descriptions shown on palette cards. */
@@ -120,6 +130,9 @@ export const PAGE_BLOCK_DESCRIPTIONS = {
   [PAGE_BLOCK_TYPES.citationSmall]: PAGE_BLOCK_COPY.descriptions.citationSmall,
   [PAGE_BLOCK_TYPES.reference]: PAGE_BLOCK_COPY.descriptions.reference,
   [PAGE_BLOCK_TYPES.medallions]: PAGE_BLOCK_COPY.descriptions.medallions,
+  [PAGE_BLOCK_TYPES.cardCarousel]: PAGE_BLOCK_COPY.descriptions.cardCarousel,
+  [PAGE_BLOCK_TYPES.randomLink]: PAGE_BLOCK_COPY.descriptions.randomLink,
+  [PAGE_BLOCK_TYPES.randomBook]: PAGE_BLOCK_COPY.descriptions.randomBook,
 };
 
 export const PAGE_BLOCK_ALIGNMENTS = ['left', 'center', 'right'];
@@ -147,6 +160,9 @@ export const PAGE_BLOCK_PALETTE = [
   PAGE_BLOCK_TYPES.socials,
   PAGE_BLOCK_TYPES.instagramFeed,
   PAGE_BLOCK_TYPES.medallions,
+  PAGE_BLOCK_TYPES.cardCarousel,
+  PAGE_BLOCK_TYPES.randomLink,
+  PAGE_BLOCK_TYPES.randomBook,
 ];
 
 export const PAGE_BLOCK_EDITABLE_TYPES = new Set([
@@ -167,6 +183,7 @@ export const PAGE_BLOCK_EDITABLE_TYPES = new Set([
   PAGE_BLOCK_TYPES.citationSmall,
   PAGE_BLOCK_TYPES.reference,
   PAGE_BLOCK_TYPES.medallions,
+  PAGE_BLOCK_TYPES.cardCarousel,
 ]);
 
 export function isBlockEditable(blockOrType) {
@@ -208,6 +225,7 @@ export const PAGE_BLOCK_PALETTE_GROUPS = [
       PAGE_BLOCK_TYPES.imageTriplet,
       PAGE_BLOCK_TYPES.youtube,
       PAGE_BLOCK_TYPES.parallaxImage,
+      PAGE_BLOCK_TYPES.cardCarousel,
     ],
   },
   {
@@ -226,6 +244,8 @@ export const PAGE_BLOCK_PALETTE_GROUPS = [
       PAGE_BLOCK_TYPES.socials,
       PAGE_BLOCK_TYPES.instagramFeed,
       PAGE_BLOCK_TYPES.medallions,
+      PAGE_BLOCK_TYPES.randomLink,
+      PAGE_BLOCK_TYPES.randomBook,
     ],
   },
 ];

@@ -3,6 +3,7 @@ import { useEvents } from '../../contexts/EventsContext';
 import { useImageFrames } from '../../hooks/useImageFrames';
 import { useParallax } from '../../hooks/useParallax';
 import { getBlocksForPage } from '../../utils/page-blocks';
+import { siteDocumentTitle } from '../../utils/admin-text';
 import PageBlockRenderer from './PageBlockRenderer';
 
 export default function PageBlocksView({ page, variant = 'home' }) {
@@ -18,7 +19,7 @@ export default function PageBlocksView({ page, variant = 'home' }) {
     if (!page?.title) return;
     document.title = variant === 'home'
       ? page.title
-      : `${page.title} — Komunita Popcorn`;
+      : siteDocumentTitle(page.title);
   }, [page?.title, variant]);
 
   if (!blocks.length) return null;

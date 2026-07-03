@@ -1,4 +1,5 @@
 import BlogProfileMenu from './BlogProfileMenu';
+import { siteText } from '../utils/admin-text';
 
 export default function BlogPageToolbar({ canCreate = false, onCreate }) {
   return (
@@ -10,7 +11,7 @@ export default function BlogPageToolbar({ canCreate = false, onCreate }) {
           className="btn btn--primary btn--small blog-page-toolbar__create"
           onClick={onCreate}
         >
-          Nový příspěvek
+          {siteText('blog.toolbar.newPost')}
         </button>
       )}
     </div>

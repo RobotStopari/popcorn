@@ -1,6 +1,7 @@
 import { SOCIAL_LINK_PRESETS } from '../data/social-link-presets';
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { resolveBlockSocialLinks } from '../utils/site-branding';
+import { trackSocialClick } from '../utils/analytics-track';
 
 export default function BlockSocialLinks({ links = [] }) {
   const { settings } = useSiteSettings();
@@ -24,6 +25,7 @@ export default function BlockSocialLinks({ links = [] }) {
             aria-label={label}
             target={link.href.startsWith('mailto:') ? undefined : '_blank'}
             rel={link.href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
+            onClick={() => trackSocialClick(link.preset, label)}
           >
             <span dangerouslySetInnerHTML={{ __html: preset.icon }} />
             <span>{label}</span>

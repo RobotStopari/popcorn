@@ -5,6 +5,7 @@ import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { buildPersonContactLinks } from '../utils/contact-links';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
+import { siteText } from '../utils/admin-text';
 
 const CONTACT_ICONS = {
   email: ICONS.email,
@@ -49,10 +50,10 @@ function MedallionContactRow({ type, href, text, external = false }) {
       />
       <span className="medallion-modal__contact-copy">
         <span className="medallion-modal__contact-label">
-          {type === 'email' && 'E-mail'}
-          {type === 'phone' && 'Telefon'}
-          {type === 'instagram' && 'Instagram'}
-          {type === 'facebook' && 'Facebook'}
+          {type === 'email' && siteText('common.contact.email')}
+          {type === 'phone' && siteText('common.contact.phone')}
+          {type === 'instagram' && siteText('common.contact.instagram')}
+          {type === 'facebook' && siteText('common.contact.facebook')}
         </span>
         <span className="medallion-modal__contact-text">{label}</span>
       </span>
@@ -87,7 +88,7 @@ function MedallionContacts({ person }) {
 
   return (
     <section className="medallion-modal__section">
-      <h3 className="medallion-modal__section-title">Kontakt</h3>
+      <h3 className="medallion-modal__section-title">{siteText('medallion.contactSection')}</h3>
       <div className="medallion-modal__contacts">
         {rows.map((row) => (
           <MedallionContactRow key={row.type} {...row} />
@@ -129,7 +130,7 @@ export default function MedallionDetailModal({ person, open, onClose }) {
         type="button"
         className="medallion-modal__backdrop"
         onClick={onClose}
-        aria-label="Zavřít medailonek"
+        aria-label={siteText('medallion.closeBackdropAriaLabel')}
       />
       <div
         className="medallion-modal__panel"
@@ -140,7 +141,7 @@ export default function MedallionDetailModal({ person, open, onClose }) {
           type="button"
           className="medallion-modal__close"
           onClick={onClose}
-          aria-label="Zavřít"
+          aria-label={siteText('common.close')}
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
@@ -164,7 +165,7 @@ export default function MedallionDetailModal({ person, open, onClose }) {
 
           {displayHtml && (
             <section className="medallion-modal__section">
-              <h3 className="medallion-modal__section-title">O osobě</h3>
+              <h3 className="medallion-modal__section-title">{siteText('medallion.aboutSection')}</h3>
               <div
                 className="medallion-modal__description blog-detail__body"
                 dangerouslySetInnerHTML={{ __html: displayHtml }}

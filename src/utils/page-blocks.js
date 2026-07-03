@@ -5,6 +5,9 @@ import {
   PAGE_BLOCK_ALIGNMENTS,
   PAGE_BLOCK_TYPES,
   MEDALLION_DESCRIPTION_PREVIEW_LENGTH,
+  CARD_CAROUSEL_MIN_CARDS,
+  CARD_CAROUSEL_MAX_CARDS,
+  CARD_CAROUSEL_DESCRIPTION_MAX,
   PAGE_BLOCK_IMAGE_TRIPLET_GAP_DEFAULT,
   PAGE_BLOCK_IMAGE_TRIPLET_GAP_MAX,
   PAGE_BLOCK_IMAGE_TRIPLET_GAP_MIN,
@@ -39,6 +42,7 @@ import { normalizeParallaxOverlayFields } from './parallax-overlay';
 import { parseYoutubeVideoId } from './rich-text-embeds';
 import { DEFAULT_SITE_TEXTS } from '../data/site-texts';
 import { SPACING_TEST_PAGE_SLUG, SPACING_TEST_PAGE_MAX_BLOCKS } from '../data/spacing-test-page';
+import { MENU_LINK_TYPES } from '../data/site-menu';
 
 const MAX_BLOCKS = 50;
 const IMAGE_TRIPLET_COUNT = 3;
@@ -340,6 +344,57 @@ function normalizeMedallionPeople(rawPeople) {
   return normalized;
 }
 
+function normalizeCarouselCard(raw = {}) {
+  const linkType = raw.linkType === MENU_LINK_TYPES.custom
+    ? MENU_LINK_TYPES.custom
+    : MENU_LINK_TYPES.page;
+  let description = typeof raw.description === 'string' ? raw.description : '';
+  if (description.length > CARD_CAROUSEL_DESCRIPTION_MAX) {
+    description = description.slice(0, CARD_CAROUSEL_DESCRIPTION_MAX);
+  }
+
+  return {
+    id: typeof raw?.id === 'string' && raw.id ? raw.id : createBlockId(),
+    title: typeof raw.title === 'string' ? raw.title : '',
+    description,
+    imageUrl: typeof raw.imageUrl === 'string' ? raw.imageUrl : '',
+    imagePublicId: typeof raw.imagePublicId === 'string' ? raw.imagePublicId : '',
+    imageAlt: typeof raw.imageAlt === 'string' ? raw.imageAlt : '',
+    linkType,
+    pageId: linkType === MENU_LINK_TYPES.page ? (raw.pageId || '') : '',
+    href: linkType === MENU_LINK_TYPES.custom ? (raw.href || '') : '',
+    external: linkType === MENU_LINK_TYPES.custom ? true : Boolean(raw.external),
+  };
+}
+
+function normalizeCarouselCards(rawCards) {
+  const slots = Array.isArray(rawCards) ? rawCards : [];
+  let normalized = slots
+    .map((card) => normalizeCarouselCard(card))
+    .slice(0, CARD_CAROUSEL_MAX_CARDS);
+
+  while (normalized.length < CARD_CAROUSEL_MIN_CARDS) {
+    normalized.push(normalizeCarouselCard({}));
+  }
+
+  return normalized;
+}
+
+export function createEmptyCarouselCard() {
+  return normalizeCarouselCard({});
+}
+
+export function carouselCardHasContent(card) {
+  if (!card) return false;
+  return Boolean(
+    card.title?.trim()
+    || card.description?.trim()
+    || card.imageUrl?.trim()
+    || card.pageId?.trim()
+    || card.href?.trim(),
+  );
+}
+
 export function getSpaceBlockStyle(heightRem = PAGE_BLOCK_SPACE_HEIGHT_DEFAULT) {
   return {
     height: `${clampSpaceHeightRem(heightRem)}rem`,
@@ -453,6 +508,8 @@ function normalizeBlock(raw) {
     case PAGE_BLOCK_TYPES.pastEvents:
     case PAGE_BLOCK_TYPES.calendar:
     case PAGE_BLOCK_TYPES.instagramFeed:
+    case PAGE_BLOCK_TYPES.randomLink:
+    case PAGE_BLOCK_TYPES.randomBook:
       return { id, type };
     case PAGE_BLOCK_TYPES.socials:
       return {
@@ -521,6 +578,12 @@ function normalizeBlock(raw) {
         id,
         type,
         people: normalizeMedallionPeople(raw.people),
+      };
+    case PAGE_BLOCK_TYPES.cardCarousel:
+      return {
+        id,
+        type,
+        cards: normalizeCarouselCards(raw.cards),
       };
     default:
       return null;
@@ -669,6 +732,12 @@ export function createBlock(type, data = {}) {
         id: createBlockId(),
         type,
         people: normalizeMedallionPeople([]),
+      };
+    case PAGE_BLOCK_TYPES.cardCarousel:
+      return {
+        id: createBlockId(),
+        type,
+        cards: normalizeCarouselCards([]),
       };
     default:
       return { id: createBlockId(), type };
@@ -841,6 +910,8 @@ export function isBlockEmpty(block) {
       return false;
     case PAGE_BLOCK_TYPES.medallions:
       return !(block.people || []).some((person) => person?.name?.trim());
+    case PAGE_BLOCK_TYPES.cardCarousel:
+      return !(block.cards || []).some((card) => carouselCardHasContent(card));
     default:
       return true;
   }

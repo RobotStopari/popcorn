@@ -108,3 +108,72 @@ export async function queryFirestoreByField(collectionId, fieldPath, value, env,
     .map((row) => decodeFirestoreDocument(row.document))
     .filter(Boolean);
 }
+
+export async function fetchFirestoreDocumentWithAccessToken(collectionId, docId, env, accessToken) {
+  const { projectId } = getFirestoreConfig(env);
+  const url = `${firestoreBaseUrl(projectId)}/${collectionId}/${encodeURIComponent(docId)}`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Firestore document fetch failed (${response.status}): ${text.slice(0, 200)}`);
+  }
+
+  const doc = await response.json();
+  return decodeFirestoreDocument(doc);
+}
+
+export async function queryFirestoreByFieldWithAccessToken(
+  collectionId,
+  fieldPath,
+  value,
+  env,
+  accessToken,
+  { limit = 1 } = {},
+) {
+  const { projectId } = getFirestoreConfig(env);
+  const url = `${firestoreBaseUrl(projectId)}:runQuery`;
+
+  const fieldValue = typeof value === 'boolean'
+    ? { booleanValue: value }
+    : typeof value === 'number'
+      ? { integerValue: String(value) }
+      : { stringValue: String(value) };
+
+  const body = {
+    structuredQuery: {
+      from: [{ collectionId }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath },
+          op: 'EQUAL',
+          value: fieldValue,
+        },
+      },
+      limit,
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Firestore authenticated query failed (${response.status}): ${text.slice(0, 200)}`);
+  }
+
+  const payload = await response.json();
+  return payload
+    .map((row) => decodeFirestoreDocument(row.document))
+    .filter(Boolean);
+}

@@ -133,21 +133,24 @@ export default function AdminBlogPostsPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload, { authorUid } = {}) => {
+  const handleSave = async (payload) => {
     setSaveError('');
 
-    if (isSlugTaken(posts, payload.slug, editingPost?.id)) {
+    if (!payload.isExternal && isSlugTaken(posts, payload.slug, editingPost?.id)) {
       setSaveError(adminText('blog.list.errors.slugTaken'));
       return false;
     }
 
-    const targetUid = authorUid || editingPost?.author?.uid || user.uid;
-
     try {
-      const author = await fetchAuthorSnapshot(targetUid);
-      if (!author) {
-        setSaveError(adminText('blog.list.errors.authorLoad'));
-        return false;
+      let author = payload.author;
+
+      if (!payload.isExternal) {
+        const targetUid = payload.author?.uid || editingPost?.author?.uid || user.uid;
+        author = await fetchAuthorSnapshot(targetUid);
+        if (!author) {
+          setSaveError(adminText('blog.list.errors.authorLoad'));
+          return false;
+        }
       }
 
       if (editingPost) {
@@ -217,10 +220,17 @@ export default function AdminBlogPostsPage() {
 
           <ul className="admin-blog-posts__list">
             {filteredPosts.map((post) => (
-              <li key={post.id} className="admin-blog-posts__row">
+              <li
+                key={post.id}
+                className={`admin-blog-posts__row${post.isExternal ? ' admin-blog-posts__row--external' : ''}`}
+              >
                 <div className="admin-blog-posts__title">{post.title}</div>
                 <div className="admin-blog-posts__author">
-                  <BlogAuthor author={resolveAuthor(post.author)} size="small" />
+                  <BlogAuthor
+                    author={resolveAuthor(post.author)}
+                    size="small"
+                    className={post.isExternal ? 'blog-author--flat' : ''}
+                  />
                 </div>
                 <div className="admin-blog-posts__date">{post.dateTimeLabel}</div>
                 <div className="admin-blog-posts__actions">
@@ -259,7 +269,9 @@ export default function AdminBlogPostsPage() {
         open={formOpen}
         post={editingPost}
         allowAuthorPick
+        allowExternalPosts
         users={adminUsers}
+        posts={posts}
         defaultAuthorUid={user.uid}
         onClose={() => {
           setSaveError('');

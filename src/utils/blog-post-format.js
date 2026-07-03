@@ -3,8 +3,11 @@ import { slugifyTitle } from '../data/pages';
 import { normalizeEventImageList } from '../data/event-images';
 import { BLOG_GALLERY_MAX } from '../data/blog-images';
 import { stripRichTextEmbedsForPreview } from './rich-text-embeds';
+import { isValidHttpsUrl } from './event-format';
+import { adminText } from './admin-text';
 
 export const MAX_BLOG_KEYWORDS = 15;
+export const EXTERNAL_BLOG_AUTHOR_UID = 'external';
 
 function decodeHtmlEntities(text) {
   if (typeof document !== 'undefined') {
@@ -149,6 +152,8 @@ export function getBlogGalleryImages(post) {
 export function normalizeBlogPost(raw) {
   const author = normalizeAuthor(raw.author);
   const keywords = normalizeKeywords(raw.keywords);
+  const isExternal = raw.isExternal === true;
+  const externalUrl = isExternal ? (raw.externalUrl?.trim() || '') : '';
 
   const post = {
     id: raw.id,
@@ -161,7 +166,11 @@ export function normalizeBlogPost(raw) {
     keywords,
     coverImage: raw.coverImage?.trim() || '',
     coverPublicId: raw.coverPublicId?.trim() || '',
-    galleryImages: normalizeEventImageList(raw.galleryImages, BLOG_GALLERY_MAX),
+    galleryImages: isExternal
+      ? []
+      : normalizeEventImageList(raw.galleryImages, BLOG_GALLERY_MAX),
+    isExternal,
+    externalUrl,
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -175,6 +184,7 @@ export function normalizeBlogPost(raw) {
     authorLabel: formatAuthorDisplayName(author),
     excerpt: getBlogExcerpt({ body: post.body }),
     hasCoverImage: Boolean(post.coverImage),
+    hasExternalLink: isExternal && isValidHttpsUrl(externalUrl),
   };
 
   return normalized;
@@ -185,6 +195,43 @@ export function sortPostsByPublished(posts, descending = true) {
     const diff = getBlogPublishedDateTime(a) - getBlogPublishedDateTime(b);
     return descending ? -diff : diff;
   });
+}
+
+function postMatchesAllKeywordTerms(post, terms) {
+  return terms.every((term) => {
+    const lower = term.toLowerCase();
+    return post.keywords.some((keyword) => keyword.toLowerCase() === lower);
+  });
+}
+
+export function parseSearchTerms(query) {
+  return query
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function collectAllBlogKeywords(posts) {
+  const keywords = new Set();
+
+  posts.forEach((post) => {
+    post.keywords.forEach((keyword) => {
+      if (keyword?.trim()) keywords.add(keyword.trim());
+    });
+  });
+
+  return [...keywords].sort((a, b) => a.localeCompare(b, 'cs'));
+}
+
+function shouldUseKeywordSearch(terms, allKeywords) {
+  if (terms.length > 1) return true;
+
+  if (terms.length === 1) {
+    const lower = terms[0].toLowerCase();
+    return allKeywords.some((keyword) => keyword.toLowerCase() === lower);
+  }
+
+  return false;
 }
 
 function scorePostMatch(post, query) {
@@ -212,8 +259,16 @@ function scorePostMatch(post, query) {
 }
 
 export function filterPostsBySearch(posts, query) {
-  const trimmed = query.trim();
-  if (!trimmed) return sortPostsByPublished(posts);
+  const terms = parseSearchTerms(query);
+  if (!terms.length) return sortPostsByPublished(posts);
+
+  const allKeywords = collectAllBlogKeywords(posts);
+
+  if (shouldUseKeywordSearch(terms, allKeywords)) {
+    return sortPostsByPublished(posts.filter((post) => postMatchesAllKeywordTerms(post, terms)));
+  }
+
+  const trimmed = terms[0];
 
   return posts
     .map((post) => ({ post, score: scorePostMatch(post, trimmed) }))
@@ -251,6 +306,34 @@ export function buildAuthorSnapshot(profile, user) {
   };
 }
 
+export function buildExternalAuthorSnapshot(name) {
+  const trimmed = name?.trim() || '';
+  return {
+    uid: EXTERNAL_BLOG_AUTHOR_UID,
+    name: trimmed,
+    nick: '',
+    photoURL: '',
+    label: trimmed || 'Autor',
+  };
+}
+
+export function resolveUniqueSlug(posts, baseSlug, excludeId = null) {
+  const normalized = baseSlug?.trim() || 'prispevek';
+  let slug = normalized;
+  let suffix = 2;
+
+  while (isSlugTaken(posts, slug, excludeId)) {
+    slug = `${normalized}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
+}
+
+function isSlugTaken(posts, slug, excludeId = null) {
+  return posts.some((post) => post.slug === slug && post.id !== excludeId);
+}
+
 export function getPublishTimestamp(now = new Date()) {
   return {
     publishedDate: toIsoDate(now),
@@ -261,6 +344,7 @@ export function getPublishTimestamp(now = new Date()) {
 export function blogPostToFormState(post) {
   if (!post) {
     return {
+      isExternal: false,
       title: '',
       slug: '',
       body: '',
@@ -268,10 +352,13 @@ export function blogPostToFormState(post) {
       coverImage: '',
       coverPublicId: '',
       galleryImages: [],
+      externalUrl: '',
+      externalAuthorName: '',
     };
   }
 
   return {
+    isExternal: post.isExternal === true,
     title: post.title || '',
     slug: post.slug || '',
     body: post.body || '',
@@ -279,20 +366,30 @@ export function blogPostToFormState(post) {
     coverImage: post.coverImage || '',
     coverPublicId: post.coverPublicId || '',
     galleryImages: post.galleryImages || [],
+    externalUrl: post.externalUrl || '',
+    externalAuthorName: post.isExternal ? (post.author?.name || '') : '',
   };
 }
 
-export function formStateToBlogPayload(form, { author = null } = {}) {
+export function formStateToBlogPayload(form, { author = null, posts = [], excludeId = null } = {}) {
+  const isExternal = form.isExternal === true;
   const keywords = parseKeywordsInput(form.keywordsInput);
+  const baseSlug = isExternal
+    ? suggestSlugFromTitle(form.title)
+    : form.slug.trim();
 
   const payload = {
     title: form.title.trim(),
-    slug: form.slug.trim(),
-    body: form.body,
+    slug: isExternal ? resolveUniqueSlug(posts, baseSlug, excludeId) : baseSlug,
+    body: form.body || '',
     keywords,
     coverImage: form.coverImage?.trim() || '',
     coverPublicId: form.coverPublicId?.trim() || '',
-    galleryImages: normalizeEventImageList(form.galleryImages, BLOG_GALLERY_MAX),
+    galleryImages: isExternal
+      ? []
+      : normalizeEventImageList(form.galleryImages, BLOG_GALLERY_MAX),
+    isExternal,
+    externalUrl: isExternal ? form.externalUrl.trim() : '',
   };
 
   if (author) {
@@ -306,31 +403,47 @@ export function suggestSlugFromTitle(title) {
   return slugifyTitle(title);
 }
 
-export function validateBlogForm(form) {
+export function validateBlogForm(form, { allowExternal = false } = {}) {
   if (!form.title.trim()) {
-    return 'Název příspěvku je povinný.';
+    return adminText('blog.form.errors.titleRequired');
   }
 
   if (form.title.trim().length > 200) {
-    return 'Název může mít maximálně 200 znaků.';
-  }
-
-  if (!form.slug.trim()) {
-    return 'URL příspěvku je povinná.';
-  }
-
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug.trim())) {
-    return 'URL smí obsahovat jen malá písmena, čísla a pomlčky.';
+    return adminText('blog.form.errors.titleTooLong');
   }
 
   const keywords = parseKeywordsInput(form.keywordsInput);
   if (keywords.length > MAX_BLOG_KEYWORDS) {
-    return `Příspěvek může mít maximálně ${MAX_BLOG_KEYWORDS} klíčových slov.`;
+    return adminText('blog.form.errors.keywordsTooMany', { max: MAX_BLOG_KEYWORDS });
+  }
+
+  if (form.isExternal && allowExternal) {
+    if (!form.externalUrl.trim()) {
+      return adminText('blog.form.errors.externalUrlRequired');
+    }
+
+    if (!isValidHttpsUrl(form.externalUrl)) {
+      return adminText('blog.form.errors.externalUrlInvalid');
+    }
+
+    if (!form.externalAuthorName.trim()) {
+      return adminText('blog.form.errors.externalAuthorRequired');
+    }
+
+    return null;
+  }
+
+  if (!form.slug.trim()) {
+    return adminText('blog.form.errors.slugRequired');
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug.trim())) {
+    return adminText('blog.form.errors.slugInvalid');
   }
 
   const bodyText = stripHtml(form.body);
   if (!bodyText) {
-    return 'Text příspěvku je povinný.';
+    return adminText('blog.form.errors.bodyRequired');
   }
 
   return null;

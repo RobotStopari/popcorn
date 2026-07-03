@@ -1,4 +1,5 @@
 import { handleInstagramImageRequest, handleInstagramPostsRequest } from './instagram.js';
+import { handleBlogNotifyCreatedRequest } from './blog-notify.js';
 import shellHtml from './shell.html';
 import { buildRobotsTxt } from '../shared/robots.js';
 import {
@@ -82,6 +83,10 @@ export default {
 
     if (url.pathname === '/api/instagram/image') {
       return handleInstagramImageRequest(request);
+    }
+
+    if (url.pathname === '/api/blog/notify-created') {
+      return handleBlogNotifyCreatedRequest(request, env);
     }
 
     if (url.pathname === '/robots.txt') {

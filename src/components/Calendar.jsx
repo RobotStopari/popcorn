@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { CALENDAR_LOCALE, eventUrl } from '../data/events';
+import { eventUrl } from '../data/events';
 import { EVENT_CATEGORY_ICONS } from '../data/icons';
 import { useEventCategories } from '../hooks/useEventCategories';
 import { useEvents } from '../contexts/EventsContext';
+import { useAppTexts } from '../contexts/AppTextsContext';
 import { formatEventDateLabel } from '../utils/event-dates';
-
-const { months: MONTHS, weekdays: WEEKDAYS } = CALENDAR_LOCALE;
+import { siteText } from '../utils/admin-text';
 
 function parseDate(str) {
   const [y, m, d] = str.split('-').map(Number);
@@ -152,7 +152,7 @@ function MonthAgenda({ events, year, month }) {
   if (!monthEvents.length) return null;
 
   return (
-    <div className="cal__agenda" aria-label="Akce v tomto měsíci">
+    <div className="cal__agenda" aria-label={siteText('calendar.agendaAriaLabel')}>
       <ul className="cal__agenda-list">
         {monthEvents.map((event) => {
           const category = event.category || 'public';
@@ -250,7 +250,10 @@ function Week({ weekDays, eventLanes, events }) {
 
 export default function Calendar() {
   const { calendarEvents } = useEvents();
+  const { siteTexts } = useAppTexts();
   const { categories, categoryIds } = useEventCategories();
+  const months = siteTexts.calendar.months;
+  const weekdays = siteTexts.calendar.weekdays;
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -317,16 +320,16 @@ export default function Calendar() {
         <div className="cal reveal">
           <div className="cal__toolbar">
             <div className="cal__toolbar-start">
-              <button type="button" className="cal__nav" id="calPrev" onClick={onPrev} aria-label="Předchozí měsíc">‹</button>
-              <button type="button" className="cal__nav" id="calNext" onClick={onNext} aria-label="Další měsíc">›</button>
+              <button type="button" className="cal__nav" id="calPrev" onClick={onPrev} aria-label={siteText('calendar.prevMonthAriaLabel')}>‹</button>
+              <button type="button" className="cal__nav" id="calNext" onClick={onNext} aria-label={siteText('calendar.nextMonthAriaLabel')}>›</button>
             </div>
             <h2 className="cal__title" id="calTitle">
-              {capitalize(MONTHS[viewMonth])} {viewYear}
+              {capitalize(months[viewMonth])} {viewYear}
             </h2>
-            <button type="button" className="cal__today" id="calToday" onClick={onToday}>Dnes</button>
+            <button type="button" className="cal__today" id="calToday" onClick={onToday}>{siteText('calendar.today')}</button>
           </div>
           <div className="cal__weekdays" id="calWeekdays">
-            {WEEKDAYS.map((day) => (
+            {weekdays.map((day) => (
               <div key={day} className="cal__weekday">{day}</div>
             ))}
           </div>
@@ -341,7 +344,7 @@ export default function Calendar() {
             ))}
           </div>
           <MonthAgenda events={calendarEvents} year={viewYear} month={viewMonth} />
-          <div className="cal__legend" aria-label="Legenda kategorií akcí">
+          <div className="cal__legend" aria-label={siteText('calendar.legendAriaLabel')}>
             {categoryIds.map((categoryId) => (
               <div key={categoryId} className="cal__legend-item">
                 <span

@@ -10,6 +10,7 @@ import AdminModalPanel from './AdminModalPanel';
 const COMPACT_PREVIEW_BLOCK_TYPES = new Set([
   PAGE_BLOCK_TYPES.imageTriplet,
   PAGE_BLOCK_TYPES.medallions,
+  PAGE_BLOCK_TYPES.cardCarousel,
   PAGE_BLOCK_TYPES.buttonPair,
   PAGE_BLOCK_TYPES.imageText,
 ]);

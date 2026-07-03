@@ -3,6 +3,7 @@ import { ADMIN_NAV_GROUPS } from '../data/admin-texts';
 import { ADMIN_SIDEBAR_ICONS } from '../data/admin-sidebar-icons';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useAdminShell } from '../contexts/AdminShellContext';
+import { useAppTexts } from '../contexts/AppTextsContext';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { adminText } from '../utils/admin-text';
 import AdminBrand from './AdminBrand';
@@ -10,6 +11,8 @@ import AdminBrand from './AdminBrand';
 export default function AdminSidebar() {
   const { canAccessAdmin } = useAdminAuth();
   const { sidebarOpen, closeSidebar } = useAdminShell();
+  // Subscribe to text overrides so nav labels refresh after admin edits.
+  const { revision } = useAppTexts();
   const { mounted, visible } = useAnimatedPresence(sidebarOpen, 240);
 
   if (!canAccessAdmin) return null;
@@ -25,7 +28,7 @@ export default function AdminSidebar() {
         />
       )}
 
-      <aside className={`admin-sidebar${sidebarOpen ? ' admin-sidebar--open' : ''}`}>
+      <aside className={`admin-sidebar${sidebarOpen ? ' admin-sidebar--open' : ''}`} data-text-revision={revision}>
         <AdminBrand className="admin-sidebar__brand" onClick={closeSidebar} />
         <nav className="admin-sidebar__nav" aria-label={adminText('shell.sidebar.navAria')}>
           <p className="admin-sidebar__heading">{adminText('shell.sidebar.heading')}</p>

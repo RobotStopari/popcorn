@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import BlogPostDetail from '../components/BlogPostDetail';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useImageFrames } from '../hooks/useImageFrames';
+import { siteDocumentTitle } from '../utils/admin-text';
 
 export default function BlogPostPage() {
   const { postSlug } = useParams();
@@ -16,7 +17,7 @@ export default function BlogPostPage() {
     if (loading) return;
     if (!post) return;
 
-    document.title = `${post.title} — Komunita Popcorn`;
+    document.title = siteDocumentTitle(post.title);
   }, [postSlug, loading, post]);
 
   return <BlogPostDetail slug={postSlug} />;

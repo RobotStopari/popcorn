@@ -3,15 +3,16 @@ import { useSearchParams } from 'react-router-dom';
 import { pagePath, getPageIntro } from '../data/pages';
 import { useEvents } from '../contexts/EventsContext';
 import { getAllPast, getAllUpcoming } from '../utils/event-dates';
+import { siteDocumentTitle, siteText } from '../utils/admin-text';
 import EventCard from './EventCard';
 import EventsPagination from './EventsPagination';
 import SectionLabel from './SectionLabel';
 
 const PAGE_SIZE = 15;
 
-const EMPTY_MESSAGES = {
-  upcoming: 'Zatím žádné nadcházející akce.',
-  past: 'Zatím žádné proběhlé akce.',
+const EMPTY_MESSAGE_KEYS = {
+  upcoming: 'events.list.emptyUpcoming',
+  past: 'events.list.emptyPast',
 };
 
 export default function EventsListPage({ page, variant }) {
@@ -38,7 +39,7 @@ export default function EventsListPage({ page, variant }) {
 
   useEffect(() => {
     if (!page?.title) return;
-    document.title = `${page.title} — Komunita Popcorn`;
+    document.title = siteDocumentTitle(page.title);
   }, [page?.title]);
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function EventsListPage({ page, variant }) {
         <p className="events-list__intro reveal">{intro}</p>
 
         {loading ? (
-          <p className="section__empty">Načítám akce…</p>
+          <p className="section__empty">{siteText('events.list.loading')}</p>
         ) : pageEvents.length > 0 ? (
           <div className="cards-grid reveal-stagger">
             {pageEvents.map((event, index) => (
@@ -77,7 +78,7 @@ export default function EventsListPage({ page, variant }) {
             ))}
           </div>
         ) : (
-          <p className="section__empty">{EMPTY_MESSAGES[variant]}</p>
+          <p className="section__empty">{siteText(EMPTY_MESSAGE_KEYS[variant])}</p>
         )}
 
         {!loading && allEvents.length > 0 && (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminAvatar from '../components/AdminAvatar';
+import AdminBlogNotifyEmailsModal from '../components/AdminBlogNotifyEmailsModal';
 import AdminDeleteUserDialog from '../components/AdminDeleteUserDialog';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { formatJoinDate } from '../utils/format-date';
@@ -122,6 +123,7 @@ export default function AdminUsersPage() {
   const [listLoading, setListLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [notifyEmailsOpen, setNotifyEmailsOpen] = useState(false);
 
   useEffect(() => {
     document.title = adminDocumentTitle(adminText('users.list.title'));
@@ -200,9 +202,18 @@ export default function AdminUsersPage() {
 
   return (
     <div className="admin-content container">
-      <header className="admin-content__header">
-        <h1 className="admin-content__title">{adminText('users.list.title')}</h1>
-        <p className="admin-content__subtitle">{adminText('users.list.subtitle')}</p>
+      <header className="admin-content__header admin-content__header--actions">
+        <div>
+          <h1 className="admin-content__title">{adminText('users.list.title')}</h1>
+          <p className="admin-content__subtitle">{adminText('users.list.subtitle')}</p>
+        </div>
+        <button
+          type="button"
+          className="btn btn--outline"
+          onClick={() => setNotifyEmailsOpen(true)}
+        >
+          {adminText('users.list.notifyEmailsButton')}
+        </button>
       </header>
 
       {error && <p className="admin-error admin-content__error">{error}</p>}
@@ -266,6 +277,12 @@ export default function AdminUsersPage() {
           )}
         </div>
       )}
+
+      <AdminBlogNotifyEmailsModal
+        open={notifyEmailsOpen}
+        onClose={() => setNotifyEmailsOpen(false)}
+        adminUsers={users}
+      />
 
       <AdminDeleteUserDialog
         open={Boolean(userToDelete)}

@@ -10,14 +10,21 @@ export const PAGE_TYPES = {
   eventsUpcoming: 'events-upcoming',
   eventsPast: 'events-past',
   blogList: 'blog-list',
+  linksList: 'links-list',
+  publicationsList: 'publications-list',
   content: 'content',
 };
+
+export const USEFUL_LINKS_PAGE_ID = 'odkazy';
+export const PUBLICATIONS_PAGE_ID = 'publikace';
 
 export const PAGE_TYPE_LABELS = {
   [PAGE_TYPES.home]: 'Hlavní stránka',
   [PAGE_TYPES.eventsUpcoming]: 'Nadcházející akce',
   [PAGE_TYPES.eventsPast]: 'Proběhlé akce',
   [PAGE_TYPES.blogList]: 'Blog',
+  [PAGE_TYPES.linksList]: 'Odkazy',
+  [PAGE_TYPES.publicationsList]: 'Publikace',
   [PAGE_TYPES.content]: 'Obsah',
 };
 
@@ -40,6 +47,8 @@ export const SYSTEM_PAGE_CONFIG = {
   vypukne: { noDelete: true },
   probehle: { noDelete: true },
   blog: { noDelete: true },
+  [USEFUL_LINKS_PAGE_ID]: { noDelete: true },
+  [PUBLICATIONS_PAGE_ID]: { noDelete: true },
   [COMING_SOON_PAGE_ID]: { noDelete: true, lockSlug: true, hideSlug: true },
   [NOT_FOUND_PAGE_ID]: { noDelete: true, lockName: true, lockSlug: true, hideSlug: true },
 };
@@ -68,6 +77,18 @@ export const DEFAULT_PAGES = [
     slug: 'blog',
     title: 'Blog',
     type: PAGE_TYPES.blogList,
+  },
+  {
+    id: USEFUL_LINKS_PAGE_ID,
+    slug: 'odkazy',
+    title: 'Odkazy',
+    type: PAGE_TYPES.linksList,
+  },
+  {
+    id: PUBLICATIONS_PAGE_ID,
+    slug: 'publikace',
+    title: 'Publikace',
+    type: PAGE_TYPES.publicationsList,
   },
   {
     id: COMING_SOON_PAGE_ID,
@@ -105,15 +126,9 @@ export const DEFAULT_PAGES = [
     title: 'Uspořádej akci!',
     type: PAGE_TYPES.content,
   },
-  {
-    id: 'odkazy',
-    slug: 'odkazy',
-    title: 'Odkazy',
-    type: PAGE_TYPES.content,
-  },
 ];
 
-export const PINNED_PAGE_IDS = ['home', 'vypukne', 'probehle', 'blog', COMING_SOON_PAGE_ID, NOT_FOUND_PAGE_ID];
+export const PINNED_PAGE_IDS = ['home', 'vypukne', 'probehle', 'blog', USEFUL_LINKS_PAGE_ID, PUBLICATIONS_PAGE_ID, COMING_SOON_PAGE_ID, NOT_FOUND_PAGE_ID];
 
 export function filterAndGroupPages(pages, query = '') {
   const q = query.trim().toLowerCase();
@@ -155,6 +170,8 @@ export const PAGE_INTRO_DEFAULTS = {
   vypukne: 'Těšíme se na setkání s vámi na těchto akcích. Vyberte si tu svou a přijďte zažít společné chvíle s komunitou Popcorn.',
   probehle: 'Za námi už je spousta skvělých setkání a zážitků. Prohlédněte si, co všechno jsme společně prožili.',
   blog: 'Inspirace, zkušenosti a příběhy z komunity Popcorn. Prohlédněte si naše blogové příspěvky.',
+  [USEFUL_LINKS_PAGE_ID]: 'Užitečné odkazy, které stojí za to. Najděte inspiraci, nástroje a komunity, které doporučujeme.',
+  [PUBLICATIONS_PAGE_ID]: 'Knihy a publikace, které nás inspirovaly nebo které doporučujeme dál.',
 };
 
 export const PAGE_INTRO_FIELD_COPY = {
@@ -172,6 +189,14 @@ export const PAGE_INTRO_FIELD_COPY = {
   },
   blog: {
     label: 'Úvodní text Blog',
+    hint: 'Zobrazí se pod nadpisem stránky',
+  },
+  [USEFUL_LINKS_PAGE_ID]: {
+    label: 'Úvodní text Odkazy',
+    hint: 'Zobrazí se pod nadpisem stránky',
+  },
+  [PUBLICATIONS_PAGE_ID]: {
+    label: 'Úvodní text Publikace',
     hint: 'Zobrazí se pod nadpisem stránky',
   },
 };

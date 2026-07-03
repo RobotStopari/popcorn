@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { siteText } from '../utils/admin-text';
 
 function ArrowIcon({ direction }) {
   const rotate = direction === 'prev' ? 'rotate(90deg)' : 'rotate(-90deg)';
@@ -29,12 +30,12 @@ export default function EventsPagination({ basePath, page, totalPages }) {
   const nextPage = page < totalPages ? page + 1 : null;
 
   return (
-    <nav className="events-pagination reveal" aria-label="Stránkování akcí">
+    <nav className="events-pagination reveal" aria-label={siteText('events.pagination.navAriaLabel')}>
       {prevPage ? (
         <Link
           to={prevPage === 1 ? basePath : `${basePath}?page=${prevPage}`}
           className="events-pagination__btn"
-          aria-label="Předchozí stránka"
+          aria-label={siteText('events.pagination.prevAriaLabel')}
         >
           <ArrowIcon direction="prev" />
         </Link>
@@ -45,14 +46,14 @@ export default function EventsPagination({ basePath, page, totalPages }) {
       )}
 
       <span className="events-pagination__status">
-        Strana {page} z {totalPages}
+        {siteText('events.pagination.status', { page, totalPages })}
       </span>
 
       {nextPage ? (
         <Link
           to={`${basePath}?page=${nextPage}`}
           className="events-pagination__btn"
-          aria-label="Další stránka"
+          aria-label={siteText('events.pagination.nextAriaLabel')}
         >
           <ArrowIcon direction="next" />
         </Link>

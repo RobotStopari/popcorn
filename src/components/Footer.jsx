@@ -1,4 +1,5 @@
 import { FOOTER_ICON_SIZE } from '../data/icons';
+import { trackSocialClick, trackContactClick } from '../utils/analytics-track';
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { resolveFooterSocialLinks, resolveSiteBranding } from '../utils/site-branding';
 
@@ -24,6 +25,7 @@ export default function Footer() {
                 aria-label={social.label}
                 target={social.href.startsWith('mailto:') ? undefined : '_blank'}
                 rel={social.href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
+                onClick={() => trackSocialClick(social.id, social.label)}
                 dangerouslySetInnerHTML={{ __html: resizeIcon(social.icon, FOOTER_ICON_SIZE) }}
               />
             ))}
@@ -35,7 +37,12 @@ export default function Footer() {
         </div>
         <div className="footer__contact">
           <p>{branding.footer.contactLabel}</p>
-          <a href={`mailto:${branding.footer.contactEmail}`}>{branding.footer.contactEmail}</a>
+          <a
+            href={`mailto:${branding.footer.contactEmail}`}
+            onClick={() => trackContactClick('email', branding.footer.contactEmail)}
+          >
+            {branding.footer.contactEmail}
+          </a>
         </div>
       </div>
     </footer>

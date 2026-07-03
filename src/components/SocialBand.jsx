@@ -1,4 +1,5 @@
 import { SOCIALS } from '../data/socials';
+import { trackSocialClick } from '../utils/analytics-track';
 
 export default function SocialBand() {
   const bandSocials = SOCIALS.filter((s) => s.showInBand);
@@ -11,6 +12,7 @@ export default function SocialBand() {
           href={social.href}
           className={`social-btn social-btn--${social.id} shine-hover reveal`}
           aria-label={social.label}
+          onClick={() => trackSocialClick(social.id, social.label)}
         >
           <span dangerouslySetInnerHTML={{ __html: social.icon }} />
           <span>{social.label}</span>

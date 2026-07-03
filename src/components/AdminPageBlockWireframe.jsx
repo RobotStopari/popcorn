@@ -332,6 +332,34 @@ function WireMedallions({ block }) {
   );
 }
 
+function WireCardCarousel({ block }) {
+  const cards = Array.isArray(block.cards) ? block.cards : [];
+  const count = Math.max(cards.length, 2);
+
+  return (
+    <div className="block-wireframe__carousel">
+      <span className="block-wireframe__carousel-arrow" aria-hidden="true" />
+      <div className="block-wireframe__carousel-track">
+        {Array.from({ length: Math.min(count, 3) }, (_, index) => {
+          const card = cards[index];
+          return (
+            <div key={card?.id || index} className="block-wireframe__carousel-card">
+              <span className="block-wireframe__carousel-cover">
+                {card?.imageUrl && (
+                  <img src={card.imageUrl} alt="" className="block-wireframe__carousel-img" />
+                )}
+              </span>
+              <span className="block-wireframe__carousel-line block-wireframe__carousel-line--title" />
+              <span className="block-wireframe__carousel-line" />
+            </div>
+          );
+        })}
+      </div>
+      <span className="block-wireframe__carousel-arrow" aria-hidden="true" />
+    </div>
+  );
+}
+
 function WireWideImage({ block }) {
   return (
     <div className="block-wireframe__wide-image" style={getWideImageBlockStyle(block.maxWidthPercent)}>
@@ -543,6 +571,26 @@ export default function AdminPageBlockWireframe({ block }) {
         <WireNarrow>
           <WireMedallions block={block} />
         </WireNarrow>
+      );
+      break;
+    case PAGE_BLOCK_TYPES.cardCarousel:
+      preview = <WireCardCarousel block={block} />;
+      break;
+    case PAGE_BLOCK_TYPES.randomLink:
+      preview = (
+        <>
+          <span className="block-wireframe__cta" />
+          <WireLines lines={2} />
+          <span className="block-wireframe__cta" />
+        </>
+      );
+      break;
+    case PAGE_BLOCK_TYPES.randomBook:
+      preview = (
+        <>
+          <WireLines lines={3} />
+          <span className="block-wireframe__cta" />
+        </>
       );
       break;
     default:

@@ -16,6 +16,8 @@ import {
   NOT_FOUND_PAGE_ADMIN_TITLE,
   NOT_FOUND_PAGE_ID,
   PAGE_TYPES,
+  PUBLICATIONS_PAGE_ID,
+  USEFUL_LINKS_PAGE_ID,
   canDeletePage,
   canEditPageSlug,
   canEditPageTitle,
@@ -60,7 +62,7 @@ function normalizePage(raw, fallback = null) {
   const defaultPage = DEFAULT_PAGES.find((item) => item.id === id);
   let type = raw.type || base.type || PAGE_TYPES.content;
 
-  if (id === 'blog' && defaultPage) {
+  if ((id === 'blog' || id === USEFUL_LINKS_PAGE_ID || id === PUBLICATIONS_PAGE_ID) && defaultPage) {
     type = defaultPage.type;
   }
 

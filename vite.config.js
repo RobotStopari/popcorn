@@ -7,6 +7,7 @@ import {
   jsonResponse,
   resolveInstagramUsername,
 } from './worker/instagram.js';
+import { handleBlogNotifyCreatedRequest } from './worker/blog-notify.js';
 import { buildRobotsTxt } from './shared/robots.js';
 import {
   buildSitemapXml,
@@ -70,6 +71,34 @@ export default defineConfig(({ mode }) => {
                 }
                 return;
               }
+            }
+
+            if (req.url === '/api/blog/notify-created' && req.method === 'POST') {
+              try {
+                const url = new URL(req.url, 'http://localhost');
+                const chunks = [];
+                for await (const chunk of req) {
+                  chunks.push(chunk);
+                }
+                const body = Buffer.concat(chunks).toString();
+                const workerEnv = {
+                  ...env,
+                  FIREBASE_PROJECT_ID: env.FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID,
+                  FIREBASE_API_KEY: env.FIREBASE_API_KEY || env.VITE_FIREBASE_API_KEY,
+                  SITE_URL: env.SITE_URL || env.VITE_SITE_URL,
+                };
+                const request = new Request(url, {
+                  method: 'POST',
+                  headers: req.headers,
+                  body,
+                });
+                await sendWebResponse(await handleBlogNotifyCreatedRequest(request, workerEnv), res);
+              } catch (error) {
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                res.end(JSON.stringify({ error: error.message || 'Notification failed.' }));
+              }
+              return;
             }
 
             if (req.method !== 'GET') {

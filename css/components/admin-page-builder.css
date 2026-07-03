@@ -2213,6 +2213,129 @@ input.admin-page-meta-control {
   justify-self: start;
 }
 
+.admin-carousel-cards {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-carousel-cards__card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 2px solid color-mix(in srgb, var(--black) 12%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--orange-pale) 28%, var(--white));
+}
+
+.admin-carousel-cards__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-carousel-cards__card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.admin-carousel-cards__fields {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-carousel-cards__add {
+  justify-self: start;
+}
+
+.admin-carousel-cards__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-carousel-cards__switch {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-carousel-cards__switch .admin-toggle__track--on {
+  background: var(--orange);
+}
+
+.admin-carousel-cards__switch .admin-toggle__track--on .admin-toggle__thumb {
+  transform: translateX(18px);
+}
+
+.admin-carousel-cards__switch:focus-visible .admin-toggle__track {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.block-wireframe__carousel {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0;
+}
+
+.block-wireframe__carousel-arrow {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--black);
+  border-radius: 0.25rem;
+  background: var(--white);
+}
+
+.block-wireframe__carousel-track {
+  display: flex;
+  gap: 0.35rem;
+  overflow: hidden;
+  padding: 0.15rem 0;
+}
+
+.block-wireframe__carousel-card {
+  flex: 0 0 38%;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border: 2px solid var(--black);
+  border-radius: 0.35rem;
+  background: var(--white);
+}
+
+.block-wireframe__carousel-cover {
+  display: block;
+  aspect-ratio: 16 / 10;
+  border: 1px solid color-mix(in srgb, var(--black) 18%, transparent);
+  border-radius: 0.2rem;
+  background: var(--orange-pale);
+  overflow: hidden;
+}
+
+.block-wireframe__carousel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.block-wireframe__carousel-line {
+  display: block;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--black) 12%, transparent);
+}
+
+.block-wireframe__carousel-line--title {
+  width: 72%;
+}
+
 .block-wireframe__divider {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ import {
   DEFAULT_SITE_SETTINGS,
   EVENT_CATEGORY_FIELDS,
   SITE_SETTINGS_DOC_ID,
+  normalizeBlogNotifyEmails,
   normalizeBrandLinks,
   normalizeFooterSocialSlots,
 } from '../data/site-settings';
@@ -43,6 +44,10 @@ export function normalizeSiteSettings(data = {}) {
     brandLinks: normalizeBrandLinks(data.brandLinks),
     footerSocialSlots: normalizeFooterSocialSlots(data.footerSocialSlots),
     comingSoonEnabled: normalizeBoolean(data.comingSoonEnabled, DEFAULT_SITE_SETTINGS.comingSoonEnabled),
+    comingSoonBypassLocalhost: normalizeBoolean(
+      data.comingSoonBypassLocalhost,
+      DEFAULT_SITE_SETTINGS.comingSoonBypassLocalhost,
+    ),
     anonymousBlogLikesEnabled: normalizeBoolean(
       data.anonymousBlogLikesEnabled,
       DEFAULT_SITE_SETTINGS.anonymousBlogLikesEnabled,
@@ -51,6 +56,7 @@ export function normalizeSiteSettings(data = {}) {
       data.membersCanCreateBlogPosts,
       DEFAULT_SITE_SETTINGS.membersCanCreateBlogPosts,
     ),
+    blogNotifyEmails: normalizeBlogNotifyEmails(data.blogNotifyEmails),
     ...EVENT_CATEGORY_FIELD_IDS.reduce((acc, fieldId) => {
       acc[fieldId] = typeof data[fieldId] === 'string' && data[fieldId].trim()
         ? data[fieldId].trim()
@@ -74,8 +80,10 @@ export function serializeSiteSettings(settings) {
     brandLinks: normalized.brandLinks,
     footerSocialSlots: normalized.footerSocialSlots,
     comingSoonEnabled: normalized.comingSoonEnabled,
+    comingSoonBypassLocalhost: normalized.comingSoonBypassLocalhost,
     anonymousBlogLikesEnabled: normalized.anonymousBlogLikesEnabled,
     membersCanCreateBlogPosts: normalized.membersCanCreateBlogPosts,
+    blogNotifyEmails: normalized.blogNotifyEmails,
     ...EVENT_CATEGORY_FIELD_IDS.reduce((acc, fieldId) => {
       acc[fieldId] = normalized[fieldId];
       return acc;
@@ -98,6 +106,17 @@ export async function updateSiteSettings(settings) {
     siteSettingsRef,
     {
       ...serializeSiteSettings(settings),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function updateBlogNotifyEmails(emails) {
+  await setDoc(
+    siteSettingsRef,
+    {
+      blogNotifyEmails: normalizeBlogNotifyEmails(emails),
       updatedAt: serverTimestamp(),
     },
     { merge: true },

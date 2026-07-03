@@ -2,10 +2,13 @@ import { Outlet } from 'react-router-dom';
 import { useLoader } from '../hooks/useLoader';
 import { useNavbar } from '../hooks/useNavbar';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import { useSiteAnalytics } from '../hooks/useSiteAnalytics';
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { usePages } from '../contexts/PagesContext';
+import { shouldShowComingSoonForCurrentSite } from '../utils/coming-soon';
 import { COMING_SOON_PAGE_ID } from '../data/pages';
 import ContentPage from '../pages/ContentPage';
+import { siteText } from '../utils/admin-text';
 import Loader from './Loader';
 import PageDots from './PageDots';
 import Navbar from './Navbar';
@@ -18,8 +21,9 @@ export default function Layout() {
   const { getPageById, loading: pagesLoading } = usePages();
   useNavbar();
   useScrollReveal();
+  useSiteAnalytics();
 
-  const showComingSoon = !settingsLoading && settings.comingSoonEnabled;
+  const showComingSoon = !settingsLoading && shouldShowComingSoonForCurrentSite(settings);
   const comingSoonPage = showComingSoon ? getPageById(COMING_SOON_PAGE_ID) : null;
 
   if (showComingSoon) {
@@ -33,7 +37,7 @@ export default function Layout() {
           {pagesLoading || !comingSoonPage ? (
             <section className="section content-page-section">
               <div className="container">
-                <p className="section__empty">Načítám stránku…</p>
+                <p className="section__empty">{siteText('common.pageLoading')}</p>
               </div>
             </section>
           ) : (

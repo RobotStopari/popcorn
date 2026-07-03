@@ -1,4 +1,5 @@
 import { deriveEventSlug } from '../../shared/event-url.js';
+import { CALENDAR_LOCALE } from './admin-texts.js';
 
 /** Build URL for an event detail page */
 export function eventUrl(eventOrId) {
@@ -16,10 +17,4 @@ export function eventUrl(eventOrId) {
 
 export { deriveEventSlug };
 
-export const CALENDAR_LOCALE = {
-  months: [
-    'leden', 'únor', 'březen', 'duben', 'květen', 'červen',
-    'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec',
-  ],
-  weekdays: ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'],
-};
+export { CALENDAR_LOCALE };

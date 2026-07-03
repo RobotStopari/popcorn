@@ -5,6 +5,7 @@ import { useBlogCompleteProfile } from '../hooks/useBlogCompleteProfile';
 import AdminAvatar from './AdminAvatar';
 import AdminEditProfileModal from './AdminEditProfileModal';
 import BlogCompleteProfileModal from './BlogCompleteProfileModal';
+import { siteText } from '../utils/admin-text';
 
 export default function BlogProfileMenu() {
   const {
@@ -60,12 +61,12 @@ export default function BlogProfileMenu() {
         onClick={handleSignIn}
         disabled={signingIn}
       >
-        {signingIn ? 'Přihlašuji…' : 'Přihlásit se'}
+        {signingIn ? siteText('auth.signingIn') : siteText('auth.signIn')}
       </button>
     );
   }
 
-  const triggerLabel = profileComplete ? profileLabel : 'Dokončit profil';
+  const triggerLabel = profileComplete ? profileLabel : siteText('blog.profile.completeCta');
 
   return (
     <>
@@ -75,7 +76,7 @@ export default function BlogProfileMenu() {
           className="admin-profile-menu__trigger"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
-          aria-label={`Profil: ${triggerLabel}`}
+          aria-label={siteText('blog.profile.menuAriaLabel', { label: triggerLabel })}
           onClick={(event) => {
             event.stopPropagation();
             if (!profileComplete) {
@@ -110,7 +111,7 @@ export default function BlogProfileMenu() {
                   setEditOpen(true);
                 }}
               >
-                Upravit profil
+                {siteText('blog.profile.edit')}
               </button>
             </li>
             <li role="none">
@@ -123,7 +124,7 @@ export default function BlogProfileMenu() {
                   signOutUser();
                 }}
               >
-                Odhlásit se
+                {siteText('auth.signOut')}
               </button>
             </li>
           </ul>

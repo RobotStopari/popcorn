@@ -13,6 +13,7 @@ import { canEditPageSlug, canEditPageTitle, getPageAdminListTitle, getPageIntroF
 import {
   applyHomeIntroToBlocks,
   canPageHaveBlocks,
+  carouselCardHasContent,
   createBlock,
   ensureLockedPageTitleBlock,
   getBlocksForPage,
@@ -139,6 +140,16 @@ function getBlockSummary(block) {
       const count = (block.people || []).filter((person) => person?.name?.trim()).length;
       return count ? `${count} ${count === 1 ? 'osoba' : count < 5 ? 'osoby' : 'osob'}` : 'Medailonky';
     }
+    case PAGE_BLOCK_TYPES.cardCarousel: {
+      const count = (block.cards || []).filter((card) => carouselCardHasContent(card)).length;
+      return count
+        ? `${count} ${count === 1 ? 'karta' : count < 5 ? 'karty' : 'karet'}`
+        : 'Karusel karet';
+    }
+    case PAGE_BLOCK_TYPES.randomLink:
+      return 'Náhodný odkaz a odkaz na seznam všech';
+    case PAGE_BLOCK_TYPES.randomBook:
+      return 'Náhodná publikace a odkaz na seznam všech';
     default:
       return '';
   }

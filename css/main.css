@@ -20,6 +20,7 @@
 @import url('sections/content-page.css');
 @import url('sections/events-list.css');
 @import url('sections/blog.css');
+@import url('sections/resource-list.css');
 @import url('sections/event-detail.css');
 @import url('sections/calendar.css');
 @import url('sections/instagram-feed.css');
@@ -41,6 +42,12 @@
   padding: 1.5rem 1.25rem 3rem;
   font-family: var(--font-body, 'Poppins', sans-serif);
   color: var(--color-black, #1a1a1a);
+}
+
+/* Hide the SEO fallback during boot so the loader shows instead of raw HTML.
+   Kept in the DOM for crawlers; revealed for no-JS browsers via <noscript>. */
+body.is-loading #ssr-shell {
+  display: none;
 }
 
 .ssr-fallback__nav,

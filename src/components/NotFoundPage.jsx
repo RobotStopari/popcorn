@@ -1,6 +1,7 @@
 import { usePages } from '../contexts/PagesContext';
 import { NOT_FOUND_PAGE_ID } from '../data/pages';
 import ContentPage from '../pages/ContentPage';
+import { siteText } from '../utils/admin-text';
 
 export default function NotFoundPage() {
   const { getPageById, loading } = usePages();
@@ -10,7 +11,7 @@ export default function NotFoundPage() {
     return (
       <section className="section content-page-section">
         <div className="container">
-          <p className="section__empty">Načítám stránku…</p>
+          <p className="section__empty">{siteText('common.pageLoading')}</p>
         </div>
       </section>
     );
@@ -20,8 +21,8 @@ export default function NotFoundPage() {
     return (
       <section className="section content-page-section">
         <div className="container">
-          <h1>Stránka nenalezena</h1>
-          <p>Tato stránka neexistuje nebo byla přesunuta.</p>
+          <h1>{siteText('notFound.title')}</h1>
+          <p>{siteText('notFound.message')}</p>
         </div>
       </section>
     );

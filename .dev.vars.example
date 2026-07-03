@@ -1,3 +1,16 @@
 FIREBASE_PROJECT_ID=
 FIREBASE_API_KEY=
 SITE_URL=https://komunitapopcorn.cz
+
+# Blog admin notifications (Brevo — free tier: 300 emails/day)
+# https://www.brevo.com/
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=
+BREVO_SENDER_NAME=Komunita Popcorn
+
+# Option A (simple fallback): comma-separated admin Gmail addresses
+# Prefer managing recipients in Admin → Uživatelé → "E-maily při novém příspěvku"
+# BLOG_NOTIFY_ADMIN_EMAILS=
+
+# Option B (automatic): Firebase service account JSON (one line) to load admins with admin: true
+# FIREBASE_SERVICE_ACCOUNT_JSON=

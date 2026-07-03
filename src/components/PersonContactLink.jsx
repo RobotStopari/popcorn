@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ICONS } from '../data/icons';
+import { trackContactClick, trackOutboundClick, trackSocialClick } from '../utils/analytics-track';
 
 const CONTACT_ICONS = {
   email: ICONS.email,
@@ -39,6 +40,18 @@ export default function PersonContactLink({
 
   const tip = tooltip || label;
   const className = `event-detail__organiser-link event-detail__organiser-link--${type}`;
+
+  const handleClick = () => {
+    if (type === 'email' || type === 'phone') {
+      trackContactClick(type, label);
+      return;
+    }
+    if (type === 'instagram' || type === 'facebook') {
+      trackSocialClick(type, label);
+      return;
+    }
+    trackOutboundClick(href, label);
+  };
 
   const updatePosition = () => {
     const link = linkRef.current;
@@ -108,6 +121,7 @@ export default function PersonContactLink({
     onMouseLeave: hideTooltip,
     onFocus: showTooltip,
     onBlur: hideTooltip,
+    onClick: handleClick,
   };
 
   return (

@@ -1,5 +1,9 @@
 import { deriveEventSlug } from '../shared/event-url.js';
 import {
+  COMING_SOON_PAGE_ID,
+  shouldShowComingSoon,
+} from '../shared/coming-soon.js';
+import {
   buildHomeMetaDescription,
   buildHomeMetaKeywords,
   formatMetaKeywords,
@@ -118,6 +122,31 @@ export async function fetchSsrPayload(pathname, env, request) {
   const route = matchPublicRoute(pathname);
   const siteUrl = resolveSiteUrl(env, request);
   const global = await fetchGlobalSiteData(env);
+  const requestHostname = new URL(request.url).hostname;
+
+  if (shouldShowComingSoon(global.siteSettings, requestHostname)) {
+    const pages = await fetchFirestoreCollection('pages', env);
+    const comingSoonPage = pages.find((item) => item.id === COMING_SOON_PAGE_ID) || null;
+
+    return {
+      route: { type: 'coming-soon' },
+      siteUrl,
+      redirect: null,
+      notFound: false,
+      data: {
+        ...global,
+        pages,
+        events: [],
+        blogPosts: [],
+        usefulLinks: [],
+        publications: [],
+        page: comingSoonPage,
+        event: null,
+        blogPost: null,
+      },
+      meta: buildComingSoonMeta({ comingSoonPage, siteUrl }),
+    };
+  }
 
   if (route.type === 'event-legacy-id') {
     const events = withEventSlugs(await fetchFirestoreCollection('events', env));
@@ -146,14 +175,18 @@ export async function fetchSsrPayload(pathname, env, request) {
     };
   }
 
-  const [pages, eventsRaw, blogPosts] = await Promise.all([
+  const [pages, eventsRaw, blogPosts, usefulLinksRaw, publicationsRaw] = await Promise.all([
     fetchFirestoreCollection('pages', env),
     fetchFirestoreCollection('events', env),
     fetchFirestoreCollection('blogPosts', env),
+    fetchFirestoreCollection('usefulLinks', env),
+    fetchFirestoreCollection('publications', env),
   ]);
 
   const events = withEventSlugs(eventsRaw).filter(isEventListed);
   const publishedPosts = blogPosts.filter((post) => post.title && post.slug);
+  const usefulLinks = usefulLinksRaw.filter((item) => item.title && item.url);
+  const publications = publicationsRaw.filter((item) => item.title);
   const notFoundPage = pages.find((item) => item.id === NOT_FOUND_PAGE_ID) || null;
 
   let page = null;
@@ -189,7 +222,7 @@ export async function fetchSsrPayload(pathname, env, request) {
       const queried = await queryFirestoreByField('blogPosts', 'slug', route.slug, env);
       if (queried[0]) blogPost = queried[0];
     }
-    if (!blogPost) notFound = true;
+    if (!blogPost || blogPost.isExternal === true) notFound = true;
   }
 
   if (notFound) {
@@ -203,6 +236,8 @@ export async function fetchSsrPayload(pathname, env, request) {
         pages,
         events,
         blogPosts: publishedPosts,
+        usefulLinks,
+        publications,
         page: notFoundPage,
         notFoundPage,
         event: null,
@@ -217,6 +252,8 @@ export async function fetchSsrPayload(pathname, env, request) {
     pages,
     events,
     blogPosts: publishedPosts,
+    usefulLinks,
+    publications,
     page,
     event,
     blogPost,
@@ -225,6 +262,30 @@ export async function fetchSsrPayload(pathname, env, request) {
   const meta = buildMeta({ route, siteUrl, data, pathname });
 
   return { route, siteUrl, redirect: null, data, meta, notFound: false };
+}
+
+function buildComingSoonMeta({ comingSoonPage, siteUrl }) {
+  const defaultDescription = trimMetaDescription(
+    'Komunita Popcorn — brzy spouštíme nový web. Sledujte nás a buďte u toho.',
+  );
+  const intro = trimMetaDescription(stripHtml(comingSoonPage?.intro || ''), 160);
+  const title = comingSoonPage?.title?.trim() || 'Již brzy';
+
+  return {
+    title: `${title} — ${SITE_NAME}`,
+    description: intro || defaultDescription,
+    canonical: `${siteUrl}/`,
+    ogType: 'website',
+    ogImage: '',
+    robots: 'noindex, follow',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: title,
+      description: intro || defaultDescription,
+      url: `${siteUrl}/`,
+    },
+  };
 }
 
 function buildNotFoundMeta({ notFoundPage, siteUrl, pathname }) {

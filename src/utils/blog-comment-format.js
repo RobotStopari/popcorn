@@ -1,5 +1,6 @@
 import { normalizeAuthor } from './blog-post-format';
 import { MONTHS_GENITIVE } from './event-dates';
+import { siteText } from './admin-text';
 
 export const MAX_COMMENT_LENGTH = 2000;
 
@@ -31,9 +32,9 @@ export function formatCommentDateTime(comment) {
 
 export function validateCommentBody(body) {
   const trimmed = body?.trim() || '';
-  if (!trimmed) return 'Komentář nemůže být prázdný.';
+  if (!trimmed) return siteText('blog.comment.emptyError');
   if (trimmed.length > MAX_COMMENT_LENGTH) {
-    return `Komentář může mít maximálně ${MAX_COMMENT_LENGTH} znaků.`;
+    return siteText('blog.comment.maxLengthError', { max: MAX_COMMENT_LENGTH });
   }
   return null;
 }

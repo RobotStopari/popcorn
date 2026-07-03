@@ -145,6 +145,22 @@ service cloud.firestore {
         && author.name.size() > 0;
     }
 
+    function validExternalBlogAuthor(author) {
+      return author is map
+        && author.name is string
+        && author.name.size() > 0;
+    }
+
+    function validExternalBlogUrl(url) {
+      return url is string
+        && url.size() > 0
+        && url.matches('^https://.+$');
+    }
+
+    function isExternalBlogPost(data) {
+      return data.get('isExternal', false) == true;
+    }
+
     function validBlogPostCore(data) {
       return data.title is string
         && data.title.size() > 0
@@ -152,17 +168,24 @@ service cloud.firestore {
         && data.slug is string
         && data.slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$')
         && data.body is string
-        && data.body.size() > 0
         && data.keywords is list
         && data.publishedDate is string
         && data.publishedDate.size() > 0
         && data.publishedTime is string
         && data.publishedTime.size() > 0
-        && validBlogAuthor(data.author);
+        && (
+          (!isExternalBlogPost(data)
+            && data.body.size() > 0
+            && validBlogAuthor(data.author))
+          || (isExternalBlogPost(data)
+            && validExternalBlogAuthor(data.author)
+            && validExternalBlogUrl(data.get('externalUrl', '')))
+        );
     }
 
     function validBlogPostData(data) {
       return validBlogPostCore(data)
+        && !isExternalBlogPost(data)
         && data.author.uid == request.auth.uid;
     }
 
@@ -369,11 +392,34 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /appTexts/{docId} {
+      allow read: if true;
+
+      allow create: if isAdmin()
+        && docId == 'config'
+        && validAppTextsData();
+
+      allow update: if isAdmin()
+        && docId == 'config'
+        && validAppTextsData();
+
+      allow delete: if false;
+    }
+
+    function validAppTextsData() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['overrides', 'updatedAt'])
+        && data.overrides is map
+        && data.overrides.size() <= 600;
+    }
+
     function isProtectedPage(pageId) {
       return pageId == 'home'
         || pageId == 'vypukne'
         || pageId == 'probehle'
         || pageId == 'blog'
+        || pageId == 'odkazy'
+        || pageId == 'publikace'
         || pageId == 'coming-soon'
         || pageId == '404';
     }
@@ -383,6 +429,8 @@ service cloud.firestore {
         || type == 'events-upcoming'
         || type == 'events-past'
         || type == 'blog-list'
+        || type == 'links-list'
+        || type == 'publications-list'
         || type == 'content';
     }
 
@@ -437,6 +485,11 @@ service cloud.firestore {
         && links.linkedin is string;
     }
 
+    function validBlogNotifyEmails(emails) {
+      return emails is list
+        && emails.size() <= 50;
+    }
+
     function validSiteSettingsPatch() {
       let data = request.resource.data;
       let keys = request.resource.data.diff(resource.data).affectedKeys();
@@ -452,8 +505,10 @@ service cloud.firestore {
           'brandLinks',
           'footerSocialSlots',
           'comingSoonEnabled',
+          'comingSoonBypassLocalhost',
           'anonymousBlogLikesEnabled',
           'membersCanCreateBlogPosts',
+          'blogNotifyEmails',
           'eventCategoryPublicLabel',
           'eventCategoryPublicDescription',
           'eventCategoryPrivateLabel',
@@ -473,8 +528,10 @@ service cloud.firestore {
         && (!keys.hasAny(['brandLinks']) || validSiteSettingsBrandLinks(data.brandLinks))
         && (!keys.hasAny(['footerSocialSlots']) || validSiteSettingsFooterSlots(data.footerSocialSlots))
         && (!keys.hasAny(['comingSoonEnabled']) || data.comingSoonEnabled is bool)
+        && (!keys.hasAny(['comingSoonBypassLocalhost']) || data.comingSoonBypassLocalhost is bool)
         && (!keys.hasAny(['anonymousBlogLikesEnabled']) || data.anonymousBlogLikesEnabled is bool)
         && (!keys.hasAny(['membersCanCreateBlogPosts']) || data.membersCanCreateBlogPosts is bool)
+        && (!keys.hasAny(['blogNotifyEmails']) || validBlogNotifyEmails(data.blogNotifyEmails))
         && (!keys.hasAny(['eventCategoryPublicLabel']) || data.eventCategoryPublicLabel is string)
         && (!keys.hasAny(['eventCategoryPublicDescription']) || data.eventCategoryPublicDescription is string)
         && (!keys.hasAny(['eventCategoryPrivateLabel']) || data.eventCategoryPrivateLabel is string)
@@ -497,8 +554,10 @@ service cloud.firestore {
           'brandLinks',
           'footerSocialSlots',
           'comingSoonEnabled',
+          'comingSoonBypassLocalhost',
           'anonymousBlogLikesEnabled',
           'membersCanCreateBlogPosts',
+          'blogNotifyEmails',
           'eventCategoryPublicLabel',
           'eventCategoryPublicDescription',
           'eventCategoryPrivateLabel',
@@ -518,8 +577,10 @@ service cloud.firestore {
         && validSiteSettingsBrandLinks(data.brandLinks)
         && validSiteSettingsFooterSlots(data.footerSocialSlots)
         && data.comingSoonEnabled is bool
+        && data.comingSoonBypassLocalhost is bool
         && data.anonymousBlogLikesEnabled is bool
         && data.membersCanCreateBlogPosts is bool
+        && validBlogNotifyEmails(data.get('blogNotifyEmails', []))
         && data.eventCategoryPublicLabel is string
         && data.eventCategoryPublicDescription is string
         && data.eventCategoryPrivateLabel is string
@@ -619,6 +680,132 @@ service cloud.firestore {
         && validSiteColorsData();
 
       allow delete: if false;
+    }
+
+    function validAnalyticsDevice(device) {
+      return device == 'mobile' || device == 'tablet' || device == 'desktop';
+    }
+
+    function validAnalyticsType(type) {
+      return type == 'page_view'
+        || type == 'engagement'
+        || type == 'article_view'
+        || type == 'event_view'
+        || type == 'social_click'
+        || type == 'nav_click'
+        || type == 'outbound_click'
+        || type == 'notification_click'
+        || type == 'contact_click'
+        || type == 'blog_like'
+        || type == 'blog_comment';
+    }
+
+    function validAnalyticsEventData(data) {
+      return data.keys().hasOnly([
+          'type',
+          'sessionId',
+          'path',
+          'device',
+          'os',
+          'browser',
+          'articleSlug',
+          'eventId',
+          'eventSlug',
+          'clickTarget',
+          'clickLabel',
+          'durationSec',
+          'createdAt',
+        ])
+        && validAnalyticsType(data.type)
+        && data.sessionId is string
+        && data.sessionId.size() >= 8
+        && data.sessionId.size() <= 80
+        && data.path is string
+        && data.path.size() > 0
+        && data.path.size() <= 240
+        && validAnalyticsDevice(data.device)
+        && data.os is string
+        && data.os.size() <= 32
+        && data.browser is string
+        && data.browser.size() <= 32
+        && data.articleSlug is string
+        && data.articleSlug.size() <= 120
+        && data.eventId is string
+        && data.eventId.size() <= 80
+        && data.eventSlug is string
+        && data.eventSlug.size() <= 120
+        && data.clickTarget is string
+        && data.clickTarget.size() <= 120
+        && data.clickLabel is string
+        && data.clickLabel.size() <= 200
+        && data.durationSec is number
+        && data.durationSec >= 0
+        && data.durationSec <= 120;
+    }
+
+    function validKeywordsList(keywords) {
+      return keywords is list && keywords.size() <= 15;
+    }
+
+    function validUsefulLinkData(data) {
+      return data.keys().hasOnly([
+          'title',
+          'url',
+          'description',
+          'keywords',
+          'createdAt',
+          'updatedAt',
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 120
+        && data.url is string
+        && data.url.size() > 0
+        && data.url.size() <= 500
+        && data.url.matches('^https?://.+')
+        && data.description is string
+        && data.description.size() <= 200
+        && validKeywordsList(data.keywords);
+    }
+
+    function validPublicationData(data) {
+      return data.keys().hasOnly([
+          'title',
+          'author',
+          'description',
+          'keywords',
+          'createdAt',
+          'updatedAt',
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 120
+        && data.author is string
+        && data.author.size() <= 120
+        && data.description is string
+        && data.description.size() <= 400
+        && validKeywordsList(data.keywords);
+    }
+
+    // Useful links & publications (admin CRUD, public read)
+    match /usefulLinks/{linkId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && validUsefulLinkData(request.resource.data);
+      allow update: if isAdmin() && validUsefulLinkData(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /publications/{publicationId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && validPublicationData(request.resource.data);
+      allow update: if isAdmin() && validPublicationData(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /analyticsEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create: if validAnalyticsEventData(request.resource.data);
+      allow update, delete: if false;
     }
   }
 }

@@ -12,6 +12,8 @@ import {
   notificationTextToDisplayHtml,
   wereNotificationsHandledThisSession,
 } from '../utils/notification-format';
+import { siteText } from '../utils/admin-text';
+import { trackNotificationClick } from '../utils/analytics-track';
 import NotificationIcon from './NotificationIcon';
 
 let notificationsPopupEntryPathname = null;
@@ -80,7 +82,10 @@ function NotificationCard({ notification, onAction }) {
                 className={`btn site-notification-card__cta${notification.ctaOpenInNewTab ? ' site-notification-card__cta--external' : ''}`}
                 target={notification.ctaOpenInNewTab ? '_blank' : undefined}
                 rel={notification.ctaOpenInNewTab ? 'noopener noreferrer' : undefined}
-                onClick={onAction}
+                onClick={(event) => {
+                  trackNotificationClick(notification.id, notification.ctaLabel);
+                  onAction?.(event);
+                }}
               >
                 {notification.ctaLabel}
                 {notification.ctaOpenInNewTab && (
@@ -177,7 +182,7 @@ export default function SiteNotificationsPopup() {
         type="button"
         className="site-notifications__backdrop"
         onClick={handleClose}
-        aria-label="Zavřít upozornění"
+        aria-label={siteText('notifications.closeBackdropAriaLabel')}
       />
       <div
         className="site-notifications__panel"
@@ -188,7 +193,7 @@ export default function SiteNotificationsPopup() {
           type="button"
           className="site-notifications__close"
           onClick={handleClose}
-          aria-label="Zavřít"
+          aria-label={siteText('common.close')}
         >
           <CloseIcon />
         </button>

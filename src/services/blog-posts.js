@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { buildAuthorSnapshot, normalizeBlogPost } from '../utils/blog-post-format';
+import { notifyAdminsOfNewBlogPost } from './blog-notify';
 
 const blogPostsRef = collection(db, 'blogPosts');
 
@@ -43,6 +44,11 @@ export async function createBlogPost(payload) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  notifyAdminsOfNewBlogPost(docRef.id).catch((error) => {
+    console.error('Admin blog notification failed:', error);
+  });
+
   return docRef.id;
 }
 

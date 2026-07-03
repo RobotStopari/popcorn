@@ -5,6 +5,7 @@ import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
 import { getBlogGalleryImages } from '../utils/blog-post-format';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
+import { siteText } from '../utils/admin-text';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
 import AdminDeleteBlogPostDialog from './AdminDeleteBlogPostDialog';
 import BlogAuthor from './BlogAuthor';
@@ -66,11 +67,12 @@ function BlogPostCover({ post }) {
 
 export default function BlogPostDetail({ slug }) {
   const navigate = useNavigate();
-  const { getPostBySlug, loading } = useBlogPosts();
+  const { getPostBySlug, posts, loading } = useBlogPosts();
   const post = slug ? getPostBySlug(slug) : null;
 
   const {
     canManagePost,
+    allowExternalPosts,
     formOpen,
     editingPost,
     postToDelete,
@@ -99,39 +101,39 @@ export default function BlogPostDetail({ slug }) {
     return (
       <section className="section blog-detail">
         <div className="container blog-detail__container">
-          <p className="section__empty">Načítám příspěvek…</p>
+          <p className="section__empty">{siteText('blog.detail.loading')}</p>
         </div>
       </section>
     );
   }
 
-  if (!post) return <NotFoundPage />;
+  if (!post || post.isExternal) return <NotFoundPage />;
 
   return (
     <article className="section blog-detail">
       <div className="container blog-detail__container">
         <div className="blog-detail__top reveal">
-          <Link to="/blog" className="blog-detail__back">← Zpět na blog</Link>
+          <Link to="/blog" className="blog-detail__back">{siteText('blog.detail.backLink')}</Link>
 
           {canManage && (
             <div className="blog-detail__actions">
               <button
                 type="button"
                 className="blog-detail__action"
-                aria-label={`Upravit příspěvek ${post.title}`}
+                aria-label={siteText('blog.detail.editAriaLabel', { title: post.title })}
                 onClick={() => openEdit(post)}
               >
                 <EditIcon />
-                <span>Upravit</span>
+                <span>{siteText('blog.detail.edit')}</span>
               </button>
               <button
                 type="button"
                 className="blog-detail__action blog-detail__action--danger"
-                aria-label={`Smazat příspěvek ${post.title}`}
+                aria-label={siteText('blog.detail.deleteAriaLabel', { title: post.title })}
                 onClick={() => openDelete(post)}
               >
                 <TrashIcon />
-                <span>Smazat</span>
+                <span>{siteText('blog.detail.delete')}</span>
               </button>
             </div>
           )}
@@ -150,7 +152,7 @@ export default function BlogPostDetail({ slug }) {
           </div>
 
           {post.keywords.length > 0 && (
-            <ul className="blog-detail__keywords" aria-label="Klíčová slova">
+            <ul className="blog-detail__keywords" aria-label={siteText('blog.detail.keywordsAriaLabel')}>
               {post.keywords.map((keyword) => (
                 <li key={keyword} className="blog-detail__keyword">{keyword}</li>
               ))}
@@ -174,6 +176,8 @@ export default function BlogPostDetail({ slug }) {
         open={formOpen}
         post={editingPost}
         author={formAuthor}
+        allowExternalPosts={allowExternalPosts}
+        posts={posts}
         onClose={closeForm}
         onSave={handleSave}
         saveError={saveError}
