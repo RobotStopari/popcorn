@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useEvents } from '../contexts/EventsContext';
 import { ICONS } from '../data/icons';
 import { buildGoogleCalendarUrl } from '../utils/google-calendar';
@@ -104,50 +104,137 @@ function OrganiserInitials({ name }) {
   return <span className="event-detail__organiser-avatar">{initials.toUpperCase()}</span>;
 }
 
+function OrganiserChevron({ open }) {
+  return (
+    <svg
+      className={`event-detail__organiser-chevron${open ? ' event-detail__organiser-chevron--open' : ''}`}
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function OrganiserContactRow({ type, href, label, value, external = false }) {
+  if (!href || !value) return null;
+
+  return (
+    <div className="event-detail__organiser-contact">
+      <PersonContactLink
+        type={type}
+        href={href}
+        label={label}
+        external={external}
+      />
+      <div className="event-detail__organiser-contact-copy">
+        <span className="event-detail__organiser-contact-label">{label}</span>
+        {external ? (
+          <a
+            href={href}
+            className="event-detail__organiser-contact-value"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {value}
+          </a>
+        ) : (
+          <a href={href} className="event-detail__organiser-contact-value">
+            {value}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OrganiserCard({ contact }) {
+  const [open, setOpen] = useState(false);
+
+  const contacts = [
+    {
+      type: 'email',
+      href: contact.email ? `mailto:${contact.email}` : '',
+      label: siteText('common.contact.email'),
+      value: contact.email,
+    },
+    {
+      type: 'phone',
+      href: contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : '',
+      label: siteText('common.contact.phone'),
+      value: contact.phone,
+    },
+    {
+      type: 'instagram',
+      href: contact.instagramHref,
+      label: siteText('common.contact.instagram'),
+      value: contact.instagram,
+      external: true,
+    },
+    {
+      type: 'facebook',
+      href: contact.facebookHref,
+      label: siteText('common.contact.facebook'),
+      value: contact.facebook,
+      external: true,
+    },
+  ].filter((item) => item.href && item.value);
+
+  const hasContacts = contacts.length > 0;
+  const panelId = `organiser-panel-${contact.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+
+  return (
+    <li className={`event-detail__organiser-card${open ? ' event-detail__organiser-card--open' : ''}`}>
+      <button
+        type="button"
+        className="event-detail__organiser-toggle"
+        aria-expanded={open}
+        aria-controls={hasContacts ? panelId : undefined}
+        disabled={!hasContacts}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <OrganiserInitials name={contact.name} />
+        <div className="event-detail__organiser-copy">
+          <strong className="event-detail__organiser-name">{contact.name}</strong>
+          {contact.nick && (
+            <span className="event-detail__organiser-nick">({contact.nick})</span>
+          )}
+        </div>
+        {hasContacts && <OrganiserChevron open={open} />}
+      </button>
+
+      {hasContacts && (
+        <div
+          id={panelId}
+          className={`event-detail__organiser-panel${open ? ' event-detail__organiser-panel--open' : ''}`}
+          aria-hidden={!open}
+        >
+          <div className="event-detail__organiser-panel-inner">
+            <div className="event-detail__organiser-panel-content">
+              {contacts.map((item) => (
+                <OrganiserContactRow key={item.type} {...item} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
 function Organisers({ organisers }) {
   return (
     <section className="event-detail__block event-detail__block--inline reveal">
       <h2 className="event-detail__block-title">{organisers.label}</h2>
       <ul className="event-detail__organisers">
         {organisers.contacts.map((contact) => (
-          <li key={`${contact.name}-${contact.email}`} className="event-detail__organiser-card">
-            <div className="event-detail__organiser-head">
-              <OrganiserInitials name={contact.name} />
-              <div className="event-detail__organiser-copy">
-                <strong className="event-detail__organiser-name">{contact.name}</strong>
-                {contact.nick && (
-                  <span className="event-detail__organiser-nick">({contact.nick})</span>
-                )}
-              </div>
-            </div>
-
-            <div className="event-detail__organiser-links">
-              <PersonContactLink
-                type="email"
-                href={contact.email ? `mailto:${contact.email}` : ''}
-                label={contact.email}
-              />
-              <PersonContactLink
-                type="phone"
-                href={contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : ''}
-                label={contact.phone}
-              />
-              <PersonContactLink
-                type="instagram"
-                href={contact.instagramHref}
-                label={siteText('common.contact.instagram')}
-                tooltip={contact.instagram}
-                external
-              />
-              <PersonContactLink
-                type="facebook"
-                href={contact.facebookHref}
-                label={siteText('common.contact.facebook')}
-                tooltip={contact.facebook}
-                external
-              />
-            </div>
-          </li>
+          <OrganiserCard key={`${contact.name}-${contact.email}`} contact={contact} />
         ))}
       </ul>
     </section>

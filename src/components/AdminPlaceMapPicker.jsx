@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buildMapyCzPointUrl,
   geocodePlaceQuery,
@@ -46,14 +46,21 @@ export default function AdminPlaceMapPicker({
   const mapRootRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const onChangeRef = useRef(onChange);
   const [search, setSearch] = useState('');
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const [mapReady, setMapReady] = useState(false);
 
+  onChangeRef.current = onChange;
+
   const coords = normalizePlaceCoords(lat, lng);
   const hasCoords = Boolean(coords);
   const previewUrl = hasCoords ? buildMapyCzPointUrl(coords.lat, coords.lng) : '';
+
+  const emitCoords = useCallback((nextCoords) => {
+    onChangeRef.current(nextCoords);
+  }, []);
 
   useEffect(() => {
     if (disabled) return undefined;
@@ -94,7 +101,7 @@ export default function AdminPlaceMapPicker({
             markerRef.current = L.marker(position, { draggable: true }).addTo(mapInstance);
             markerRef.current.on('dragend', () => {
               const point = markerRef.current.getLatLng();
-              onChange(normalizePlaceCoords(point.lat, point.lng));
+              emitCoords(normalizePlaceCoords(point.lat, point.lng));
             });
           }
         };
@@ -102,7 +109,7 @@ export default function AdminPlaceMapPicker({
         mapInstance.on('click', (event) => {
           const nextCoords = normalizePlaceCoords(event.latlng.lat, event.latlng.lng);
           if (!nextCoords) return;
-          onChange(nextCoords);
+          emitCoords(nextCoords);
           updateMarker(nextCoords);
         });
 
@@ -127,7 +134,7 @@ export default function AdminPlaceMapPicker({
       markerRef.current = null;
       setMapReady(false);
     };
-  }, [disabled]);
+  }, [disabled, emitCoords]);
 
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
@@ -150,16 +157,15 @@ export default function AdminPlaceMapPicker({
       markerRef.current = L.marker(position, { draggable: !disabled }).addTo(mapRef.current);
       markerRef.current.on('dragend', () => {
         const point = markerRef.current.getLatLng();
-        onChange(normalizePlaceCoords(point.lat, point.lng));
+        emitCoords(normalizePlaceCoords(point.lat, point.lng));
       });
     }
 
     mapRef.current.setView(position, Math.max(mapRef.current.getZoom(), 14));
-  }, [coords?.lat, coords?.lng, disabled, mapReady, onChange]);
+  }, [coords?.lat, coords?.lng, disabled, mapReady, emitCoords]);
 
-  const handleSearch = async (event) => {
-    event.preventDefault();
-    if (!search.trim() || disabled) return;
+  const handleSearch = async () => {
+    if (!search.trim() || disabled || searching) return;
 
     setSearching(true);
     setError('');
@@ -170,12 +176,19 @@ export default function AdminPlaceMapPicker({
         setError('Adresa nebyla nalezena.');
         return;
       }
-      onChange(result);
+      emitCoords(result);
     } catch (err) {
       setError(err.message || 'Vyhledání adresy se nezdařilo.');
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    event.stopPropagation();
+    handleSearch();
   };
 
   return (
@@ -184,19 +197,29 @@ export default function AdminPlaceMapPicker({
         Klikněte na mapu nebo vyhledejte adresu. Na webu se místo otevře na Mapy.cz.
       </p>
 
-      <form className="admin-place-map__search" onSubmit={handleSearch}>
+      <div className="admin-place-map__search">
         <input
           type="search"
           className="admin-form__input"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Vyhledat adresu nebo místo…"
           disabled={disabled || searching}
         />
-        <button type="submit" className="btn btn--outline" disabled={disabled || searching || !search.trim()}>
+        <button
+          type="button"
+          className="btn btn--outline"
+          disabled={disabled || searching || !search.trim()}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handleSearch();
+          }}
+        >
           {searching ? 'Hledám…' : 'Vyhledat'}
         </button>
-      </form>
+      </div>
 
       {error && <p className="admin-error">{error}</p>}
 
@@ -221,7 +244,7 @@ export default function AdminPlaceMapPicker({
             <button
               type="button"
               className="btn btn--outline"
-              onClick={() => onChange(null)}
+              onClick={() => emitCoords(null)}
               disabled={disabled}
             >
               Odebrat bod

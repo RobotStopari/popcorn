@@ -34,26 +34,22 @@ export async function geocodePlaceQuery(query) {
   const trimmed = query?.trim();
   if (!trimmed) return null;
 
-  const url = new URL('https://nominatim.openstreetmap.org/search');
-  url.searchParams.set('format', 'json');
-  url.searchParams.set('limit', '1');
-  url.searchParams.set('countrycodes', 'cz');
+  const url = new URL('https://photon.komoot.io/api/');
   url.searchParams.set('q', trimmed);
+  url.searchParams.set('limit', '1');
 
   const response = await fetch(url.toString(), {
-    headers: {
-      Accept: 'application/json',
-      'Accept-Language': 'cs',
-    },
+    headers: { Accept: 'application/json' },
   });
 
   if (!response.ok) {
     throw new Error('Vyhledání adresy se nezdařilo.');
   }
 
-  const results = await response.json();
-  const match = results?.[0];
-  if (!match) return null;
+  const data = await response.json();
+  const coords = data?.features?.[0]?.geometry?.coordinates;
+  if (!coords || coords.length < 2) return null;
 
-  return normalizePlaceCoords(match.lat, match.lon);
+  const [lng, lat] = coords;
+  return normalizePlaceCoords(lat, lng);
 }
