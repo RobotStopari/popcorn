@@ -17,8 +17,10 @@ import {
   YAxis,
 } from 'recharts';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { fetchAnalyticsEvents } from '../services/analytics';
+import AdminResetStatsDialog from '../components/AdminResetStatsDialog';
+import { clearAllAnalyticsEvents, fetchAnalyticsEvents } from '../services/analytics';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 import {
   buildAnalyticsSummary,
   buildPageTimeSeries,
@@ -180,12 +182,15 @@ function DataTable({ title, description, columns, rows, emptyLabel }) {
 
 export default function AdminStatistikyPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
+  const logActivity = useAdminActivityLogger();
   const presets = useMemo(() => getAnalyticsRangePresets(), []);
   const [rangeId, setRangeId] = useState('30');
   const [events, setEvents] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedPaths, setSelectedPaths] = useState([]);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const selectedRange = presets.find((item) => item.id === rangeId) || presets[1];
 
@@ -203,10 +208,12 @@ export default function AdminStatistikyPage() {
       setError('');
 
       try {
-        const data = await fetchAnalyticsEvents({
-          from: selectedRange.from,
-          to: selectedRange.to,
-        });
+        const data = selectedRange.all
+          ? await fetchAnalyticsEvents({ all: true })
+          : await fetchAnalyticsEvents({
+            from: selectedRange.from,
+            to: selectedRange.to,
+          });
         if (active) setEvents(data);
       } catch (err) {
         if (active) {
@@ -223,7 +230,7 @@ export default function AdminStatistikyPage() {
     return () => {
       active = false;
     };
-  }, [canAccessAdmin, selectedRange.from, selectedRange.to]);
+  }, [canAccessAdmin, reloadKey, rangeId]);
 
   const summary = useMemo(() => buildAnalyticsSummary(events), [events]);
 
@@ -251,6 +258,18 @@ export default function AdminStatistikyPage() {
       if (current.length >= MAX_SELECTED_PATHS) return current;
       return [...current, path];
     });
+  };
+
+  const handleResetStats = async () => {
+    await clearAllAnalyticsEvents();
+    await logActivity({
+      action: 'delete',
+      targetType: 'analytics',
+      targetId: 'all',
+      summary: 'Vynulovány všechny statistiky návštěvnosti',
+    });
+    setSelectedPaths([]);
+    setReloadKey((value) => value + 1);
   };
 
   if (loading) {
@@ -320,19 +339,34 @@ export default function AdminStatistikyPage() {
           <h1 className="admin-content__title">{adminText('statistikyPage.title')}</h1>
           <p className="admin-content__subtitle">{adminText('statistikyPage.subtitle')}</p>
         </div>
-        <div className="admin-statistiky__range">
-          {presets.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className={`btn btn--outline btn--small${rangeId === preset.id ? ' admin-statistiky__range-btn--active' : ''}`}
-              onClick={() => setRangeId(preset.id)}
-            >
-              {preset.label}
-            </button>
-          ))}
+        <div className="admin-statistiky__header-actions">
+          <select
+            className="admin-statistiky__range-select"
+            value={rangeId}
+            onChange={(event) => setRangeId(event.target.value)}
+            aria-label={adminText('statistikyPage.rangeLabel')}
+          >
+            {presets.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="btn btn--outline btn--small admin-statistiky__reset-btn"
+            onClick={() => setResetOpen(true)}
+          >
+            {adminText('statistikyPage.reset.button')}
+          </button>
         </div>
       </header>
+
+      <AdminResetStatsDialog
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        onConfirm={handleResetStats}
+      />
 
       {error && <p className="admin-error admin-content__error">{error}</p>}
 

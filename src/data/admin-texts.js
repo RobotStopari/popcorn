@@ -368,6 +368,15 @@ export const ADMIN_TEXTS = {
     loading: 'Načítám statistiky…',
     loadFailed: 'Statistiky se nepodařilo načíst.',
     empty: 'Pro zvolené období zatím nejsou žádná data.',
+    rangeLabel: 'Období statistik',
+    reset: {
+      button: 'Vynulovat statistiky',
+      title: 'Vynulovat statistiky?',
+      body: 'Opravdu chcete smazat všechna nasbíraná analytická data? Grafy, tabulky i historie relací budou prázdné. Tuto akci nelze vrátit zpět.',
+      confirm: 'Vynulovat',
+      resetting: 'Mažu…',
+      failed: 'Vynulování statistik se nezdařilo.',
+    },
     kpis: {
       pageViews: 'Zobrazení stránek',
       pageViewsDesc: 'Kolikrát se za období otevřela libovolná stránka webu.',

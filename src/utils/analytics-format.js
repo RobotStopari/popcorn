@@ -311,16 +311,33 @@ export function getAnalyticsRangePresets() {
   const today = new Date();
   today.setHours(23, 59, 59, 999);
 
-  const makeFrom = (days) => {
+  const makeFromDays = (days) => {
     const from = new Date();
     from.setDate(from.getDate() - (days - 1));
     from.setHours(0, 0, 0, 0);
     return from;
   };
 
+  const makeFromMonths = (months) => {
+    const from = new Date();
+    from.setMonth(from.getMonth() - months);
+    from.setHours(0, 0, 0, 0);
+    return from;
+  };
+
+  const makeFromYears = (years) => {
+    const from = new Date();
+    from.setFullYear(from.getFullYear() - years);
+    from.setHours(0, 0, 0, 0);
+    return from;
+  };
+
   return [
-    { id: '7', label: 'Posledních 7 dní', from: makeFrom(7), to: today },
-    { id: '30', label: 'Posledních 30 dní', from: makeFrom(30), to: today },
-    { id: '90', label: 'Posledních 90 dní', from: makeFrom(90), to: today },
+    { id: '7', label: 'Posledních 7 dní', from: makeFromDays(7), to: today },
+    { id: '30', label: 'Posledních 30 dní', from: makeFromDays(30), to: today },
+    { id: '90', label: 'Posledních 90 dní', from: makeFromDays(90), to: today },
+    { id: '6m', label: 'Posledních 6 měsíců', from: makeFromMonths(6), to: today },
+    { id: '1y', label: 'Poslední rok', from: makeFromYears(1), to: today },
+    { id: 'all', label: 'Celé období', all: true },
   ];
 }
