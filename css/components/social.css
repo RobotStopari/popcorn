@@ -102,7 +102,8 @@
   color: var(--white);
 }
 
-.footer__social-link--email:hover {
+.footer__social-link--email:hover,
+.footer__social-link--mail:hover {
   background-color: var(--red);
   border-color: var(--red);
   color: var(--white);
