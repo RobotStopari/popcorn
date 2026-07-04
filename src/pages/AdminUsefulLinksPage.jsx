@@ -185,10 +185,16 @@ export default function AdminUsefulLinksPage() {
             {filteredLinks.map((link) => (
               <li key={link.id} className="admin-blog-posts__row admin-useful-links__row">
                 <div className="admin-blog-posts__title">{link.title}</div>
-                <div className="admin-useful-links__url">
+                <div
+                  className="admin-useful-links__url"
+                  data-label={adminText('common.columns.url')}
+                >
                   <a href={link.url} target="_blank" rel="noopener noreferrer">{link.url}</a>
                 </div>
-                <div className="admin-useful-links__description">
+                <div
+                  className="admin-useful-links__description"
+                  data-label={adminText('usefulLinks.list.columns.description')}
+                >
                   {link.description || adminText('common.emptyDash')}
                 </div>
                 <div className="admin-blog-posts__actions">

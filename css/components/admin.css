@@ -1229,6 +1229,31 @@
   font-size: 0.92rem;
   line-height: 1.45;
   word-break: break-word;
+  min-width: 0;
+}
+
+.admin-useful-links__head,
+.admin-useful-links__row,
+.admin-publications__head,
+.admin-publications__row {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1.75fr) auto;
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.admin-publications__author {
+  color: var(--gray);
+}
+
+.admin-useful-links__row .admin-blog-posts__actions,
+.admin-publications__row .admin-blog-posts__actions {
+  align-self: start;
+}
+
+.admin-useful-links__row .admin-blog-posts__title,
+.admin-publications__row .admin-blog-posts__title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .admin-useful-links__url a {
@@ -1240,6 +1265,81 @@
 .admin-useful-links__description,
 .admin-publications__description {
   color: var(--gray);
+}
+
+@container admin-blog-list (max-width: 980px) {
+  .admin-useful-links__head,
+  .admin-publications__head {
+    display: none;
+  }
+
+  .admin-useful-links__row,
+  .admin-publications__row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'title'
+      'meta'
+      'desc'
+      'actions';
+    gap: 0.65rem;
+    padding: 1rem;
+  }
+
+  .admin-useful-links__row .admin-blog-posts__title,
+  .admin-publications__row .admin-blog-posts__title {
+    grid-area: title;
+    font-size: 1.02rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .admin-useful-links__row .admin-blog-posts__actions,
+  .admin-publications__row .admin-blog-posts__actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    padding-top: 0.35rem;
+    border-top: 1px solid color-mix(in srgb, var(--black) 10%, transparent);
+  }
+
+  .admin-useful-links__url,
+  .admin-publications__author {
+    grid-area: meta;
+    min-width: 0;
+  }
+
+  .admin-publications__author::before,
+  .admin-useful-links__url::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .admin-useful-links__description,
+  .admin-publications__description {
+    grid-area: desc;
+    min-width: 0;
+  }
+
+  .admin-useful-links__description::before,
+  .admin-publications__description::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .admin-useful-links__url a {
+    word-break: break-all;
+  }
 }
 
 
@@ -1293,7 +1393,7 @@
     display: none;
   }
 
-  .admin-blog-posts__row {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       'star title'
@@ -1304,22 +1404,22 @@
     padding: 1rem;
   }
 
-  .admin-blog-posts__row .admin-list-star {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-list-star {
     grid-area: star;
     align-self: start;
     margin-top: 0.05rem;
   }
 
-  .admin-blog-posts__title {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__title {
     grid-area: title;
     font-size: 1.02rem;
   }
 
-  .admin-blog-posts__author {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__author {
     grid-area: author;
   }
 
-  .admin-blog-posts__author::before {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__author::before {
     content: 'Autor: ';
     display: block;
     font-size: 0.72rem;
@@ -1330,12 +1430,12 @@
     margin-bottom: 0.35rem;
   }
 
-  .admin-blog-posts__date {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__date {
     grid-area: date;
     white-space: normal;
   }
 
-  .admin-blog-posts__date::before {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__date::before {
     content: 'Publikováno: ';
     display: block;
     font-size: 0.72rem;
@@ -1346,7 +1446,7 @@
     margin-bottom: 0.2rem;
   }
 
-  .admin-blog-posts__actions {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__actions {
     grid-area: actions;
     justify-content: flex-end;
     padding-top: 0.35rem;
@@ -1448,7 +1548,7 @@
     display: none;
   }
 
-  .admin-blog-posts__row {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       'star title'
@@ -1459,22 +1559,22 @@
     padding: 1rem;
   }
 
-  .admin-blog-posts__row .admin-list-star {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-list-star {
     grid-area: star;
     align-self: start;
     margin-top: 0.05rem;
   }
 
-  .admin-blog-posts__title {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__title {
     grid-area: title;
     font-size: 1.02rem;
   }
 
-  .admin-blog-posts__author {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__author {
     grid-area: author;
   }
 
-  .admin-blog-posts__author::before {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__author::before {
     content: 'Autor: ';
     display: block;
     font-size: 0.72rem;
@@ -1485,12 +1585,12 @@
     margin-bottom: 0.35rem;
   }
 
-  .admin-blog-posts__date {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__date {
     grid-area: date;
     white-space: normal;
   }
 
-  .admin-blog-posts__date::before {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__date::before {
     content: 'Publikováno: ';
     display: block;
     font-size: 0.72rem;
@@ -1501,7 +1601,7 @@
     margin-bottom: 0.2rem;
   }
 
-  .admin-blog-posts__actions {
+  .admin-blog-posts__row:not(.admin-useful-links__row):not(.admin-publications__row) .admin-blog-posts__actions {
     grid-area: actions;
     justify-content: flex-end;
     padding-top: 0.35rem;
@@ -1515,12 +1615,13 @@
 
   .admin-useful-links__row,
   .admin-publications__row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      'title actions'
-      'meta meta'
-      'desc desc';
-    gap: 0.5rem 1rem;
+      'title'
+      'meta'
+      'desc'
+      'actions';
+    gap: 0.65rem;
     padding: 1rem;
   }
 
@@ -1528,12 +1629,16 @@
   .admin-publications__row .admin-blog-posts__title {
     grid-area: title;
     font-size: 1.02rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .admin-useful-links__row .admin-blog-posts__actions,
   .admin-publications__row .admin-blog-posts__actions {
     grid-area: actions;
-    align-self: start;
+    justify-content: flex-end;
+    padding-top: 0.35rem;
+    border-top: 1px solid color-mix(in srgb, var(--black) 10%, transparent);
   }
 
   .admin-useful-links__url,
@@ -1542,10 +1647,34 @@
     min-width: 0;
   }
 
+  .admin-publications__author::before,
+  .admin-useful-links__url::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-muted);
+    margin-bottom: 0.2rem;
+  }
+
   .admin-useful-links__description,
   .admin-publications__description {
     grid-area: desc;
     min-width: 0;
+  }
+
+  .admin-useful-links__description::before,
+  .admin-publications__description::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-muted);
+    margin-bottom: 0.2rem;
   }
 
   .admin-useful-links__url a {

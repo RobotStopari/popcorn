@@ -185,10 +185,16 @@ export default function AdminPublicationsPage() {
             {filteredPublications.map((publication) => (
               <li key={publication.id} className="admin-blog-posts__row admin-publications__row">
                 <div className="admin-blog-posts__title">{publication.title}</div>
-                <div className="admin-publications__author">
+                <div
+                  className="admin-publications__author"
+                  data-label={adminText('publications.list.columns.author')}
+                >
                   {publication.author || adminText('common.emptyDash')}
                 </div>
-                <div className="admin-publications__description">
+                <div
+                  className="admin-publications__description"
+                  data-label={adminText('publications.list.columns.description')}
+                >
                   {publication.description || adminText('common.emptyDash')}
                 </div>
                 <div className="admin-blog-posts__actions">
