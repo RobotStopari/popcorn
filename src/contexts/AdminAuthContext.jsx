@@ -242,6 +242,10 @@ export function AdminAuthProvider({ children }) {
   const profileLabel = getProfileLabel(profile);
   const canAccessAdmin = Boolean(user && isAdmin && profileComplete);
 
+  const patchProfile = useCallback((patch) => {
+    setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
   const value = useMemo(() => ({
     user,
     profile,
@@ -257,6 +261,7 @@ export function AdminAuthProvider({ children }) {
     signOutUser,
     saveProfile,
     deleteProfile,
+    patchProfile,
     fetchAllUsers,
     setUserAdmin,
     deleteUser,
@@ -274,6 +279,7 @@ export function AdminAuthProvider({ children }) {
     signOutUser,
     saveProfile,
     deleteProfile,
+    patchProfile,
     fetchAllUsers,
     setUserAdmin,
     deleteUser,

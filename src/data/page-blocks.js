@@ -40,7 +40,10 @@ export const PAGE_BLOCK_SPACE_HEIGHT_MAX = 12;
 
 export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT = 1.5;
 export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN = 0.5;
-export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX = 4;
+export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX = 8;
+
+export const PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS = ['left', 'right'];
+export const PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT = 'left';
 
 export const PAGE_BLOCK_WIDE_IMAGE_WIDTH_DEFAULT = 65;
 export const PAGE_BLOCK_WIDE_IMAGE_WIDTH_MIN = 40;
@@ -184,6 +187,8 @@ export const PAGE_BLOCK_EDITABLE_TYPES = new Set([
   PAGE_BLOCK_TYPES.reference,
   PAGE_BLOCK_TYPES.medallions,
   PAGE_BLOCK_TYPES.cardCarousel,
+  PAGE_BLOCK_TYPES.randomLink,
+  PAGE_BLOCK_TYPES.randomBook,
 ]);
 
 export function isBlockEditable(blockOrType) {

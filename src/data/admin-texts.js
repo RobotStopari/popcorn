@@ -72,6 +72,13 @@ export const ADMIN_TEXTS = {
       actions: 'Akce',
       url: 'URL',
     },
+    stars: {
+      filter: 'Označené',
+      filterAria: 'Zobrazit jen položky označené hvězdičkou',
+      empty: 'Nic není označeno hvězdičkou.',
+      starAria: 'Označit {title} hvězdičkou',
+      unstarAria: 'Odebrat hvězdičku u {title}',
+    },
   },
 
   auth: {
@@ -569,10 +576,15 @@ export const ADMIN_TEXTS = {
       loading: 'Načítám stránky…',
       empty: 'Zatím žádné stránky.',
       emptySearch: 'Žádná stránka neodpovídá hledání.',
+      emptyStarred: 'Žádná stránka není označena hvězdičkou.',
+      starFilter: 'Označené',
+      starFilterAria: 'Zobrazit jen stránky označené hvězdičkou',
       protected: 'Tuto stránku nelze smazat',
       initFailed: 'Nepodařilo se inicializovat stránky.',
       editAria: 'Upravit stránku {title}',
       deleteAria: 'Smazat stránku {title}',
+      starAria: 'Označit stránku {title} hvězdičkou',
+      unstarAria: 'Odebrat hvězdičku u stránky {title}',
     },
     form: {
       newTitle: 'Nová stránka',
@@ -1040,7 +1052,7 @@ export const SITE_UI_TEXTS = {
       emptySearch: 'Žádný odkaz neodpovídá hledání.',
     },
     random: {
-      badge: 'Náhodný zajímavý odkaz',
+      badge: 'Náhodně vybraná zajímavá webovka',
       fallbackTitle: 'Odkazy',
       loading: 'Načítám odkaz…',
       empty: 'Zatím žádné odkazy k zobrazení.',

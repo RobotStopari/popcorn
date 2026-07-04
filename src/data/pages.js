@@ -130,7 +130,13 @@ export const DEFAULT_PAGES = [
 
 export const PINNED_PAGE_IDS = ['home', 'vypukne', 'probehle', 'blog', USEFUL_LINKS_PAGE_ID, PUBLICATIONS_PAGE_ID, COMING_SOON_PAGE_ID, NOT_FOUND_PAGE_ID];
 
-export function filterAndGroupPages(pages, query = '') {
+export function filterAndGroupPages(pages, query = '', options = {}) {
+  const starredOnly = options?.starredOnly === true;
+  const starredPageIds = Array.isArray(options?.starredPageIds) ? options.starredPageIds : [];
+  const starredSet = new Set(
+    starredPageIds.filter((id) => typeof id === 'string' && id.trim()),
+  );
+
   const q = query.trim().toLowerCase();
   const matches = (page) => {
     if (!q) return true;
@@ -138,7 +144,12 @@ export function filterAndGroupPages(pages, query = '') {
     return hay.includes(q);
   };
 
-  const filtered = pages.filter(matches);
+  let filtered = pages.filter(matches);
+
+  if (starredOnly) {
+    filtered = filtered.filter((page) => starredSet.has(page.id));
+  }
+
   const pinnedSet = new Set(PINNED_PAGE_IDS);
 
   const pinned = PINNED_PAGE_IDS

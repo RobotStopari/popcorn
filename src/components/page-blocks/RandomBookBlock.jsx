@@ -7,7 +7,8 @@ import { ADMIN_SIDEBAR_ICONS } from '../../data/admin-sidebar-icons';
 import { siteText } from '../../utils/admin-text';
 import RandomPickFrame from './RandomPickFrame';
 
-export default function RandomBookBlock() {
+export default function RandomBookBlock({ block }) {
+  const align = block?.align === 'right' ? 'right' : 'left';
   const { publications, loading } = usePublications();
   const { getPageById } = usePages();
   const pickedIdRef = useRef(null);
@@ -31,11 +32,12 @@ export default function RandomBookBlock() {
       <div className="container">
         <RandomPickFrame
           variant="book"
+          align={align}
           badge={siteText('publications.random.badge')}
           icon={ADMIN_SIDEBAR_ICONS.publikace}
           footer={(
             <Link to={listHref} className="btn btn--secondary">
-              {siteText('publications.random.viewAll', { title: listLabel })}
+              {siteText('publications.random.viewAll', { title: listLabel.toLocaleLowerCase('cs') })}
             </Link>
           )}
         >

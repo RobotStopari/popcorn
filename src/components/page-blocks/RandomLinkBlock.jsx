@@ -8,7 +8,8 @@ import { siteText } from '../../utils/admin-text';
 import PageBlockLinkButton from './PageBlockLinkButton';
 import RandomPickFrame from './RandomPickFrame';
 
-export default function RandomLinkBlock() {
+export default function RandomLinkBlock({ block }) {
+  const align = block?.align === 'right' ? 'right' : 'left';
   const { links, loading } = useUsefulLinks();
   const { getPageById } = usePages();
   const pickedIdRef = useRef(null);
@@ -32,11 +33,12 @@ export default function RandomLinkBlock() {
       <div className="container">
         <RandomPickFrame
           variant="link"
+          align={align}
           badge={siteText('usefulLinks.random.badge')}
           icon={ADMIN_SIDEBAR_ICONS.odkazy}
           footer={(
             <Link to={listHref} className="btn btn--external">
-              {siteText('usefulLinks.random.viewAll', { title: listLabel })}
+              {siteText('usefulLinks.random.viewAll', { title: listLabel.toLocaleLowerCase('cs') })}
             </Link>
           )}
         >

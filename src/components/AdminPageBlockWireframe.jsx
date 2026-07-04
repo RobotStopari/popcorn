@@ -304,6 +304,26 @@ function WireNegativeSpace({ block }) {
   );
 }
 
+function WireRandomPick({ block, variant }) {
+  const reversed = block.align === 'right';
+
+  return (
+    <div className={`block-wireframe__random-pick block-wireframe__random-pick--${variant}${reversed ? ' block-wireframe__random-pick--reversed' : ''}`}>
+      <span className="block-wireframe__random-pick-aside" aria-hidden="true" />
+      <div className="block-wireframe__random-pick-main">
+        {variant === 'link' ? (
+          <>
+            <span className="block-wireframe__cta" />
+            <WireLines lines={2} />
+          </>
+        ) : (
+          <WireLines lines={3} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WireMedallions({ block }) {
   const people = Array.isArray(block.people) ? block.people : [];
   const count = Math.max(people.length, 1);
@@ -579,8 +599,7 @@ export default function AdminPageBlockWireframe({ block }) {
     case PAGE_BLOCK_TYPES.randomLink:
       preview = (
         <>
-          <span className="block-wireframe__cta" />
-          <WireLines lines={2} />
+          <WireRandomPick block={block} variant="link" />
           <span className="block-wireframe__cta" />
         </>
       );
@@ -588,7 +607,7 @@ export default function AdminPageBlockWireframe({ block }) {
     case PAGE_BLOCK_TYPES.randomBook:
       preview = (
         <>
-          <WireLines lines={3} />
+          <WireRandomPick block={block} variant="book" />
           <span className="block-wireframe__cta" />
         </>
       );

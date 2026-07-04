@@ -548,10 +548,10 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
       return <CardCarouselBlock block={block} />;
 
     case PAGE_BLOCK_TYPES.randomLink:
-      return <RandomLinkBlock />;
+      return <RandomLinkBlock block={block} />;
 
     case PAGE_BLOCK_TYPES.randomBook:
-      return <RandomBookBlock />;
+      return <RandomBookBlock block={block} />;
 
     default:
       return null;

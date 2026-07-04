@@ -23,6 +23,8 @@ import {
 import { canPageHaveBlocks } from '../utils/page-blocks';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
 import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
+import useAdminPageStars from '../hooks/useAdminPageStars';
+import { AdminListStarButton, AdminListStarFilter } from '../components/AdminListStar';
 
 function EditIcon() {
   return (
@@ -40,12 +42,23 @@ function TrashIcon() {
   );
 }
 
-function PageRow({ page, onEdit, onDelete }) {
+function PageRow({
+  page,
+  starred = false,
+  onToggleStar,
+  onEdit,
+  onDelete,
+}) {
   const slugLabel = getPageSlugLabel(page);
   const listTitle = getPageAdminListTitle(page);
 
   return (
     <li className="admin-pages__row">
+      <AdminListStarButton
+        starred={starred}
+        label={listTitle}
+        onToggle={() => onToggleStar(page.id)}
+      />
       <div className="admin-pages__title">{listTitle}</div>
       <div className="admin-pages__slug">{slugLabel}</div>
       <div className="admin-pages__actions">
@@ -77,6 +90,7 @@ function PageRow({ page, onEdit, onDelete }) {
 export default function AdminPagesPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
   const logActivity = useAdminActivityLogger();
+  const { starredPageIds, isStarred, toggleStar } = useAdminPageStars();
   const { pages, loading: pagesLoading, error: pagesError, upsertPage } = usePages();
   const [seedLoading, setSeedLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -85,6 +99,7 @@ export default function AdminPagesPage() {
   const [pageToDelete, setPageToDelete] = useState(null);
   const [saveError, setSaveError] = useState('');
   const [search, setSearch] = useState('');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
 
   useEffect(() => {
     document.title = adminDocumentTitle(adminText('pages.list.title'));
@@ -116,8 +131,11 @@ export default function AdminPagesPage() {
   }, [canAccessAdmin]);
 
   const { pinned, rest } = useMemo(
-    () => filterAndGroupPages(pages, search),
-    [pages, search],
+    () => filterAndGroupPages(pages, search, {
+      starredOnly: showStarredOnly,
+      starredPageIds,
+    }),
+    [pages, search, showStarredOnly, starredPageIds],
   );
 
   if (loading) {
@@ -202,7 +220,18 @@ export default function AdminPagesPage() {
 
   const listLoading = seedLoading || pagesLoading;
   const hasResults = pinned.length > 0 || rest.length > 0;
-  const showDivider = pinned.length > 0 && rest.length > 0;
+  const showPinnedDivider = pinned.length > 0 && rest.length > 0;
+
+  const renderPageRow = (page) => (
+    <PageRow
+      key={page.id}
+      page={page}
+      starred={isStarred(page.id)}
+      onToggleStar={toggleStar}
+      onEdit={handleEdit}
+      onDelete={setPageToDelete}
+    />
+  );
 
   return (
     <div className="admin-content container">
@@ -228,43 +257,39 @@ export default function AdminPagesPage() {
             <input
               type="search"
               className="admin-form__input admin-pages__search"
-              placeholder="Hledat podle názvu nebo URL…"
+              placeholder={adminText('pages.list.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label={adminText('pages.list.searchPlaceholder')}
+            />
+            <AdminListStarFilter
+              active={showStarredOnly}
+              onToggle={() => setShowStarredOnly((value) => !value)}
             />
           </div>
 
           <div className="admin-pages">
             <div className="admin-pages__head" aria-hidden="true">
+              <span />
               <span>Název</span>
               <span>URL</span>
               <span>Akce</span>
             </div>
 
             <ul className="admin-pages__list">
-              {pinned.map((page) => (
-                <PageRow
-                  key={page.id}
-                  page={page}
-                  onEdit={handleEdit}
-                  onDelete={setPageToDelete}
-                />
-              ))}
+              {pinned.map(renderPageRow)}
 
-              {showDivider && <li className="admin-pages__divider" aria-hidden="true" />}
+              {showPinnedDivider && <li className="admin-pages__divider" aria-hidden="true" />}
 
-              {rest.map((page) => (
-                <PageRow
-                  key={page.id}
-                  page={page}
-                  onEdit={handleEdit}
-                  onDelete={setPageToDelete}
-                />
-              ))}
+              {rest.map(renderPageRow)}
 
               {!hasResults && (
                 <li className="admin-pages__empty">
-                  {search.trim() ? 'Žádná stránka neodpovídá hledání.' : 'Zatím žádné stránky.'}
+                  {showStarredOnly
+                    ? adminText('common.stars.empty')
+                    : search.trim()
+                      ? adminText('pages.list.emptySearch')
+                      : adminText('pages.list.empty')}
                 </li>
               )}
             </ul>

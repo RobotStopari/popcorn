@@ -29,6 +29,8 @@ import {
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX,
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN,
+  PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT,
+  PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS,
   PAGE_BLOCK_WIDE_IMAGE_MAX_REM,
   PAGE_BLOCK_WIDE_IMAGE_WIDTH_DEFAULT,
   PAGE_BLOCK_WIDE_IMAGE_WIDTH_MAX,
@@ -62,6 +64,12 @@ export function createBlockId() {
 
 function normalizeAlignment(value) {
   return PAGE_BLOCK_ALIGNMENTS.includes(value) ? value : 'left';
+}
+
+function normalizeRandomPickAlign(value) {
+  return PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS.includes(value)
+    ? value
+    : PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT;
 }
 
 export function getPageBlockLimit(pageOrSlug) {
@@ -510,7 +518,11 @@ function normalizeBlock(raw) {
     case PAGE_BLOCK_TYPES.instagramFeed:
     case PAGE_BLOCK_TYPES.randomLink:
     case PAGE_BLOCK_TYPES.randomBook:
-      return { id, type };
+      return {
+        id,
+        type,
+        align: normalizeRandomPickAlign(raw.align),
+      };
     case PAGE_BLOCK_TYPES.socials:
       return {
         id,
@@ -738,6 +750,13 @@ export function createBlock(type, data = {}) {
         id: createBlockId(),
         type,
         cards: normalizeCarouselCards([]),
+      };
+    case PAGE_BLOCK_TYPES.randomLink:
+    case PAGE_BLOCK_TYPES.randomBook:
+      return {
+        id: createBlockId(),
+        type,
+        align: normalizeRandomPickAlign(data.align),
       };
     default:
       return { id: createBlockId(), type };

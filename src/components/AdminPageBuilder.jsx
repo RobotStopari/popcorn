@@ -147,9 +147,9 @@ function getBlockSummary(block) {
         : 'Karusel karet';
     }
     case PAGE_BLOCK_TYPES.randomLink:
-      return 'Náhodný odkaz a odkaz na seznam všech';
+      return block.align === 'right' ? 'Panel vpravo' : 'Panel vlevo';
     case PAGE_BLOCK_TYPES.randomBook:
-      return 'Náhodná publikace a odkaz na seznam všech';
+      return block.align === 'right' ? 'Panel vpravo' : 'Panel vlevo';
     default:
       return '';
   }

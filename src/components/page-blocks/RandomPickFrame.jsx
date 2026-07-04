@@ -1,8 +1,16 @@
-export default function RandomPickFrame({ badge, icon, variant, children, footer }) {
+export default function RandomPickFrame({
+  badge,
+  icon,
+  variant,
+  align = 'left',
+  children,
+  footer,
+}) {
   const variantClass = variant ? ` random-pick--${variant}` : '';
+  const alignClass = align === 'right' ? ' random-pick--align-right' : '';
 
   return (
-    <div className={`random-pick reveal reveal--scale${variantClass}`}>
+    <div className={`random-pick reveal reveal--scale${variantClass}${alignClass}`}>
       <div className="random-pick__frame">
         <div className="random-pick__layout">
           <div className="random-pick__aside">

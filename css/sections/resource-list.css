@@ -447,6 +447,17 @@
     padding: 2rem 2.25rem;
     gap: 1.1rem;
   }
+
+  .random-pick--align-right .random-pick__layout {
+    flex-direction: row-reverse;
+  }
+
+  .random-pick--align-right .random-pick__aside {
+    border-right: none;
+    border-left: var(--border);
+    border-top-left-radius: 0;
+    border-top-right-radius: calc(var(--radius) - 3px);
+  }
 }
 
 @media (min-width: 900px) {

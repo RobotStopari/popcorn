@@ -270,7 +270,7 @@ export default function AdminStatistikyPage() {
     started: session.startedLabel,
     lastSeen: session.lastSeenLabel,
     device: session.deviceLabel,
-    os: session.os,
+    os: session.osLabel,
     browser: session.browser,
     pages: session.pagesViewed,
     time: session.durationLabel,

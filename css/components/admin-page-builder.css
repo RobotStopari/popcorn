@@ -2100,6 +2100,46 @@ input.admin-page-meta-control {
   color: var(--red);
 }
 
+.block-wireframe__random-pick {
+  display: flex;
+  align-items: stretch;
+  gap: 0.55rem;
+  min-height: 4.5rem;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--white);
+}
+
+.block-wireframe__random-pick--reversed {
+  flex-direction: row-reverse;
+}
+
+.block-wireframe__random-pick-aside {
+  flex: 0 0 2.35rem;
+  background: color-mix(in srgb, var(--blue-pale) 55%, var(--white));
+  border-right: var(--border);
+}
+
+.block-wireframe__random-pick--book .block-wireframe__random-pick-aside {
+  background: color-mix(in srgb, var(--red-pale) 55%, var(--white));
+}
+
+.block-wireframe__random-pick--reversed .block-wireframe__random-pick-aside {
+  border-right: none;
+  border-left: var(--border);
+}
+
+.block-wireframe__random-pick-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  min-width: 0;
+}
+
 .block-wireframe__citation-small {
   display: flex;
   align-items: flex-start;

@@ -22,6 +22,8 @@ import {
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX,
   PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN,
+  PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS,
+  PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT,
   PAGE_BLOCK_WIDE_IMAGE_MAX_REM,
   PAGE_BLOCK_WIDE_IMAGE_WIDTH_DEFAULT,
   PAGE_BLOCK_WIDE_IMAGE_WIDTH_MAX,
@@ -207,6 +209,43 @@ function LayoutPicker({ reversed, onChange }) {
         </button>
       </div>
     </BlockEditorField>
+  );
+}
+
+function RandomPickLayoutPicker({ value, onChange }) {
+  const align = value === 'right' ? 'right' : 'left';
+  const labels = { left: 'Vlevo', right: 'Vpravo' };
+
+  return (
+    <BlockEditorField label="Zarovnání">
+      <div className="admin-page-block-segment admin-page-block-segment--two" role="group" aria-label="Zarovnání panelu">
+        {PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={`admin-page-block-segment__btn${align === option ? ' is-active' : ''}`}
+            onClick={() => onChange(option)}
+          >
+            {labels[option]}
+          </button>
+        ))}
+      </div>
+    </BlockEditorField>
+  );
+}
+
+function RandomPickBlockEditor({ block, onChange, title, hint }) {
+  const align = block.align === 'right' ? 'right' : PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT;
+
+  return (
+    <div className="admin-page-block-editor">
+      <BlockEditorSection title={title} hint={hint}>
+        <RandomPickLayoutPicker
+          value={align}
+          onChange={(nextAlign) => onChange({ align: nextAlign })}
+        />
+      </BlockEditorSection>
+    </div>
   );
 }
 
@@ -894,6 +933,28 @@ export default function AdminPageBlockEditor({
           />
         </BlockEditorSection>
       </div>
+    );
+  }
+
+  if (block.type === PAGE_BLOCK_TYPES.randomLink) {
+    return (
+      <RandomPickBlockEditor
+        block={block}
+        onChange={update}
+        title="Náhodný odkaz"
+        hint="Náhodně vybraný odkaz z administrace a tlačítko na seznam všech."
+      />
+    );
+  }
+
+  if (block.type === PAGE_BLOCK_TYPES.randomBook) {
+    return (
+      <RandomPickBlockEditor
+        block={block}
+        onChange={update}
+        title="Náhodná publikace"
+        hint="Náhodně vybraná publikace z administrace a tlačítko na seznam všech."
+      />
     );
   }
 

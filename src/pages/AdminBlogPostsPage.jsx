@@ -20,6 +20,9 @@ import {
 } from '../services/blog-posts';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
 import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
+import useAdminStars from '../hooks/useAdminStars';
+import { filterStarredOnly } from '../utils/admin-stars';
+import { AdminListStarButton, AdminListStarFilter } from '../components/AdminListStar';
 
 function TrashIcon() {
   return (
@@ -46,8 +49,10 @@ export default function AdminBlogPostsPage() {
     fetchAllUsers,
   } = useAdminAuth();
   const logActivity = useAdminActivityLogger();
+  const { starredIds, isStarred, toggleStar } = useAdminStars('blogPosts');
   const { posts, loading: postsLoading, error: postsError } = useBlogPosts();
   const [search, setSearch] = useState('');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -99,8 +104,9 @@ export default function AdminBlogPostsPage() {
 
   const filteredPosts = useMemo(() => {
     const searched = filterPostsBySearch(posts, search);
-    return sortPostsByPublished(searched);
-  }, [posts, search]);
+    const sorted = sortPostsByPublished(searched);
+    return filterStarredOnly(sorted, showStarredOnly, starredIds);
+  }, [posts, search, showStarredOnly, starredIds]);
 
   const resolveAuthor = (author) => resolveAuthorForDisplay(author, {
     usersByUid,
@@ -222,6 +228,10 @@ export default function AdminBlogPostsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
+        <AdminListStarFilter
+          active={showStarredOnly}
+          onToggle={() => setShowStarredOnly((value) => !value)}
+        />
       </div>
 
       {(postsError || saveError) && (
@@ -233,6 +243,7 @@ export default function AdminBlogPostsPage() {
       ) : (
         <div className="admin-blog-posts">
           <div className="admin-blog-posts__head" aria-hidden="true">
+            <span />
             <span>{adminText('common.columns.name')}</span>
             <span>{adminText('blog.list.columns.author')}</span>
             <span>{adminText('blog.list.columns.published')}</span>
@@ -245,6 +256,11 @@ export default function AdminBlogPostsPage() {
                 key={post.id}
                 className={`admin-blog-posts__row${post.isExternal ? ' admin-blog-posts__row--external' : ''}`}
               >
+                <AdminListStarButton
+                  starred={isStarred(post.id)}
+                  label={post.title}
+                  onToggle={() => toggleStar(post.id)}
+                />
                 <div className="admin-blog-posts__title">{post.title}</div>
                 <div className="admin-blog-posts__author">
                   <BlogAuthor
@@ -278,9 +294,11 @@ export default function AdminBlogPostsPage() {
 
           {!filteredPosts.length && (
             <p className="admin-blog-posts__empty">
-              {search.trim()
-                ? adminText('blog.list.emptySearch')
-                : adminText('blog.list.empty')}
+              {showStarredOnly
+                ? adminText('common.stars.empty')
+                : search.trim()
+                  ? adminText('blog.list.emptySearch')
+                  : adminText('blog.list.empty')}
             </p>
           )}
         </div>

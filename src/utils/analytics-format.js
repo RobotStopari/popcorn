@@ -1,4 +1,8 @@
-import { ANALYTICS_DEVICE_LABELS } from './analytics-device';
+import {
+  ANALYTICS_DEVICE_LABELS,
+  ANALYTICS_OS_LABELS,
+  normalizeAnalyticsDeviceInfo,
+} from './analytics-device';
 import { SOCIAL_LINK_PRESETS } from '../data/social-link-presets';
 
 function toDate(value) {
@@ -123,15 +127,21 @@ export function buildAnalyticsSummary(events = []) {
     const createdAt = toDate(event.createdAt);
     if (!createdAt) continue;
 
+    const { device, os, browser } = normalizeAnalyticsDeviceInfo({
+      device: event.device,
+      os: event.os,
+      browser: event.browser,
+    });
+
     const sessionId = event.sessionId || 'unknown';
     if (!sessions.has(sessionId)) {
       sessions.set(sessionId, {
         id: sessionId,
         startedAt: createdAt,
         lastSeenAt: createdAt,
-        device: event.device || 'desktop',
-        os: event.os || 'Other',
-        browser: event.browser || 'Other',
+        device,
+        os,
+        browser,
         entryPath: event.path || '/',
         exitPath: event.path || '/',
         pagesViewed: 0,
@@ -152,9 +162,9 @@ export function buildAnalyticsSummary(events = []) {
 
       incrementMap(pageViewsByDay, dayKey);
       incrementMap(paths, path);
-      incrementMap(devices, event.device || 'desktop');
-      incrementMap(osNames, event.os || 'Other');
-      incrementMap(browsers, event.browser || 'Other');
+      incrementMap(devices, device);
+      incrementMap(osNames, os);
+      incrementMap(browsers, browser);
       incrementMap(viewsByHour, createdAt.getHours());
 
       if (!pageViewsByDayByPath.has(path)) {
@@ -236,6 +246,7 @@ export function buildAnalyticsSummary(events = []) {
     .map((session) => ({
       ...session,
       deviceLabel: ANALYTICS_DEVICE_LABELS[session.device] || session.device,
+      osLabel: ANALYTICS_OS_LABELS[session.os] || session.os,
       durationLabel: formatDuration(session.totalSeconds),
       startedLabel: session.startedAt.toLocaleString('cs-CZ'),
       lastSeenLabel: session.lastSeenAt.toLocaleString('cs-CZ'),
@@ -281,7 +292,7 @@ export function buildAnalyticsSummary(events = []) {
     entryPages: mapToSortedRows(entryPages, formatPathLabel).slice(0, 12),
     exitPages: mapToSortedRows(exitPages, formatPathLabel).slice(0, 12),
     devices: mapToSortedRows(devices, (key) => ANALYTICS_DEVICE_LABELS[key] || key),
-    os: mapToSortedRows(osNames).slice(0, 8),
+    os: mapToSortedRows(osNames, (key) => ANALYTICS_OS_LABELS[key] || key).slice(0, 8),
     browsers: mapToSortedRows(browsers).slice(0, 8),
     articles: mapToSortedRows(articles).slice(0, 12),
     events: mapToSortedRows(eventViews).slice(0, 12),

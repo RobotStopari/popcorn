@@ -12,6 +12,29 @@ import { formatEventDateLabel, isEventPast, partitionAdminEventList, sortPastEve
 import { getAdminEventTitle, normalizeEvent } from '../utils/event-format';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
 import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
+import useAdminStars from '../hooks/useAdminStars';
+import { filterStarredOnly } from '../utils/admin-stars';
+import { AdminListStarButton, AdminListStarFilter } from '../components/AdminListStar';
+
+function applyEventsStarredFilter(result, starredOnly, starredIds) {
+  if (!starredOnly) return result;
+
+  if (Array.isArray(result)) {
+    return filterStarredOnly(result, true, starredIds);
+  }
+
+  const drafts = filterStarredOnly(result.drafts, true, starredIds);
+  const upcoming = filterStarredOnly(result.upcoming, true, starredIds);
+  const past = filterStarredOnly(result.past, true, starredIds);
+  const hasFutureSection = drafts.length > 0 || upcoming.length > 0;
+
+  return {
+    drafts,
+    upcoming,
+    past,
+    showPastDivider: hasFutureSection && past.length > 0,
+  };
+}
 
 function TrashIcon() {
   return (
@@ -38,8 +61,10 @@ const FILTERS = [
 export default function AdminEventsPage() {
   const { canAccessAdmin, loading } = useAdminAuth();
   const logActivity = useAdminActivityLogger();
+  const { starredIds, isStarred, toggleStar } = useAdminStars('events');
   const { events, loading: eventsLoading, error: eventsError } = useEvents();
   const [search, setSearch] = useState('');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortDescending, setSortDescending] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -76,22 +101,22 @@ export default function AdminEventsPage() {
     }
 
     if (statusFilter === 'upcoming') {
-      return sortUpcomingEvents(list, sortDescending);
+      return filterStarredOnly(sortUpcomingEvents(list, sortDescending), showStarredOnly, starredIds);
     }
 
     if (statusFilter === 'past') {
-      return sortPastEvents(list, sortDescending);
+      return filterStarredOnly(sortPastEvents(list, sortDescending), showStarredOnly, starredIds);
     }
 
     const { drafts, upcoming, past } = partitionAdminEventList(list, sortDescending);
     const hasFutureSection = drafts.length > 0 || upcoming.length > 0;
-    return {
+    return applyEventsStarredFilter({
       drafts,
       upcoming,
       past,
       showPastDivider: hasFutureSection && past.length > 0,
-    };
-  }, [events, search, statusFilter, sortDescending]);
+    }, showStarredOnly, starredIds);
+  }, [events, search, showStarredOnly, starredIds, statusFilter, sortDescending]);
 
   const flatEvents = Array.isArray(filteredEvents) ? filteredEvents : [
     ...filteredEvents.drafts,
@@ -230,13 +255,17 @@ export default function AdminEventsPage() {
             {sortDescending ? adminText('events.list.sortReversed') : adminText('events.list.sortNearest')}
           </button>
         </div>
-        <div className="admin-events__toolbar-row">
+        <div className="admin-events__toolbar-row admin-events__toolbar-row--search">
           <input
             type="search"
             className="admin-form__input admin-events__search"
             placeholder={adminText('events.list.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+          />
+          <AdminListStarFilter
+            active={showStarredOnly}
+            onToggle={() => setShowStarredOnly((value) => !value)}
           />
         </div>
       </div>
@@ -250,6 +279,7 @@ export default function AdminEventsPage() {
       ) : (
         <div className="admin-events">
           <div className="admin-events__head" aria-hidden="true">
+            <span />
             <span>{adminText('common.columns.name')}</span>
             <span>{adminText('events.list.columns.date')}</span>
             <span>{adminText('events.list.columns.category')}</span>
@@ -272,6 +302,11 @@ export default function AdminEventsPage() {
                     isPastSectionStart ? 'admin-events__row--past-divider' : '',
                   ].filter(Boolean).join(' ')}
                 >
+                  <AdminListStarButton
+                    starred={isStarred(event.id)}
+                    label={displayTitle}
+                    onToggle={() => toggleStar(event.id)}
+                  />
                   <div className="admin-events__title">
                     <EventCategoryIcon category={event.category} size="md" />
                     <span className="admin-events__title-text">{displayTitle}</span>
@@ -328,13 +363,15 @@ export default function AdminEventsPage() {
 
           {!flatEvents.length && (
             <p className="admin-events__empty">
-              {search.trim()
-                ? adminText('events.list.emptySearch')
-                : statusFilter === 'upcoming'
-                  ? adminText('events.list.emptyUpcoming')
-                  : statusFilter === 'past'
-                    ? adminText('events.list.emptyPast')
-                    : adminText('events.list.empty')}
+              {showStarredOnly
+                ? adminText('common.stars.empty')
+                : search.trim()
+                  ? adminText('events.list.emptySearch')
+                  : statusFilter === 'upcoming'
+                    ? adminText('events.list.emptyUpcoming')
+                    : statusFilter === 'past'
+                      ? adminText('events.list.emptyPast')
+                      : adminText('events.list.empty')}
             </p>
           )}
         </div>
