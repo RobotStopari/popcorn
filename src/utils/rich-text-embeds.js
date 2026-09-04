@@ -1,3 +1,5 @@
+import { stripForeignFonts } from './rich-text-sanitize';
+
 function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
@@ -125,12 +127,14 @@ function transformEditorDividers(root) {
 export function transformRichTextForDisplay(html) {
   if (!html) return '';
 
+  const withoutForeignFonts = stripForeignFonts(html);
+
   if (typeof document === 'undefined') {
-    return html;
+    return withoutForeignFonts;
   }
 
   const wrapper = document.createElement('div');
-  wrapper.innerHTML = html;
+  wrapper.innerHTML = withoutForeignFonts;
   transformYoutubeMarkers(wrapper);
   transformEditorDividers(wrapper);
   return wrapper.innerHTML;

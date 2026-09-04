@@ -66,6 +66,7 @@ service cloud.firestore {
         && shareLinkEditable(shareId)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'title',
+          'slug',
           'dateStart',
           'timeStart',
           'dateEnd',
@@ -82,6 +83,7 @@ service cloud.firestore {
           'galleryLink',
           'coverImage',
           'coverPublicId',
+          'coverPatternSeed',
           'promoImages',
           'galleryPicks',
           'category',
@@ -171,6 +173,10 @@ service cloud.firestore {
         && data.slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$')
         && data.body is string
         && data.keywords is list
+        && data.get('categoryId', '') is string
+        && data.get('categoryId', '').size() <= 40
+        && data.get('coverPatternSeed', '') is string
+        && data.get('coverPatternSeed', '').size() <= 80
         && data.publishedDate is string
         && data.publishedDate.size() > 0
         && data.publishedTime is string
@@ -494,6 +500,67 @@ service cloud.firestore {
         && emails.size() <= 50;
     }
 
+    function validResourceCategoryItem(item) {
+      return item is map
+        && item.keys().hasOnly(['id', 'label'])
+        && item.id is string
+        && item.id.size() > 0
+        && item.id.size() <= 40
+        && item.label is string
+        && item.label.size() > 0
+        && item.label.size() <= 80;
+    }
+
+    function validResourceCategoriesList(categories) {
+      return categories is list
+        && categories.size() <= 40
+        && (
+          categories.size() == 0
+          || (
+            validResourceCategoryItem(categories[0])
+            && (categories.size() < 2 || validResourceCategoryItem(categories[1]))
+            && (categories.size() < 3 || validResourceCategoryItem(categories[2]))
+            && (categories.size() < 4 || validResourceCategoryItem(categories[3]))
+            && (categories.size() < 5 || validResourceCategoryItem(categories[4]))
+            && (categories.size() < 6 || validResourceCategoryItem(categories[5]))
+            && (categories.size() < 7 || validResourceCategoryItem(categories[6]))
+            && (categories.size() < 8 || validResourceCategoryItem(categories[7]))
+            && (categories.size() < 9 || validResourceCategoryItem(categories[8]))
+            && (categories.size() < 10 || validResourceCategoryItem(categories[9]))
+            && (categories.size() < 11 || validResourceCategoryItem(categories[10]))
+            && (categories.size() < 12 || validResourceCategoryItem(categories[11]))
+            && (categories.size() < 13 || validResourceCategoryItem(categories[12]))
+            && (categories.size() < 14 || validResourceCategoryItem(categories[13]))
+            && (categories.size() < 15 || validResourceCategoryItem(categories[14]))
+            && (categories.size() < 16 || validResourceCategoryItem(categories[15]))
+            && (categories.size() < 17 || validResourceCategoryItem(categories[16]))
+            && (categories.size() < 18 || validResourceCategoryItem(categories[17]))
+            && (categories.size() < 19 || validResourceCategoryItem(categories[18]))
+            && (categories.size() < 20 || validResourceCategoryItem(categories[19]))
+            && (categories.size() < 21 || validResourceCategoryItem(categories[20]))
+            && (categories.size() < 22 || validResourceCategoryItem(categories[21]))
+            && (categories.size() < 23 || validResourceCategoryItem(categories[22]))
+            && (categories.size() < 24 || validResourceCategoryItem(categories[23]))
+            && (categories.size() < 25 || validResourceCategoryItem(categories[24]))
+            && (categories.size() < 26 || validResourceCategoryItem(categories[25]))
+            && (categories.size() < 27 || validResourceCategoryItem(categories[26]))
+            && (categories.size() < 28 || validResourceCategoryItem(categories[27]))
+            && (categories.size() < 29 || validResourceCategoryItem(categories[28]))
+            && (categories.size() < 30 || validResourceCategoryItem(categories[29]))
+            && (categories.size() < 31 || validResourceCategoryItem(categories[30]))
+            && (categories.size() < 32 || validResourceCategoryItem(categories[31]))
+            && (categories.size() < 33 || validResourceCategoryItem(categories[32]))
+            && (categories.size() < 34 || validResourceCategoryItem(categories[33]))
+            && (categories.size() < 35 || validResourceCategoryItem(categories[34]))
+            && (categories.size() < 36 || validResourceCategoryItem(categories[35]))
+            && (categories.size() < 37 || validResourceCategoryItem(categories[36]))
+            && (categories.size() < 38 || validResourceCategoryItem(categories[37]))
+            && (categories.size() < 39 || validResourceCategoryItem(categories[38]))
+            && (categories.size() < 40 || validResourceCategoryItem(categories[39]))
+          )
+        );
+    }
+
     function validSiteSettingsPatch() {
       let data = request.resource.data;
       let keys = request.resource.data.diff(resource.data).affectedKeys();
@@ -513,6 +580,9 @@ service cloud.firestore {
           'anonymousBlogLikesEnabled',
           'membersCanCreateBlogPosts',
           'blogNotifyEmails',
+          'blogCategories',
+          'publicationCategories',
+          'usefulLinkCategories',
           'eventCategoryPublicLabel',
           'eventCategoryPublicDescription',
           'eventCategoryPrivateLabel',
@@ -536,6 +606,9 @@ service cloud.firestore {
         && (!keys.hasAny(['anonymousBlogLikesEnabled']) || data.anonymousBlogLikesEnabled is bool)
         && (!keys.hasAny(['membersCanCreateBlogPosts']) || data.membersCanCreateBlogPosts is bool)
         && (!keys.hasAny(['blogNotifyEmails']) || validBlogNotifyEmails(data.blogNotifyEmails))
+        && (!keys.hasAny(['blogCategories']) || validResourceCategoriesList(data.blogCategories))
+        && (!keys.hasAny(['publicationCategories']) || validResourceCategoriesList(data.publicationCategories))
+        && (!keys.hasAny(['usefulLinkCategories']) || validResourceCategoriesList(data.usefulLinkCategories))
         && (!keys.hasAny(['eventCategoryPublicLabel']) || data.eventCategoryPublicLabel is string)
         && (!keys.hasAny(['eventCategoryPublicDescription']) || data.eventCategoryPublicDescription is string)
         && (!keys.hasAny(['eventCategoryPrivateLabel']) || data.eventCategoryPrivateLabel is string)
@@ -562,6 +635,9 @@ service cloud.firestore {
           'anonymousBlogLikesEnabled',
           'membersCanCreateBlogPosts',
           'blogNotifyEmails',
+          'blogCategories',
+          'publicationCategories',
+          'usefulLinkCategories',
           'eventCategoryPublicLabel',
           'eventCategoryPublicDescription',
           'eventCategoryPrivateLabel',
@@ -585,6 +661,9 @@ service cloud.firestore {
         && data.anonymousBlogLikesEnabled is bool
         && data.membersCanCreateBlogPosts is bool
         && validBlogNotifyEmails(data.get('blogNotifyEmails', []))
+        && validResourceCategoriesList(data.get('blogCategories', []))
+        && validResourceCategoriesList(data.get('publicationCategories', []))
+        && validResourceCategoriesList(data.get('usefulLinkCategories', []))
         && data.eventCategoryPublicLabel is string
         && data.eventCategoryPublicDescription is string
         && data.eventCategoryPrivateLabel is string
@@ -757,6 +836,7 @@ service cloud.firestore {
           'url',
           'description',
           'keywords',
+          'categoryId',
           'createdAt',
           'updatedAt',
         ])
@@ -769,7 +849,9 @@ service cloud.firestore {
         && data.url.matches('^https?://.+')
         && data.description is string
         && data.description.size() <= 200
-        && validKeywordsList(data.keywords);
+        && validKeywordsList(data.keywords)
+        && data.get('categoryId', '') is string
+        && data.get('categoryId', '').size() <= 40;
     }
 
     function validPublicationData(data) {
@@ -778,6 +860,7 @@ service cloud.firestore {
           'author',
           'description',
           'keywords',
+          'categoryId',
           'createdAt',
           'updatedAt',
         ])
@@ -788,7 +871,9 @@ service cloud.firestore {
         && data.author.size() <= 120
         && data.description is string
         && data.description.size() <= 400
-        && validKeywordsList(data.keywords);
+        && validKeywordsList(data.keywords)
+        && data.get('categoryId', '') is string
+        && data.get('categoryId', '').size() <= 40;
     }
 
     // Useful links & publications (admin CRUD, public read)

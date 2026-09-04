@@ -23,11 +23,12 @@ function ArrowIcon({ direction }) {
   );
 }
 
-export default function EventsPagination({ basePath, page, totalPages }) {
+export default function EventsPagination({ basePath, page, currentPage, totalPages }) {
+  const activePage = page ?? currentPage ?? 1;
   if (totalPages <= 1) return null;
 
-  const prevPage = page > 1 ? page - 1 : null;
-  const nextPage = page < totalPages ? page + 1 : null;
+  const prevPage = activePage > 1 ? activePage - 1 : null;
+  const nextPage = activePage < totalPages ? activePage + 1 : null;
 
   return (
     <nav className="events-pagination reveal" aria-label={siteText('events.pagination.navAriaLabel')}>
@@ -36,6 +37,7 @@ export default function EventsPagination({ basePath, page, totalPages }) {
           to={prevPage === 1 ? basePath : `${basePath}?page=${prevPage}`}
           className="events-pagination__btn"
           aria-label={siteText('events.pagination.prevAriaLabel')}
+          onClick={(event) => event.currentTarget.blur()}
         >
           <ArrowIcon direction="prev" />
         </Link>
@@ -46,7 +48,7 @@ export default function EventsPagination({ basePath, page, totalPages }) {
       )}
 
       <span className="events-pagination__status">
-        {siteText('events.pagination.status', { page, totalPages })}
+        {siteText('events.pagination.status', { page: activePage, totalPages })}
       </span>
 
       {nextPage ? (
@@ -54,6 +56,7 @@ export default function EventsPagination({ basePath, page, totalPages }) {
           to={`${basePath}?page=${nextPage}`}
           className="events-pagination__btn"
           aria-label={siteText('events.pagination.nextAriaLabel')}
+          onClick={(event) => event.currentTarget.blur()}
         >
           <ArrowIcon direction="next" />
         </Link>

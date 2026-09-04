@@ -290,6 +290,23 @@ function buildOverlay(rng, palette, past) {
  * Deterministic decorative cover when an event has no photo.
  * Same seed always produces the same pattern.
  */
+export function createCoverPatternSeed(prefix = 'cover') {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** First non-empty candidate — keep admin preview and public cards on the same seed. */
+export function resolveCoverPatternSeed(...candidates) {
+  for (const value of candidates) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim().slice(0, 80);
+    }
+  }
+  return 'cover';
+}
+
 export function getEventCoverStyle(seedKey, { past = false } = {}) {
   const rng = createRng(hashSeed(seedKey));
   const palette = past ? getPastPalette() : getCoverPalette();

@@ -22,6 +22,7 @@ export function normalizeUsefulLink(raw = {}) {
     url,
     description: raw.description?.trim() || '',
     keywords: normalizeKeywords(raw.keywords),
+    categoryId: typeof raw.categoryId === 'string' ? raw.categoryId.trim().slice(0, 40) : '',
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -68,6 +69,7 @@ export function getDefaultUsefulLinkFormState() {
     url: '',
     description: '',
     keywordsInput: '',
+    categoryId: '',
   };
 }
 
@@ -79,6 +81,7 @@ export function usefulLinkToFormState(link) {
     url: link.url || '',
     description: link.description || '',
     keywordsInput: keywordsToInput(link.keywords),
+    categoryId: link.categoryId || '',
   };
 }
 
@@ -88,6 +91,7 @@ export function formStateToUsefulLinkPayload(form) {
     url: form.url.trim(),
     description: form.description.trim(),
     keywords: parseKeywordsInput(form.keywordsInput),
+    categoryId: typeof form.categoryId === 'string' ? form.categoryId.trim().slice(0, 40) : '',
   };
 }
 

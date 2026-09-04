@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { blogPostUrl } from '../data/blog-posts';
-import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { getEventCoverStyle, resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import BlogAuthor from './BlogAuthor';
 import BlogPostStats from './BlogPostStats';
+import ResourceCategoryBadge from './ResourceCategoryBadge';
 import { siteText } from '../utils/admin-text';
 import { trackNavClick, trackOutboundClick } from '../utils/analytics-track';
 
@@ -34,8 +35,8 @@ function ExternalLinkIcon() {
 
 function BlogPostCover({ post }) {
   const patternStyle = useMemo(
-    () => getEventCoverStyle(post.id || post.slug),
-    [post.id, post.slug],
+    () => getEventCoverStyle(resolveCoverPatternSeed(post.coverPatternSeed, post.id, post.slug)),
+    [post.coverPatternSeed, post.id, post.slug],
   );
 
   if (post.coverImage) {
@@ -71,6 +72,12 @@ function BlogCardContent({ post, authorLinkable = true }) {
           {post.dateTimeLabel}
         </time>
       </div>
+
+      <ResourceCategoryBadge
+        type="blog"
+        categoryId={post.categoryId}
+        className="blog-card__category"
+      />
 
       <h2 className="blog-card__title">
         <span className="blog-card__title-text">{post.title}</span>

@@ -11,33 +11,29 @@ export default function EventCategoryLabel({
 }) {
   const { getLabel, getDescription } = useEventCategories();
   const id = normalizeEventCategory(category);
-  const pastClass = past ? ' event-category--past' : '';
+  const pastClass = past ? ' event-category-tag--past' : '';
   const label = getLabel(id);
   const description = showDescription ? getDescription(id) : '';
-
-  const labelContent = (
-    <span className="event-category__row">
-      <EventCategoryIcon category={id} size={iconSize} past={past} />
-      <span className="event-category__text">{label}</span>
-    </span>
-  );
-
-  if (showDescription && description) {
-    return (
-      <div className={`event-category-detail event-category-detail--${id}${pastClass}${className ? ` ${className}` : ''}`}>
-        <div className="event-category-detail__callout" role="note">
-          <p className={`event-category event-category--${id}${pastClass} event-category-detail__label`}>
-            {labelContent}
-          </p>
-          <p className="event-category-detail__text">{description}</p>
-        </div>
-      </div>
-    );
-  }
+  const hasDescription = Boolean(description);
 
   return (
-    <p className={`event-category event-category--${id}${pastClass}${className ? ` ${className}` : ''}`}>
-      {labelContent}
-    </p>
+    <div
+      className={[
+        'event-category-tag',
+        `event-category-tag--${id}`,
+        hasDescription ? 'event-category-tag--with-text' : '',
+        pastClass,
+        className,
+      ].filter(Boolean).join(' ')}
+      role={hasDescription ? 'note' : undefined}
+    >
+      <span className="event-category-tag__label">
+        <EventCategoryIcon category={id} size={iconSize} past={past} />
+        <span className="event-category-tag__name">{label}</span>
+      </span>
+      {hasDescription && (
+        <p className="event-category-tag__description">{description}</p>
+      )}
+    </div>
   );
 }

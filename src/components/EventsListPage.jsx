@@ -43,6 +43,8 @@ export default function EventsListPage({ page, variant }) {
   }, [page?.title]);
 
   useEffect(() => {
+    if (loading) return;
+
     if (!Number.isFinite(requestedPage) || requestedPage < 1) {
       setSearchParams({}, { replace: true });
       return;
@@ -55,7 +57,7 @@ export default function EventsListPage({ page, variant }) {
         setSearchParams({ page: String(totalPages) }, { replace: true });
       }
     }
-  }, [requestedPage, totalPages, setSearchParams]);
+  }, [loading, requestedPage, totalPages, setSearchParams]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });

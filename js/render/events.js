@@ -3,7 +3,7 @@ import { CARD_EVENTS, eventUrl } from '../../data/events.js';
 
 function renderEventCard(event, index, past = false) {
   const pastClass = past ? ' event-card--past' : '';
-  const delayClass = ` reveal--delay-${index + 1}`;
+  const delayClass = ` reveal--delay-${(index % 4) + 1}`;
   const href = event.action?.href || eventUrl(event.id);
   const actionLabel = event.action?.label || (past ? 'Přečíst o akci' : 'Více informací');
 

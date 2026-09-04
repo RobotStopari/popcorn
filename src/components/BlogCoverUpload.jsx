@@ -5,17 +5,12 @@ import {
   BLOG_COVER_UPLOAD_HINT,
   BLOG_COVER_WIDTH,
 } from '../data/blog-images';
-import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { getEventCoverStyle, createCoverPatternSeed } from '../utils/event-cover-pattern';
 import { adminText } from '../utils/admin-text';
 import { isCloudinaryConfigured, uploadBlogPostCover } from '../services/cloudinary';
 import { setUploadBusy } from '../utils/upload-busy';
 
-export function createCoverPatternSeed() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `blog-cover-${crypto.randomUUID()}`;
-  }
-  return `blog-cover-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
+export { createCoverPatternSeed };
 
 function RefreshIcon() {
   return (
@@ -106,7 +101,7 @@ export default function BlogCoverUpload({
               <button
                 type="button"
                 className="admin-event-cover__pattern-refresh"
-                onClick={() => onPreviewSeedChange(createCoverPatternSeed())}
+                onClick={() => onPreviewSeedChange(createCoverPatternSeed('blog-cover'))}
                 disabled={disabled || uploading}
                 aria-label={adminText('blog.form.coverPatternRefreshAria')}
               >

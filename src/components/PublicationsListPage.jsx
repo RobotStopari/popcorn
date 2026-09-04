@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getPageIntro, pagePath } from '../data/pages';
+import { filterItemsByCategory } from '../data/resource-categories';
 import EventsPagination from './EventsPagination';
-import KeywordFilter from './KeywordFilter';
 import PublicationCard from './PublicationCard';
+import ResourceListToolbar from './ResourceListToolbar';
 import SectionLabel from './SectionLabel';
 import { usePublications } from '../contexts/PublicationsContext';
 import { filterPublicationsBySearch } from '../utils/publication-format';
@@ -16,11 +17,12 @@ export default function PublicationsListPage({ page }) {
   const { publications, loading } = usePublications();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const basePath = page ? pagePath(page) : '/publikace';
 
   const filteredPublications = useMemo(
-    () => filterPublicationsBySearch(publications, search),
-    [publications, search],
+    () => filterPublicationsBySearch(filterItemsByCategory(publications, categoryId), search),
+    [publications, search, categoryId],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredPublications.length / PAGE_SIZE));
@@ -28,6 +30,7 @@ export default function PublicationsListPage({ page }) {
   const currentPage = Number.isFinite(requestedPage) && requestedPage > 0
     ? Math.min(requestedPage, totalPages)
     : 1;
+  const filterKeyRef = useRef(`${search}|${categoryId}`);
 
   const pagePublications = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -40,6 +43,8 @@ export default function PublicationsListPage({ page }) {
   }, [page?.title]);
 
   useEffect(() => {
+    if (loading) return;
+
     if (!Number.isFinite(requestedPage) || requestedPage < 1) {
       setSearchParams({}, { replace: true });
       return;
@@ -52,21 +57,28 @@ export default function PublicationsListPage({ page }) {
         setSearchParams({ page: String(totalPages) }, { replace: true });
       }
     }
-  }, [requestedPage, totalPages, setSearchParams]);
+  }, [loading, requestedPage, totalPages, setSearchParams]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage, page?.id]);
 
   useEffect(() => {
+    const key = `${search}|${categoryId}`;
+    if (filterKeyRef.current === key) return;
+    filterKeyRef.current = key;
+
     setSearchParams((prev) => {
+      if (!prev.get('page')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('page');
       return next;
     }, { replace: true });
-  }, [search, setSearchParams]);
+  }, [search, categoryId, setSearchParams]);
 
   if (!page) return null;
+
+  const hasActiveFilters = Boolean(search.trim() || categoryId);
 
   return (
     <section className="section events-list resource-list resource-list--publications">
@@ -74,10 +86,12 @@ export default function PublicationsListPage({ page }) {
         <SectionLabel label={page.title} theme="red" />
         <p className="events-list__intro reveal">{intro}</p>
 
-        <KeywordFilter
-          items={publications}
+        <ResourceListToolbar
+          type="publication"
           search={search}
           onSearchChange={setSearch}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
           textPrefix="publications.list"
         />
 
@@ -91,7 +105,7 @@ export default function PublicationsListPage({ page }) {
           </div>
         ) : (
           <p className="section__empty reveal">
-            {search.trim()
+            {hasActiveFilters
               ? siteText('publications.list.emptySearch')
               : siteText('publications.list.empty')}
           </p>
@@ -99,9 +113,9 @@ export default function PublicationsListPage({ page }) {
 
         {!loading && filteredPublications.length > PAGE_SIZE && (
           <EventsPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
             basePath={basePath}
+            page={currentPage}
+            totalPages={totalPages}
           />
         )}
       </div>

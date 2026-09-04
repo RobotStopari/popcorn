@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { pagePath, getPageIntro } from '../data/pages';
+import { filterItemsByCategory } from '../data/resource-categories';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
 import AdminDeleteBlogPostDialog from './AdminDeleteBlogPostDialog';
-import BlogKeywordFilter from './BlogKeywordFilter';
 import BlogPageToolbar from './BlogPageToolbar';
 import BlogPostCard from './BlogPostCard';
 import EventsPagination from './EventsPagination';
+import ResourceListToolbar from './ResourceListToolbar';
 import SectionLabel from './SectionLabel';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
@@ -20,7 +21,9 @@ export default function BlogListPage({ page }) {
   const { posts, loading } = useBlogPosts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const knownPostIdsRef = useRef(new Set());
+  const filterKeyRef = useRef(`${search}|${categoryId}`);
   const basePath = page ? pagePath(page) : '/blog';
 
   const {
@@ -42,8 +45,8 @@ export default function BlogListPage({ page }) {
   } = useBlogAuthoring();
 
   const filteredPosts = useMemo(
-    () => filterPostsBySearch(posts, search),
-    [posts, search],
+    () => filterPostsBySearch(filterItemsByCategory(posts, categoryId), search),
+    [posts, search, categoryId],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
@@ -69,6 +72,8 @@ export default function BlogListPage({ page }) {
   }, [page?.title]);
 
   useEffect(() => {
+    if (loading) return;
+
     if (!Number.isFinite(requestedPage) || requestedPage < 1) {
       setSearchParams({}, { replace: true });
       return;
@@ -81,21 +86,28 @@ export default function BlogListPage({ page }) {
         setSearchParams({ page: String(totalPages) }, { replace: true });
       }
     }
-  }, [requestedPage, totalPages, setSearchParams]);
+  }, [loading, requestedPage, totalPages, setSearchParams]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage, page?.id]);
 
   useEffect(() => {
+    const key = `${search}|${categoryId}`;
+    if (filterKeyRef.current === key) return;
+    filterKeyRef.current = key;
+
     setSearchParams((prev) => {
+      if (!prev.get('page')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('page');
       return next;
     }, { replace: true });
-  }, [search, setSearchParams]);
+  }, [search, categoryId, setSearchParams]);
 
   if (!page) return null;
+
+  const hasActiveFilters = Boolean(search.trim() || categoryId);
 
   return (
     <section className="section events-list blog-list">
@@ -107,10 +119,13 @@ export default function BlogListPage({ page }) {
 
         <p className="events-list__intro reveal">{intro}</p>
 
-        <BlogKeywordFilter
-          posts={posts}
+        <ResourceListToolbar
+          type="blog"
           search={search}
           onSearchChange={setSearch}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          textPrefix="blog.list"
         />
 
         {loading ? (
@@ -131,7 +146,7 @@ export default function BlogListPage({ page }) {
           </div>
         ) : (
           <p className="section__empty">
-            {search.trim()
+            {hasActiveFilters
               ? siteText('blog.list.emptySearch')
               : siteText('blog.list.empty')}
           </p>

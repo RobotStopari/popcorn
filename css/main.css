@@ -4,6 +4,7 @@
 @import url('utilities/page-dots.css');
 @import url('utilities/page-transition.css');
 @import url('utilities/shine.css');
+@import url('utilities/rich-text.css');
 @import url('components/loader.css');
 @import url('components/buttons.css');
 @import url('components/image-frame.css');
@@ -17,6 +18,7 @@
 @import url('components/flow-connector.css');
 @import url('components/event-card.css');
 @import url('components/event-category.css');
+@import url('components/resource-category.css');
 @import url('sections/content-page.css');
 @import url('sections/events-list.css');
 @import url('sections/blog.css');

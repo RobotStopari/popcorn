@@ -8,7 +8,7 @@ import EventCategoryIcon from '../components/EventCategoryIcon';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { createDraftEvent, createEvent, deleteEvent, fetchEventById, updateEvent } from '../services/events';
 import { useEvents } from '../contexts/EventsContext';
-import { formatEventDateLabel, isEventPast, partitionAdminEventList, sortPastEvents, sortUpcomingEvents } from '../utils/event-dates';
+import { eventHasMissingTimes, formatEventDateLabel, isEventPast, partitionAdminEventList, sortPastEvents, sortUpcomingEvents } from '../utils/event-dates';
 import { getAdminEventTitle, normalizeEvent } from '../utils/event-format';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
 import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
@@ -310,6 +310,15 @@ export default function AdminEventsPage() {
                   <div className="admin-events__title">
                     <EventCategoryIcon category={event.category} size="md" />
                     <span className="admin-events__title-text">{displayTitle}</span>
+                    {eventHasMissingTimes(event) && (
+                      <span
+                        className="admin-events__time-warning"
+                        title={adminText('events.list.badges.missingTimesTitle')}
+                        aria-label={adminText('events.list.badges.missingTimesTitle')}
+                      >
+                        !
+                      </span>
+                    )}
                   </div>
                   <div className="admin-events__meta">
                     <div className="admin-events__date">{formatEventDateLabel(event)}</div>

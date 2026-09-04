@@ -6,8 +6,10 @@ export const MONTHS_GENITIVE = [
 const WEEKDAYS = ['neděle', 'pondělí', 'úterý', 'středa', 'čvrtek', 'pátek', 'sobota'];
 
 export function parseIsoDate(iso) {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '').trim());
+  if (!match) return new Date(NaN);
+  // Noon avoids DST midnight edge cases when reading weekday/calendar day.
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0);
 }
 
 export function toIsoDate(date) {
@@ -15,6 +17,31 @@ export function toIsoDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/** Weekday for a YYYY-MM-DD calendar date: 0=Sun … 5=Fri … 6=Sat (timezone-independent). */
+export function getCalendarWeekday(isoDate) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDate || '').trim());
+  if (!match) return null;
+  return new Date(Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    12,
+  )).getUTCDay();
+}
+
+export function addCalendarDays(isoDate, days) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDate || '').trim());
+  if (!match) return '';
+  const date = new Date(Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    12,
+  ));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 export function getEventStartDateTime(event) {
@@ -26,25 +53,53 @@ export function getEventEndDateTime(event) {
 }
 
 export function isEventPast(event, now = new Date()) {
-  if (!event.dateEnd || !event.timeEnd) return false;
+  if (!event.dateEnd) return false;
   const end = getEventEndDateTime(event);
   if (Number.isNaN(end.getTime())) return false;
   return end <= now;
 }
 
+/** Friday start → following Sunday; otherwise same day. */
 export function suggestEndDate(dateStart) {
-  if (!dateStart) return '';
-  const start = parseIsoDate(dateStart);
-  const end = new Date(start);
-  if (start.getDay() === 5) {
-    end.setDate(end.getDate() + 2);
-  }
-  return toIsoDate(end);
+  const iso = String(dateStart || '').trim();
+  if (!iso) return '';
+  const weekday = getCalendarWeekday(iso);
+  if (weekday === null) return iso;
+  if (weekday === 5) return addCalendarDays(iso, 2);
+  return iso;
+}
+
+export function isCompleteEventTime(value) {
+  const trimmed = String(value || '').trim();
+  const match = trimmed.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return false;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
+}
+
+/** Suggest end time from a completed start time. Empty string = no suggestion. */
+export function suggestEndTime(timeStart, dateStart = '', dateEnd = '') {
+  const raw = String(timeStart || '').trim();
+  if (!isCompleteEventTime(raw)) return '';
+
+  const start = raw.slice(0, 5);
+  const sameDay = !dateStart || !dateEnd || dateStart === dateEnd;
+  if (!sameDay) return start;
+
+  const [hours, minutes] = start.split(':').map(Number);
+  const totalMinutes = Math.min(hours * 60 + minutes + 60, 23 * 60 + 59);
+  const end = `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`;
+  return end > start ? end : '';
+}
+
+export function eventHasMissingTimes(event) {
+  return !String(event?.timeStart || '').trim() || !String(event?.timeEnd || '').trim();
 }
 
 export function validateDateRange(event) {
-  if (!event.dateStart || !event.timeStart || !event.dateEnd || !event.timeEnd) {
-    return 'Vyplňte datum a čas začátku i konce akce.';
+  if (!event.dateStart || !event.dateEnd) {
+    return 'Vyplňte datum začátku i konce akce.';
   }
 
   const start = getEventStartDateTime(event);
@@ -118,7 +173,7 @@ export function getAllUpcoming(events, now = new Date()) {
   return events
     .filter((event) => {
       if (!isPublicListedEvent(event)) return false;
-      if (!event.dateEnd || !event.timeEnd) return false;
+      if (!event.dateEnd) return false;
       const end = getEventEndDateTime(event);
       if (Number.isNaN(end.getTime())) return false;
       return end > now;
@@ -130,7 +185,7 @@ export function getAllPast(events, now = new Date()) {
   return events
     .filter((event) => {
       if (!isPublicListedEvent(event)) return false;
-      if (!event.dateEnd || !event.timeEnd) return false;
+      if (!event.dateEnd) return false;
       const end = getEventEndDateTime(event);
       if (Number.isNaN(end.getTime())) return false;
       return end <= now;

@@ -1,6 +1,7 @@
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .cards-grid > .event-card-wrap {
+  .cards-grid > .event-card-wrap,
+  .cards-grid > .event-card {
     flex: 0 1 min(100%, 480px);
     max-width: 480px;
   }

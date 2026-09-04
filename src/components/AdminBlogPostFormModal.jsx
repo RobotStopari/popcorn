@@ -15,15 +15,17 @@ import AdminBlogPostCommentsSection from './AdminBlogPostCommentsSection';
 import AdminModalPanel from './AdminModalPanel';
 import BlogAuthor from './BlogAuthor';
 import BlogCoverUpload, { createCoverPatternSeed } from './BlogCoverUpload';
+import { resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import EventImageUploadList from './EventImageUploadList';
+import ResourceCategorySelect from './ResourceCategorySelect';
 import RichTextEditor from './RichTextEditor';
 import UserCombobox from './UserCombobox';
 
-function FieldGroup({ label, required = false, children, hint }) {
+function FieldGroup({ label, htmlFor, required = false, children, hint }) {
   return (
     <div className="admin-form__group">
       {label && (
-        <label className="admin-form__label">
+        <label className="admin-form__label" htmlFor={htmlFor}>
           {label}
           {required && <span className="admin-form__required">*</span>}
         </label>
@@ -52,7 +54,7 @@ export default function AdminBlogPostFormModal({
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [coverPatternSeed, setCoverPatternSeed] = useState(createCoverPatternSeed);
+  const [coverPatternSeed, setCoverPatternSeed] = useState(() => createCoverPatternSeed('blog-cover'));
   const { mounted, visible } = useAnimatedPresence(open, 240);
 
   const eligibleUsers = useMemo(
@@ -84,7 +86,11 @@ export default function AdminBlogPostFormModal({
     setForm(blogPostToFormState(post));
     setAuthorUid(post?.author?.uid || defaultAuthorUid || '');
     setSlugTouched(Boolean(post?.slug));
-    setCoverPatternSeed(post?.id || createCoverPatternSeed());
+    setCoverPatternSeed(
+      post
+        ? resolveCoverPatternSeed(post.coverPatternSeed, post.id, post.slug)
+        : createCoverPatternSeed('blog-cover'),
+    );
     setError('');
     setSaving(false);
   }, [open, post?.id, defaultAuthorUid]);
@@ -157,7 +163,10 @@ export default function AdminBlogPostFormModal({
       resolvedAuthor = buildExternalAuthorSnapshot(form.externalAuthorName);
     }
 
-    const payload = formStateToBlogPayload(form, {
+    const payload = formStateToBlogPayload({
+      ...form,
+      coverPatternSeed,
+    }, {
       author: resolvedAuthor,
       posts,
       excludeId: post?.id || null,
@@ -280,6 +289,19 @@ export default function AdminBlogPostFormModal({
                     coverPublicId,
                   }));
                 }}
+              />
+            </FieldGroup>
+
+            <FieldGroup
+              label={adminText('blog.form.categoryLabel')}
+              htmlFor="blog-post-category"
+            >
+              <ResourceCategorySelect
+                type="blog"
+                id="blog-post-category"
+                value={form.categoryId}
+                onChange={(value) => updateField('categoryId', value)}
+                disabled={saving}
               />
             </FieldGroup>
 

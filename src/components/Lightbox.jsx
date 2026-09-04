@@ -53,7 +53,10 @@ export default function Lightbox({ images, openIndex, onClose }) {
         <button
           type="button"
           className="lightbox__nav lightbox__nav--prev"
-          onClick={() => step(-1)}
+          onClick={(event) => {
+            step(-1);
+            event.currentTarget.blur();
+          }}
           disabled={index === 0}
           aria-label="Předchozí obrázek"
         >
@@ -71,7 +74,10 @@ export default function Lightbox({ images, openIndex, onClose }) {
         <button
           type="button"
           className="lightbox__nav lightbox__nav--next"
-          onClick={() => step(1)}
+          onClick={(event) => {
+            step(1);
+            event.currentTarget.blur();
+          }}
           disabled={index === images.length - 1}
           aria-label="Další obrázek"
         >

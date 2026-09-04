@@ -1,0 +1,15 @@
+/* Force site typeface inside rich-text surfaces (overrides pasted inline fonts). */
+.rich-text__editor,
+.rich-text__editor *,
+.blog-detail__body,
+.blog-detail__body *,
+.event-detail__description--rich,
+.event-detail__description--rich *,
+.page-block__rich-text,
+.page-block__rich-text *,
+.medallion-modal__description,
+.medallion-modal__description *,
+.site-notification-card__text,
+.site-notification-card__text * {
+  font-family: inherit !important;
+}

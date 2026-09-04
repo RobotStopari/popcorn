@@ -23,6 +23,13 @@ function stripHtml(html) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/** Stored slug for forms/URLs — ignore empty values and Firestore-id fallbacks. */
+export function normalizeEventSlug(raw = {}) {
+  const stored = typeof raw.slug === 'string' ? raw.slug.trim() : '';
+  if (stored && stored !== raw.id) return stored;
+  return deriveEventSlug({ title: raw.title, slug: '' });
+}
+
 function hasText(value) {
   return Boolean(stripHtml(value));
 }
@@ -56,9 +63,8 @@ export function isValidHttpsUrl(value) {
   }
 }
 
-export function normalizeExternalPageFields(category, raw = {}) {
-  const external = normalizeEventCategory(category) === 'external';
-  const enabled = external && raw.externalPageEnabled === true;
+export function normalizeExternalPageFields(_category, raw = {}) {
+  const enabled = raw.externalPageEnabled === true;
   const url = enabled ? (raw.externalPageUrl?.trim() || '') : '';
 
   return {
@@ -68,10 +74,8 @@ export function normalizeExternalPageFields(category, raw = {}) {
   };
 }
 
-export function normalizeCalendarOnlyFields(category, raw = {}, externalPage = {}) {
-  const external = normalizeEventCategory(category) === 'external';
-  const calendarOnly = external
-    && externalPage.externalPageEnabled === true
+export function normalizeCalendarOnlyFields(_category, raw = {}, externalPage = {}) {
+  const calendarOnly = externalPage.externalPageEnabled === true
     && externalPage.hasExternalPage === true
     && raw.calendarOnly === true;
 
@@ -118,7 +122,7 @@ export function normalizeEvent(raw) {
 
   const event = {
     id: raw.id,
-    slug: raw.slug?.trim() || deriveEventSlug({ id: raw.id, title: raw.title, slug: '' }),
+    slug: normalizeEventSlug(raw),
     title: raw.title?.trim() || '',
     dateStart: raw.dateStart || '',
     timeStart: raw.timeStart || '',
@@ -136,6 +140,9 @@ export function normalizeEvent(raw) {
     galleryLink: raw.galleryLink?.trim() || '',
     coverImage: raw.coverImage?.trim() || '',
     coverPublicId: raw.coverPublicId?.trim() || '',
+    coverPatternSeed: typeof raw.coverPatternSeed === 'string'
+      ? raw.coverPatternSeed.trim().slice(0, 80)
+      : '',
     promoImages: normalizeEventImageList(raw.promoImages, 10),
     galleryPicks: normalizeEventImageList(raw.galleryPicks, 10),
     category: normalizeEventCategory(raw.category),
@@ -260,6 +267,7 @@ export function eventToFormState(event) {
       galleryLink: '',
       coverImage: '',
       coverPublicId: '',
+      coverPatternSeed: '',
       promoImages: [],
       galleryPicks: [],
       category: DEFAULT_EVENT_CATEGORY,
@@ -288,6 +296,8 @@ export function eventToFormState(event) {
     galleryLink: event.galleryLink || '',
     coverImage: event.coverImage || '',
     coverPublicId: event.coverPublicId || '',
+    // Only the explicit override — public falls back to id via resolveCoverPatternSeed.
+    coverPatternSeed: event.coverPatternSeed || '',
     promoImages: event.promoImages || [],
     galleryPicks: event.galleryPicks || [],
     category: normalizeEventCategory(event.category),
@@ -299,11 +309,9 @@ export function eventToFormState(event) {
 
 export function formStateToPayload(form) {
   const category = normalizeEventCategory(form.category);
-  const external = category === 'external';
-  const externalPageEnabled = external && form.externalPageEnabled === true;
+  const externalPageEnabled = form.externalPageEnabled === true;
   const externalPageUrl = externalPageEnabled ? form.externalPageUrl.trim() : '';
-  const calendarOnly = external
-    && externalPageEnabled
+  const calendarOnly = externalPageEnabled
     && isValidHttpsUrl(externalPageUrl)
     && form.calendarOnly === true;
 
@@ -339,6 +347,9 @@ export function formStateToPayload(form) {
     galleryLink: form.galleryLink.trim(),
     coverImage: form.coverImage?.trim() || '',
     coverPublicId: form.coverPublicId?.trim() || '',
+    coverPatternSeed: typeof form.coverPatternSeed === 'string'
+      ? form.coverPatternSeed.trim().slice(0, 80)
+      : '',
     promoImages: form.promoImages,
     galleryPicks: form.galleryPicks,
     category,

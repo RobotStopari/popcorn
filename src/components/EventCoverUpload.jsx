@@ -5,9 +5,24 @@ import {
   EVENT_COVER_UPLOAD_HINT,
   EVENT_COVER_WIDTH,
 } from '../data/event-images';
-import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import {
+  createCoverPatternSeed,
+  getEventCoverStyle,
+} from '../utils/event-cover-pattern';
+import { adminText } from '../utils/admin-text';
 import { isCloudinaryConfigured, uploadEventCover } from '../services/cloudinary';
 import { setUploadBusy } from '../utils/upload-busy';
+
+export { createCoverPatternSeed };
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </svg>
+  );
+}
 
 export default function EventCoverUpload({
   coverImage = '',
@@ -16,6 +31,7 @@ export default function EventCoverUpload({
   past = false,
   disabled = false,
   onChange,
+  onPreviewSeedChange,
 }) {
   const inputId = useId();
   const inputRef = useRef(null);
@@ -74,11 +90,25 @@ export default function EventCoverUpload({
             className="admin-event-cover__image"
           />
         ) : (
-          <div
-            className="admin-event-cover__pattern"
-            style={patternStyle}
-            aria-hidden="true"
-          />
+          <>
+            <div
+              className="admin-event-cover__pattern"
+              style={patternStyle}
+              aria-hidden="true"
+            />
+            {onPreviewSeedChange && (
+              <button
+                type="button"
+                className="admin-event-cover__pattern-refresh"
+                onClick={() => onPreviewSeedChange(createCoverPatternSeed('event-cover'))}
+                disabled={disabled || uploading}
+                aria-label={adminText('blog.form.coverPatternRefreshAria')}
+              >
+                <RefreshIcon />
+                <span>{adminText('blog.form.coverPatternRefresh')}</span>
+              </button>
+            )}
+          </>
         )}
         <span className="admin-event-cover__ratio">{EVENT_COVER_ASPECT_RATIO}</span>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminDeletePublicationDialog from '../components/AdminDeletePublicationDialog';
 import AdminPublicationFormModal from '../components/AdminPublicationFormModal';
+import AdminResourceCategoriesModal from '../components/AdminResourceCategoriesModal';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import {
   createPublication,
@@ -44,6 +45,7 @@ export default function AdminPublicationsPage() {
   const [editingPublication, setEditingPublication] = useState(null);
   const [publicationToDelete, setPublicationToDelete] = useState(null);
   const [saveError, setSaveError] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     document.title = adminDocumentTitle(adminText('publications.list.title'));
@@ -151,9 +153,14 @@ export default function AdminPublicationsPage() {
           <h1 className="admin-content__title">{adminText('publications.list.title')}</h1>
           <p className="admin-content__subtitle">{adminText('publications.list.subtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary" onClick={handleCreate}>
-          {adminText('publications.list.newPublication')}
-        </button>
+        <div className="admin-content__header-actions">
+          <button type="button" className="btn btn--outline" onClick={() => setSettingsOpen(true)}>
+            {adminText('common.settings')}
+          </button>
+          <button type="button" className="btn btn--primary" onClick={handleCreate}>
+            {adminText('publications.list.newPublication')}
+          </button>
+        </div>
       </header>
 
       <div className="admin-blog-posts__toolbar">
@@ -242,6 +249,12 @@ export default function AdminPublicationsPage() {
         publication={publicationToDelete}
         onClose={() => setPublicationToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      <AdminResourceCategoriesModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        type="publication"
       />
     </div>
   );

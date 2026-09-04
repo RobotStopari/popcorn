@@ -17,39 +17,13 @@ export function collectAllKeywordsFromItems(items, getKeywords = (item) => item.
   return [...keywords].sort((a, b) => a.localeCompare(b, 'cs'));
 }
 
-function shouldUseKeywordSearch(terms, allKeywords) {
-  if (terms.length > 1) return true;
-
-  if (terms.length === 1) {
-    const lower = terms[0].toLowerCase();
-    return allKeywords.some((keyword) => keyword.toLowerCase() === lower);
-  }
-
-  return false;
-}
-
-function itemMatchesAllKeywordTerms(item, terms, getKeywords) {
-  return terms.every((term) => {
-    const lower = term.toLowerCase();
-    return (getKeywords(item) || []).some((keyword) => keyword.toLowerCase() === lower);
-  });
-}
-
+/** Ranked text search: title/name first, then keywords, then content. No keyword-chip filtering. */
 export function filterItemsByKeywordSearch(items, query, {
-  getKeywords = (item) => item.keywords,
   scoreItem,
   sortItems = (list) => list,
 }) {
-  const terms = parseSearchTerms(query);
-  if (!terms.length) return sortItems(items);
-
-  const allKeywords = collectAllKeywordsFromItems(items, getKeywords);
-
-  if (shouldUseKeywordSearch(terms, allKeywords)) {
-    return sortItems(items.filter((item) => itemMatchesAllKeywordTerms(item, terms, getKeywords)));
-  }
-
-  const trimmed = terms[0].toLowerCase();
+  const trimmed = String(query || '').trim().toLowerCase();
+  if (!trimmed) return sortItems(items);
   if (!scoreItem) return sortItems(items);
 
   return items

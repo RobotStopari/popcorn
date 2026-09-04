@@ -4,7 +4,7 @@ export function initScrollReveal({ loader } = {}) {
 
   document.querySelectorAll('.reveal-stagger').forEach((group) => {
     group.querySelectorAll('.reveal').forEach((el, index) => {
-      el.style.transitionDelay = `${index * 0.12}s`;
+      el.style.transitionDelay = `${Math.min(index, 5) * 0.04}s`;
     });
   });
 
@@ -19,7 +19,7 @@ export function initScrollReveal({ loader } = {}) {
       if (el.classList.contains('reveal--visible')) return;
 
       const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+      if (rect.top < window.innerHeight + 72 && rect.bottom > 0) {
         revealElement(el);
         revealObserver?.unobserve(el);
       }
@@ -40,7 +40,7 @@ export function initScrollReveal({ loader } = {}) {
         }
       });
     },
-    { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
+    { threshold: 0, rootMargin: '0px 0px 12% 0px' },
   );
 
   revealEls.forEach((el) => revealObserver.observe(el));

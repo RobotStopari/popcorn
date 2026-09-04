@@ -3,21 +3,32 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: stretch;
   gap: 1.5rem;
 }
 
-.cards-grid > .event-card-wrap {
+.cards-grid > .event-card-wrap,
+.cards-grid > .event-card {
   flex: 0 1 calc((100% - 3rem) / 3);
   max-width: 420px;
   min-width: min(100%, 280px);
+  display: flex;
+  flex-direction: column;
 }
 
 .event-card-wrap {
-  display: block;
+  min-height: 0;
+}
+
+.event-card-wrap > .event-card {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
 }
 
 .event-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
   color: inherit;
   background: var(--white);
@@ -35,26 +46,42 @@
   box-shadow: var(--shadow-hover);
 }
 
-.event-card__image-wrap {
+.event-card__media {
   position: relative;
   overflow: hidden;
   border-bottom: var(--border);
   border-top-left-radius: calc(var(--radius) - 3px);
   border-top-right-radius: calc(var(--radius) - 3px);
   aspect-ratio: 3 / 2;
+}
+
+.event-card__image-wrap,
+.event-card__placeholder {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  aspect-ratio: auto;
 }
 
 .event-card--no-image .event-card__body {
   min-height: auto;
 }
 
-.event-card__placeholder {
-  position: relative;
+.event-card__category-tag {
+  position: absolute;
+  left: 0.65rem;
+  bottom: 0.65rem;
+  z-index: 3;
+  max-width: calc(100% - 1.3rem);
+  pointer-events: none;
+}
+
+.event-card__category-tag .event-category-tag__name {
   overflow: hidden;
-  aspect-ratio: 3 / 2;
-  border-bottom: var(--border);
-  border-top-left-radius: calc(var(--radius) - 3px);
-  border-top-right-radius: calc(var(--radius) - 3px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .event-card__placeholder-surface {
@@ -62,6 +89,8 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  background-size: cover;
+  background-position: center;
   transition: transform 0.5s ease;
 }
 
@@ -98,6 +127,7 @@
   padding: 1.25rem 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 0.5rem;
 }
 

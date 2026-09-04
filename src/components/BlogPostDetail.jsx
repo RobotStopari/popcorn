@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
 import { getBlogGalleryImages } from '../utils/blog-post-format';
-import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { getEventCoverStyle, resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import { siteText } from '../utils/admin-text';
 import AdminBlogPostFormModal from './AdminBlogPostFormModal';
@@ -42,8 +42,8 @@ function RichTextBlock({ html }) {
 
 function BlogPostCover({ post }) {
   const patternStyle = useMemo(
-    () => getEventCoverStyle(post.id || post.slug),
-    [post.id, post.slug],
+    () => getEventCoverStyle(resolveCoverPatternSeed(post.coverPatternSeed, post.id, post.slug)),
+    [post.coverPatternSeed, post.id, post.slug],
   );
 
   if (post.coverImage) {

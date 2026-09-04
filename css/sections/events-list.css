@@ -31,16 +31,34 @@
   box-shadow: var(--shadow);
   background: var(--white);
   color: var(--black);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
   transition:
     transform var(--transition),
     box-shadow var(--transition),
-    background-color var(--transition);
+    background-color var(--transition),
+    color var(--transition);
 }
 
-.events-pagination__btn:hover:not(.events-pagination__btn--disabled) {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-hover);
+.events-pagination__btn:focus {
+  outline: none;
+}
+
+.events-pagination__btn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.events-pagination__btn:active:not(.events-pagination__btn--disabled) {
   background: var(--orange);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .events-pagination__btn:hover:not(.events-pagination__btn--disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-hover);
+    background: var(--orange);
+  }
 }
 
 .events-pagination__btn--disabled {

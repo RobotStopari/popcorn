@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminBlogPostFormModal from '../components/AdminBlogPostFormModal';
 import AdminDeleteBlogPostDialog from '../components/AdminDeleteBlogPostDialog';
+import AdminResourceCategoriesModal from '../components/AdminResourceCategoriesModal';
 import BlogAuthor from '../components/BlogAuthor';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
@@ -57,6 +58,7 @@ export default function AdminBlogPostsPage() {
   const [editingPost, setEditingPost] = useState(null);
   const [postToDelete, setPostToDelete] = useState(null);
   const [saveError, setSaveError] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [usersByUid, setUsersByUid] = useState({});
   const backfillStarted = useRef(false);
 
@@ -215,9 +217,14 @@ export default function AdminBlogPostsPage() {
           <h1 className="admin-content__title">{adminText('blog.list.title')}</h1>
           <p className="admin-content__subtitle">{adminText('blog.list.subtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary" onClick={handleCreate}>
-          {adminText('blog.list.newPost')}
-        </button>
+        <div className="admin-content__header-actions">
+          <button type="button" className="btn btn--outline" onClick={() => setSettingsOpen(true)}>
+            {adminText('common.settings')}
+          </button>
+          <button type="button" className="btn btn--primary" onClick={handleCreate}>
+            {adminText('blog.list.newPost')}
+          </button>
+        </div>
       </header>
 
       <div className="admin-blog-posts__toolbar">
@@ -325,6 +332,12 @@ export default function AdminBlogPostsPage() {
         post={postToDelete}
         onClose={() => setPostToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      <AdminResourceCategoriesModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        type="blog"
       />
     </div>
   );

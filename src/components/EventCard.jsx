@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { eventUrl } from '../data/events';
-import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { getEventCoverStyle, resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import { siteText } from '../utils/admin-text';
-import { trackNavClick, trackOutboundClick } from '../utils/analytics-track';
+import { trackNavClick } from '../utils/analytics-track';
 import EventCategoryLabel from './EventCategoryLabel';
 
 function EventCardPlaceholder({ seed, past }) {
@@ -39,7 +39,7 @@ export default function EventCard({ event, index, past = false }) {
   const hasCover = Boolean(event.coverImage);
   const pastClass = past ? ' event-card--past' : '';
   const noImageClass = hasCover ? '' : ' event-card--no-image';
-  const delayClass = ` reveal--delay-${index + 1}`;
+  const delayClass = ` reveal--delay-${(index % 4) + 1}`;
   const href = eventUrl(event);
   const actionLabel = past ? siteText('events.card.readPast') : siteText('events.card.moreInfo');
 
@@ -50,14 +50,24 @@ export default function EventCard({ event, index, past = false }) {
         className={`event-card shine-parent${pastClass}${noImageClass}`}
         onClick={() => trackNavClick(href, event.name)}
       >
-        {hasCover ? (
-          <EventCardImage event={event} />
-        ) : (
-          <EventCardPlaceholder seed={event.id || event.name} past={past} />
-        )}
+        <div className="event-card__media">
+          {hasCover ? (
+            <EventCardImage event={event} />
+          ) : (
+            <EventCardPlaceholder
+              seed={resolveCoverPatternSeed(event.coverPatternSeed, event.id, event.name)}
+              past={past}
+            />
+          )}
+          <EventCategoryLabel
+            category={event.category}
+            past={past}
+            className="event-card__category-tag"
+            iconSize="sm"
+          />
+        </div>
         <div className="event-card__body">
           <h2 className="event-card__name">{event.name}</h2>
-          <EventCategoryLabel category={event.category} past={past} className="event-card__category" />
           <time className="event-card__date" dateTime={event.dateStart}>{event.dateLabel}</time>
           <span className="btn btn--outline">{actionLabel}</span>
         </div>

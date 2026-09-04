@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useEvents } from '../contexts/EventsContext';
 import { ICONS } from '../data/icons';
 import { buildGoogleCalendarUrl } from '../utils/google-calendar';
@@ -370,8 +371,34 @@ function PastDetail({ event }) {
   );
 }
 
-function BackLink({ className = 'event-detail__back' }) {
-  return <a href="/" className={`${className} reveal`}>{siteText('events.detail.back')}</a>;
+function BackLink({ className = 'event-detail__back', past = false }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const fallbackHref = past ? '/probehle' : '/vypukne';
+
+  const handleClick = (event) => {
+    event.preventDefault();
+    // Stop the global page-transition click handler from following href="/".
+    event.stopPropagation();
+
+    const hasInAppHistory = location.key !== 'default' && window.history.length > 1;
+    if (hasInAppHistory) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(fallbackHref);
+  };
+
+  return (
+    <a
+      href={fallbackHref}
+      className={`${className} reveal`}
+      onClick={handleClick}
+    >
+      {siteText('events.detail.back')}
+    </a>
+  );
 }
 
 export default function EventDetail({ slug }) {
@@ -395,18 +422,20 @@ export default function EventDetail({ slug }) {
 
   return (
     <article className="event-detail container">
-      <BackLink />
+      <BackLink past={past} />
 
       <header className="event-detail__header reveal reveal--scale">
         <h1 className="event-detail__title">{event.name}</h1>
-        <time className={dateClass} dateTime={event.dateStart}>{event.dateLabel}</time>
-        {past && (
-          <EventCategoryLabel
-            category={event.category}
-            past
-            className="event-detail__category"
-          />
-        )}
+        <div className="event-detail__meta">
+          <time className={dateClass} dateTime={event.dateStart}>{event.dateLabel}</time>
+          {past && (
+            <EventCategoryLabel
+              category={event.category}
+              past
+              className="event-detail__category"
+            />
+          )}
+        </div>
       </header>
 
       {event.hasExternalPage && (
@@ -428,7 +457,7 @@ export default function EventDetail({ slug }) {
         : <UpcomingDetail event={event} />}
 
       <div className="event-detail__back-bottom reveal">
-        <BackLink className="event-detail__back event-detail__back--bottom" />
+        <BackLink className="event-detail__back event-detail__back--bottom" past={past} />
       </div>
     </article>
   );

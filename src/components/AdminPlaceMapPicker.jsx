@@ -173,7 +173,7 @@ export default function AdminPlaceMapPicker({
     try {
       const result = await geocodePlaceQuery(search);
       if (!result) {
-        setError('Adresa nebyla nalezena.');
+        setError('Adresa ani souřadnice nebyly rozpoznány.');
         return;
       }
       emitCoords(result);
@@ -194,7 +194,7 @@ export default function AdminPlaceMapPicker({
   return (
     <div className="admin-place-map">
       <p className="admin-form__hint">
-        Klikněte na mapu nebo vyhledejte adresu. Na webu se místo otevře na Mapy.cz.
+        Klikněte na mapu, vyhledejte adresu, nebo vložte souřadnice.
       </p>
 
       <div className="admin-place-map__search">
@@ -204,7 +204,7 @@ export default function AdminPlaceMapPicker({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={handleSearchKeyDown}
-          placeholder="Vyhledat adresu nebo místo…"
+          placeholder="Adresa, místo nebo souřadnice…"
           disabled={disabled || searching}
         />
         <button

@@ -11,12 +11,13 @@ import {
 import { MAX_KEYWORDS } from '../utils/keywords-format';
 import { adminText } from '../utils/admin-text';
 import AdminModalPanel from './AdminModalPanel';
+import ResourceCategorySelect from './ResourceCategorySelect';
 
-function FieldGroup({ label, required = false, children, hint, error }) {
+function FieldGroup({ label, htmlFor, required = false, children, hint, error }) {
   return (
     <div className="admin-form__group">
       {label && (
-        <label className="admin-form__label">
+        <label className="admin-form__label" htmlFor={htmlFor}>
           {label}
           {required && <span className="admin-form__required">*</span>}
         </label>
@@ -92,7 +93,7 @@ export default function AdminUsefulLinkFormModal({
       aria-labelledby="admin-useful-link-form-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <AdminModalPanel>
+      <AdminModalPanel className="admin-modal__panel--resource-form">
         <h2 id="admin-useful-link-form-title" className="admin-modal__title">
           {link
             ? adminText('usefulLinks.form.editTitle')
@@ -131,6 +132,19 @@ export default function AdminUsefulLinkFormModal({
               placeholder={adminText('usefulLinks.form.descriptionPlaceholder')}
               maxLength={MAX_USEFUL_LINK_DESCRIPTION}
               rows={4}
+            />
+          </FieldGroup>
+
+          <FieldGroup
+            label={adminText('usefulLinks.form.categoryLabel')}
+            htmlFor="useful-link-category"
+          >
+            <ResourceCategorySelect
+              type="usefulLink"
+              id="useful-link-category"
+              value={form.categoryId}
+              onChange={(value) => updateField('categoryId', value)}
+              disabled={saving}
             />
           </FieldGroup>
 

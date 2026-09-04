@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import BlogKeywordFilter from '../components/BlogKeywordFilter';
 import BlogPostCard from '../components/BlogPostCard';
 import BlogAuthor from '../components/BlogAuthor';
 import EventsPagination from '../components/EventsPagination';
+import ResourceListToolbar from '../components/ResourceListToolbar';
 import SectionLabel from '../components/SectionLabel';
+import { filterItemsByCategory } from '../data/resource-categories';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import {
   filterPostsByAuthor,
@@ -22,7 +23,9 @@ export default function BlogAuthorPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { posts, loading } = useBlogPosts();
   const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const knownPostIdsRef = useRef(new Set());
+  const filterKeyRef = useRef(`${search}|${categoryId}`);
 
   const authorPosts = useMemo(
     () => filterPostsByAuthor(posts, decodedAuthorKey),
@@ -35,8 +38,8 @@ export default function BlogAuthorPage() {
   );
 
   const filteredPosts = useMemo(
-    () => filterPostsBySearch(authorPosts, search),
-    [authorPosts, search],
+    () => filterPostsBySearch(filterItemsByCategory(authorPosts, categoryId), search),
+    [authorPosts, search, categoryId],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
@@ -63,6 +66,8 @@ export default function BlogAuthorPage() {
   }, [author]);
 
   useEffect(() => {
+    if (loading) return;
+
     if (!Number.isFinite(requestedPage) || requestedPage < 1) {
       setSearchParams({}, { replace: true });
       return;
@@ -75,15 +80,20 @@ export default function BlogAuthorPage() {
         setSearchParams({ page: String(totalPages) }, { replace: true });
       }
     }
-  }, [requestedPage, totalPages, setSearchParams]);
+  }, [loading, requestedPage, totalPages, setSearchParams]);
 
   useEffect(() => {
+    const key = `${search}|${categoryId}`;
+    if (filterKeyRef.current === key) return;
+    filterKeyRef.current = key;
+
     setSearchParams((prev) => {
+      if (!prev.get('page')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('page');
       return next;
     }, { replace: true });
-  }, [search, setSearchParams]);
+  }, [search, categoryId, setSearchParams]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -102,6 +112,8 @@ export default function BlogAuthorPage() {
     );
   }
 
+  const hasActiveFilters = Boolean(search.trim() || categoryId);
+
   return (
     <section className="section events-list blog-list blog-author-page">
       <div className="container">
@@ -118,10 +130,13 @@ export default function BlogAuthorPage() {
           </div>
         )}
 
-        <BlogKeywordFilter
-          posts={authorPosts}
+        <ResourceListToolbar
+          type="blog"
           search={search}
           onSearchChange={setSearch}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          textPrefix="blog.list"
         />
 
         {loading ? (
@@ -140,7 +155,7 @@ export default function BlogAuthorPage() {
           </div>
         ) : (
           <p className="section__empty">
-            {search.trim()
+            {hasActiveFilters
               ? siteText('blog.list.emptySearch')
               : siteText('blog.author.empty')}
           </p>

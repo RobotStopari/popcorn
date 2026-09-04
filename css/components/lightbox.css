@@ -77,14 +77,38 @@ body.lightbox-open {
   border: var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  transition: transform var(--transition), background-color var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  transition: transform var(--transition), background-color var(--transition), box-shadow var(--transition);
 }
 
-.lightbox__close:hover,
-.lightbox__nav:hover:not(:disabled) {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-hover);
+.lightbox__close:focus,
+.lightbox__nav:focus {
+  outline: none;
+}
+
+.lightbox__close:focus-visible,
+.lightbox__nav:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.lightbox__close:active:not(:disabled),
+.lightbox__nav:active:not(:disabled) {
   background-color: var(--orange);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lightbox__close:hover,
+  .lightbox__nav:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-hover);
+    background-color: var(--orange);
+  }
+
+  .lightbox__nav:hover:not(:disabled) {
+    transform: translateY(-50%) translate(-2px, -2px);
+  }
 }
 
 .lightbox__close {
@@ -99,10 +123,6 @@ body.lightbox-open {
   transform: translateY(-50%);
   width: 3rem;
   height: 3rem;
-}
-
-.lightbox__nav:hover:not(:disabled) {
-  transform: translateY(-50%) translate(-2px, -2px);
 }
 
 .lightbox__nav--prev {

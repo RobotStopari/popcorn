@@ -35,8 +35,14 @@ function ensureLightbox() {
   lightboxEl.querySelectorAll('[data-lightbox-close]').forEach((el) => {
     el.addEventListener('click', closeLightbox);
   });
-  lightboxEl.querySelector('[data-lightbox-prev]')?.addEventListener('click', () => stepLightbox(-1));
-  lightboxEl.querySelector('[data-lightbox-next]')?.addEventListener('click', () => stepLightbox(1));
+  lightboxEl.querySelector('[data-lightbox-prev]')?.addEventListener('click', (event) => {
+    stepLightbox(-1);
+    event.currentTarget.blur();
+  });
+  lightboxEl.querySelector('[data-lightbox-next]')?.addEventListener('click', (event) => {
+    stepLightbox(1);
+    event.currentTarget.blur();
+  });
 
   document.addEventListener('keydown', onLightboxKeydown);
 

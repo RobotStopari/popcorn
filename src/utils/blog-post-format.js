@@ -201,8 +201,12 @@ export function normalizeBlogPost(raw) {
     publishedTime: raw.publishedTime || '',
     author,
     keywords,
+    categoryId: typeof raw.categoryId === 'string' ? raw.categoryId.trim().slice(0, 40) : '',
     coverImage: raw.coverImage?.trim() || '',
     coverPublicId: raw.coverPublicId?.trim() || '',
+    coverPatternSeed: typeof raw.coverPatternSeed === 'string'
+      ? raw.coverPatternSeed.trim().slice(0, 80)
+      : '',
     galleryImages: isExternal
       ? []
       : normalizeEventImageList(raw.galleryImages, BLOG_GALLERY_MAX),
@@ -234,43 +238,6 @@ export function sortPostsByPublished(posts, descending = true) {
   });
 }
 
-function postMatchesAllKeywordTerms(post, terms) {
-  return terms.every((term) => {
-    const lower = term.toLowerCase();
-    return post.keywords.some((keyword) => keyword.toLowerCase() === lower);
-  });
-}
-
-export function parseSearchTerms(query) {
-  return query
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-export function collectAllBlogKeywords(posts) {
-  const keywords = new Set();
-
-  posts.forEach((post) => {
-    post.keywords.forEach((keyword) => {
-      if (keyword?.trim()) keywords.add(keyword.trim());
-    });
-  });
-
-  return [...keywords].sort((a, b) => a.localeCompare(b, 'cs'));
-}
-
-function shouldUseKeywordSearch(terms, allKeywords) {
-  if (terms.length > 1) return true;
-
-  if (terms.length === 1) {
-    const lower = terms[0].toLowerCase();
-    return allKeywords.some((keyword) => keyword.toLowerCase() === lower);
-  }
-
-  return false;
-}
-
 function scorePostMatch(post, query) {
   const q = query.trim().toLowerCase();
   if (!q) return 1;
@@ -296,16 +263,8 @@ function scorePostMatch(post, query) {
 }
 
 export function filterPostsBySearch(posts, query) {
-  const terms = parseSearchTerms(query);
-  if (!terms.length) return sortPostsByPublished(posts);
-
-  const allKeywords = collectAllBlogKeywords(posts);
-
-  if (shouldUseKeywordSearch(terms, allKeywords)) {
-    return sortPostsByPublished(posts.filter((post) => postMatchesAllKeywordTerms(post, terms)));
-  }
-
-  const trimmed = terms[0];
+  const trimmed = String(query || '').trim();
+  if (!trimmed) return sortPostsByPublished(posts);
 
   return posts
     .map((post) => ({ post, score: scorePostMatch(post, trimmed) }))
@@ -386,8 +345,10 @@ export function blogPostToFormState(post) {
       slug: '',
       body: '',
       keywordsInput: '',
+      categoryId: '',
       coverImage: '',
       coverPublicId: '',
+      coverPatternSeed: '',
       galleryImages: [],
       externalUrl: '',
       externalAuthorName: '',
@@ -400,8 +361,10 @@ export function blogPostToFormState(post) {
     slug: post.slug || '',
     body: post.body || '',
     keywordsInput: keywordsToInput(post.keywords),
+    categoryId: post.categoryId || '',
     coverImage: post.coverImage || '',
     coverPublicId: post.coverPublicId || '',
+    coverPatternSeed: post.coverPatternSeed || '',
     galleryImages: post.galleryImages || [],
     externalUrl: post.externalUrl || '',
     externalAuthorName: post.isExternal ? (post.author?.name || '') : '',
@@ -420,8 +383,12 @@ export function formStateToBlogPayload(form, { author = null, posts = [], exclud
     slug: isExternal ? resolveUniqueSlug(posts, baseSlug, excludeId) : baseSlug,
     body: form.body || '',
     keywords,
+    categoryId: typeof form.categoryId === 'string' ? form.categoryId.trim().slice(0, 40) : '',
     coverImage: form.coverImage?.trim() || '',
     coverPublicId: form.coverPublicId?.trim() || '',
+    coverPatternSeed: typeof form.coverPatternSeed === 'string'
+      ? form.coverPatternSeed.trim().slice(0, 80)
+      : '',
     galleryImages: isExternal
       ? []
       : normalizeEventImageList(form.galleryImages, BLOG_GALLERY_MAX),

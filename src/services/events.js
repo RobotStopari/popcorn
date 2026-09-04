@@ -62,6 +62,7 @@ const EMPTY_EVENT_FIELDS = {
   galleryLink: '',
   coverImage: '',
   coverPublicId: '',
+  coverPatternSeed: '',
   promoImages: [],
   galleryPicks: [],
   category: DEFAULT_EVENT_CATEGORY,

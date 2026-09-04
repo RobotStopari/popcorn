@@ -9,6 +9,14 @@ import { subscribeSiteSettings, updateEventCategorySettings } from '../services/
 import AdminModalPanel from './AdminModalPanel';
 import { adminText } from '../utils/admin-text';
 
+const CATEGORY_SECTIONS = [
+  { id: 'public', title: 'Veřejná akce', labelField: 'eventCategoryPublicLabel', descriptionField: 'eventCategoryPublicDescription' },
+  { id: 'private', title: 'Soukromá akce', labelField: 'eventCategoryPrivateLabel', descriptionField: 'eventCategoryPrivateDescription' },
+  { id: 'external', title: 'Akce mimo Popcorn', labelField: 'eventCategoryExternalLabel', descriptionField: 'eventCategoryExternalDescription' },
+];
+
+const FIELD_BY_ID = Object.fromEntries(EVENT_CATEGORY_FIELDS.map((field) => [field.id, field]));
+
 export default function AdminEventSettingsModal({ open, onClose }) {
   const { mounted, visible } = useAnimatedPresence(open, 240);
   const [settings, setSettings] = useState(DEFAULT_SITE_SETTINGS);
@@ -42,7 +50,7 @@ export default function AdminEventSettingsModal({ open, onClose }) {
     if (!mounted) return undefined;
 
     const onKeydown = (event) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && !saving) onClose();
     };
 
     document.body.classList.add('admin-modal-open');
@@ -52,7 +60,7 @@ export default function AdminEventSettingsModal({ open, onClose }) {
       document.body.classList.remove('admin-modal-open');
       document.removeEventListener('keydown', onKeydown);
     };
-  }, [mounted, onClose]);
+  }, [mounted, onClose, saving]);
 
   if (!mounted) return null;
 
@@ -90,6 +98,69 @@ export default function AdminEventSettingsModal({ open, onClose }) {
     }
   };
 
+  const footer = (
+    <div className="admin-page-form-modal__footer">
+      {(error || message) && (
+        <p
+          className={`admin-texts-page__status${error ? ' admin-texts-page__status--error' : ''}`}
+          role="status"
+        >
+          {error || message}
+        </p>
+      )}
+      <div className="admin-modal__actions admin-page-form-modal__actions">
+        <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
+          {adminText('common.cancel')}
+        </button>
+        <button
+          type="submit"
+          form="admin-event-categories-form"
+          className="btn btn--primary"
+          disabled={saving || loading}
+        >
+          {saving ? adminText('common.saving') : adminText('common.save')}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderField = (fieldId) => {
+    const field = FIELD_BY_ID[fieldId];
+    if (!field) return null;
+
+    return (
+      <div key={field.id} className="admin-texts-row">
+        <div className="admin-texts-row__head">
+          <label className="admin-texts-row__label" htmlFor={field.id}>
+            {field.label}
+          </label>
+          <p className="admin-texts-row__hint">{field.hint}</p>
+        </div>
+        {field.inputType === 'text' ? (
+          <input
+            id={field.id}
+            type="text"
+            className="admin-form__input admin-texts-row__input admin-texts-row__input--text"
+            value={settings[field.id] || ''}
+            onChange={(event) => handleChange(field.id, event.target.value)}
+            required
+            disabled={saving}
+          />
+        ) : (
+          <textarea
+            id={field.id}
+            className="admin-form__input admin-texts-row__input"
+            rows={2}
+            value={settings[field.id] || ''}
+            onChange={(event) => handleChange(field.id, event.target.value)}
+            required
+            disabled={saving}
+          />
+        )}
+      </div>
+    );
+  };
+
   return createPortal(
     <div
       className={`admin-modal admin-event-settings-modal${visible ? ' admin-modal--visible' : ''}`}
@@ -98,7 +169,7 @@ export default function AdminEventSettingsModal({ open, onClose }) {
       aria-labelledby="admin-event-settings-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <AdminModalPanel className="admin-modal__panel--page">
+      <AdminModalPanel className="admin-modal__panel--page-settings" footer={footer}>
         <h2 id="admin-event-settings-title" className="admin-modal__title">
           Nastavení kategorií akcí
         </h2>
@@ -109,53 +180,14 @@ export default function AdminEventSettingsModal({ open, onClose }) {
         {loading ? (
           <p className="admin-loading">{adminText('common.loading')}</p>
         ) : (
-          <form className="admin-form admin-texts" onSubmit={handleSubmit}>
-            <div className="admin-texts__section-body">
-              {EVENT_CATEGORY_FIELDS.map((field) => (
-                <div key={field.id} className="admin-texts-row">
-                  <div className="admin-texts-row__head">
-                    <label className="admin-texts-row__label" htmlFor={field.id}>
-                      {field.label}
-                    </label>
-                    <p className="admin-texts-row__hint">{field.hint}</p>
-                  </div>
-                  {field.inputType === 'text' ? (
-                    <input
-                      id={field.id}
-                      type="text"
-                      className="admin-form__input admin-texts-row__input admin-texts-row__input--text"
-                      value={settings[field.id] || ''}
-                      onChange={(event) => handleChange(field.id, event.target.value)}
-                      required
-                    />
-                  ) : (
-                    <textarea
-                      id={field.id}
-                      className="admin-form__input admin-texts-row__input"
-                      rows={2}
-                      value={settings[field.id] || ''}
-                      onChange={(event) => handleChange(field.id, event.target.value)}
-                      required
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {(error || message) && (
-              <p className={`admin-texts-page__status${error ? ' admin-texts-page__status--error' : ''}`} role="status">
-                {error || message}
-              </p>
-            )}
-
-            <div className="admin-modal__actions">
-              <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
-                {adminText('common.cancel')}
-              </button>
-              <button type="submit" className="btn btn--primary" disabled={saving}>
-                {saving ? adminText('common.saving') : adminText('common.save')}
-              </button>
-            </div>
+          <form id="admin-event-categories-form" className="admin-form admin-texts" onSubmit={handleSubmit}>
+            {CATEGORY_SECTIONS.map((section) => (
+              <section key={section.id} className="admin-texts__section">
+                <h3 className="admin-texts__section-head">{section.title}</h3>
+                {renderField(section.labelField)}
+                {renderField(section.descriptionField)}
+              </section>
+            ))}
           </form>
         )}
       </AdminModalPanel>

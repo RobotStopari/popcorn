@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { waitForPageEnterComplete } from '../utils/page-transition';
 
 export function useScrollReveal() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const runIdRef = useRef(0);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export function useScrollReveal() {
         const items = group.querySelectorAll('.reveal');
         items.forEach((el, index) => {
           if (el.classList.contains('reveal--visible')) return;
-          el.style.transitionDelay = `${index * 0.12}s`;
+          el.style.transitionDelay = `${Math.min(index, 5) * 0.04}s`;
         });
       });
     };
@@ -45,7 +45,7 @@ export function useScrollReveal() {
         if (el.classList.contains('reveal--visible')) return;
 
         const rect = el.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+        if (rect.top < window.innerHeight + 72 && rect.bottom > 0) {
           reveal(el);
           intersectionObserver?.unobserve(el);
         }
@@ -79,7 +79,7 @@ export function useScrollReveal() {
               }
             });
           },
-          { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
+          { threshold: 0, rootMargin: '0px 0px 12% 0px' },
         );
       }
 
@@ -132,5 +132,5 @@ export function useScrollReveal() {
       window.removeEventListener('resize', onScrollOrResize);
       timeouts.forEach(clearTimeout);
     };
-  }, [pathname]);
+  }, [pathname, search]);
 }

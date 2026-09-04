@@ -215,6 +215,11 @@
   border: 2px solid var(--black);
   border-radius: 50%;
   font-weight: 700;
+  color: var(--black);
+}
+
+.cal__day--other.cal__day--today .cal__day-num {
+  color: var(--black);
 }
 
 .cal__day-num {

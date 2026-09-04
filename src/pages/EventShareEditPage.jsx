@@ -100,6 +100,7 @@ export default function EventShareEditPage() {
       }
       return true;
     } catch (err) {
+      console.error('Share-link event save failed:', err);
       return false;
     }
   };

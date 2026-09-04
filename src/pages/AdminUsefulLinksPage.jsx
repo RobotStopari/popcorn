@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminDeleteUsefulLinkDialog from '../components/AdminDeleteUsefulLinkDialog';
+import AdminResourceCategoriesModal from '../components/AdminResourceCategoriesModal';
 import AdminUsefulLinkFormModal from '../components/AdminUsefulLinkFormModal';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import {
@@ -44,6 +45,7 @@ export default function AdminUsefulLinksPage() {
   const [editingLink, setEditingLink] = useState(null);
   const [linkToDelete, setLinkToDelete] = useState(null);
   const [saveError, setSaveError] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     document.title = adminDocumentTitle(adminText('usefulLinks.list.title'));
@@ -151,9 +153,14 @@ export default function AdminUsefulLinksPage() {
           <h1 className="admin-content__title">{adminText('usefulLinks.list.title')}</h1>
           <p className="admin-content__subtitle">{adminText('usefulLinks.list.subtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary" onClick={handleCreate}>
-          {adminText('usefulLinks.list.newLink')}
-        </button>
+        <div className="admin-content__header-actions">
+          <button type="button" className="btn btn--outline" onClick={() => setSettingsOpen(true)}>
+            {adminText('common.settings')}
+          </button>
+          <button type="button" className="btn btn--primary" onClick={handleCreate}>
+            {adminText('usefulLinks.list.newLink')}
+          </button>
+        </div>
       </header>
 
       <div className="admin-blog-posts__toolbar">
@@ -242,6 +249,12 @@ export default function AdminUsefulLinksPage() {
         link={linkToDelete}
         onClose={() => setLinkToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      <AdminResourceCategoriesModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        type="usefulLink"
       />
     </div>
   );

@@ -8,6 +8,7 @@ import {
 } from '../utils/rich-text-editor-commands';
 import { buildDividerEditorHtml, buildYoutubePlaceholderHtml } from '../utils/rich-text-embeds';
 import { resolveRichTextFeatures } from '../utils/rich-text-features';
+import { stripForeignFonts } from '../utils/rich-text-sanitize';
 import RichTextLinkDialog from './RichTextLinkDialog';
 import RichTextYoutubeDialog from './RichTextYoutubeDialog';
 
@@ -162,13 +163,44 @@ export default function RichTextEditor({
 
   useEffect(() => {
     if (!editorRef.current) return;
-    if (editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
+    const next = stripForeignFonts(value || '');
+    if (editorRef.current.innerHTML !== next) {
+      editorRef.current.innerHTML = next;
     }
   }, [value]);
 
   const emitChange = () => {
-    onChange(editorRef.current?.innerHTML || '');
+    const editor = editorRef.current;
+    if (!editor) {
+      onChange('');
+      return;
+    }
+
+    const raw = editor.innerHTML || '';
+    const cleaned = stripForeignFonts(raw);
+    if (cleaned !== raw) {
+      editor.innerHTML = cleaned;
+    }
+    onChange(cleaned);
+  };
+
+  const handlePaste = (event) => {
+    const clipboard = event.clipboardData;
+    if (!clipboard) return;
+
+    const html = clipboard.getData('text/html');
+    const text = clipboard.getData('text/plain');
+    if (!html && !text) return;
+
+    event.preventDefault();
+    editorRef.current?.focus();
+
+    if (html) {
+      document.execCommand('insertHTML', false, stripForeignFonts(html));
+    } else {
+      document.execCommand('insertText', false, text);
+    }
+    emitChange();
   };
 
   const runCommand = (command, commandValue = null) => {
@@ -450,6 +482,7 @@ export default function RichTextEditor({
           role="textbox"
           aria-multiline="true"
           onInput={emitChange}
+          onPaste={handlePaste}
           onBlur={handleEditorBlur}
           onKeyDown={handleEditorKeyDown}
           data-placeholder="Začněte psát…"

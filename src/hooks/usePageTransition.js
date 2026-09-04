@@ -84,9 +84,10 @@ export function usePageTransition(location) {
       if (url.origin !== window.location.origin) return;
 
       const destination = `${url.pathname}${url.search}${url.hash}`;
-      const samePath = url.pathname === location.pathname && url.search === location.search;
+      const samePathname = url.pathname === location.pathname;
+      const sameLocation = samePathname && url.search === location.search && url.hash === location.hash;
 
-      if (samePath) {
+      if (sameLocation) {
         if (isHome(url.pathname)) {
           event.preventDefault();
           clearHomeScroll();
@@ -94,6 +95,9 @@ export function usePageTransition(location) {
         }
         return;
       }
+
+      // Query/hash-only changes (pagination) should not use the page curtain.
+      if (samePathname) return;
 
       if (!isPublicRoute(url.pathname)) return;
 
@@ -117,5 +121,5 @@ export function usePageTransition(location) {
 
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [navigate, location.pathname, location.search]);
+  }, [navigate, location.pathname, location.search, location.hash]);
 }

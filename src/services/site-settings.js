@@ -1,10 +1,4 @@
 import {
-  doc,
-  onSnapshot,
-  serverTimestamp,
-  setDoc,
-} from 'firebase/firestore';
-import {
   DEFAULT_SITE_SETTINGS,
   EVENT_CATEGORY_FIELDS,
   SITE_SETTINGS_DOC_ID,
@@ -12,15 +6,39 @@ import {
   normalizeBrandLinks,
   normalizeFooterSocialSlots,
 } from '../data/site-settings';
+import {
+  RESOURCE_CATEGORY_TYPES,
+  normalizeResourceCategoriesList,
+} from '../data/resource-categories';
 import { db } from '../firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore';
 
 const siteSettingsRef = doc(db, 'siteSettings', SITE_SETTINGS_DOC_ID);
 
 const EVENT_CATEGORY_FIELD_IDS = EVENT_CATEGORY_FIELDS.map((field) => field.id);
 
+const RESOURCE_CATEGORY_SETTINGS_KEYS = Object.values(RESOURCE_CATEGORY_TYPES).map(
+  (item) => item.settingsKey,
+);
+
 function normalizeBoolean(value, defaultValue) {
   if (typeof value === 'boolean') return value;
   return defaultValue;
+}
+
+function normalizeResourceCategorySettings(data = {}) {
+  return RESOURCE_CATEGORY_SETTINGS_KEYS.reduce((acc, key) => {
+    acc[key] = normalizeResourceCategoriesList(data[key]);
+    return acc;
+  }, {});
 }
 
 export function normalizeSiteSettings(data = {}) {
@@ -57,6 +75,7 @@ export function normalizeSiteSettings(data = {}) {
       DEFAULT_SITE_SETTINGS.membersCanCreateBlogPosts,
     ),
     blogNotifyEmails: normalizeBlogNotifyEmails(data.blogNotifyEmails),
+    ...normalizeResourceCategorySettings(data),
     ...EVENT_CATEGORY_FIELD_IDS.reduce((acc, fieldId) => {
       acc[fieldId] = typeof data[fieldId] === 'string' && data[fieldId].trim()
         ? data[fieldId].trim()
@@ -84,6 +103,7 @@ export function serializeSiteSettings(settings) {
     anonymousBlogLikesEnabled: normalized.anonymousBlogLikesEnabled,
     membersCanCreateBlogPosts: normalized.membersCanCreateBlogPosts,
     blogNotifyEmails: normalized.blogNotifyEmails,
+    ...normalizeResourceCategorySettings(normalized),
     ...EVENT_CATEGORY_FIELD_IDS.reduce((acc, fieldId) => {
       acc[fieldId] = normalized[fieldId];
       return acc;
@@ -141,4 +161,53 @@ export async function updateEventCategorySettings(patch) {
     },
     { merge: true },
   );
+}
+
+const RESOURCE_ITEM_COLLECTIONS = {
+  blog: 'blogPosts',
+  publication: 'publications',
+  usefulLink: 'usefulLinks',
+};
+
+async function clearOrphanedCategoryIds(type, keptCategoryIds) {
+  const collectionName = RESOURCE_ITEM_COLLECTIONS[type];
+  if (!collectionName) return;
+
+  const kept = new Set(keptCategoryIds);
+  const snapshot = await getDocs(collection(db, collectionName));
+  const orphans = snapshot.docs.filter((item) => {
+    const categoryId = item.data()?.categoryId;
+    return typeof categoryId === 'string' && categoryId && !kept.has(categoryId);
+  });
+
+  if (!orphans.length) return;
+
+  // Firestore batches max 500 operations.
+  for (let index = 0; index < orphans.length; index += 450) {
+    const batch = writeBatch(db);
+    orphans.slice(index, index + 450).forEach((item) => {
+      batch.update(item.ref, { categoryId: '', updatedAt: serverTimestamp() });
+    });
+    await batch.commit();
+  }
+}
+
+export async function updateResourceCategories(type, categories) {
+  const meta = RESOURCE_CATEGORY_TYPES[type];
+  if (!meta) {
+    throw new Error('Neznámý typ kategorií.');
+  }
+
+  const nextCategories = normalizeResourceCategoriesList(categories);
+
+  await setDoc(
+    siteSettingsRef,
+    {
+      [meta.settingsKey]: nextCategories,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  await clearOrphanedCategoryIds(type, nextCategories.map((item) => item.id));
 }

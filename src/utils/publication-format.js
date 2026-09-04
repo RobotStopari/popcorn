@@ -21,6 +21,7 @@ export function normalizePublication(raw = {}) {
     author: raw.author?.trim() || '',
     description: raw.description?.trim() || '',
     keywords: normalizeKeywords(raw.keywords),
+    categoryId: typeof raw.categoryId === 'string' ? raw.categoryId.trim().slice(0, 40) : '',
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -67,6 +68,7 @@ export function getDefaultPublicationFormState() {
     author: '',
     description: '',
     keywordsInput: '',
+    categoryId: '',
   };
 }
 
@@ -78,6 +80,7 @@ export function publicationToFormState(publication) {
     author: publication.author || '',
     description: publication.description || '',
     keywordsInput: keywordsToInput(publication.keywords),
+    categoryId: publication.categoryId || '',
   };
 }
 
@@ -87,6 +90,7 @@ export function formStateToPublicationPayload(form) {
     author: form.author.trim(),
     description: form.description.trim(),
     keywords: parseKeywordsInput(form.keywordsInput),
+    categoryId: typeof form.categoryId === 'string' ? form.categoryId.trim().slice(0, 40) : '',
   };
 }
 
