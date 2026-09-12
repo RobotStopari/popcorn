@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   APP_TEXT_FIELDS,
@@ -9,6 +9,9 @@ import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { subscribeAppTexts, updateAppTexts } from '../services/app-texts';
 import { buildDraftFromOverrides } from '../utils/app-text-merge';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { getAutosaveFormHandlers } from '../utils/autosave';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import AutosaveStatus from '../components/AutosaveStatus';
 
 const FORM_ID = 'admin-ui-texts-form';
 
@@ -135,6 +138,13 @@ export default function AdminTextsPage() {
   const [search, setSearch] = useState('');
   const [showModifiedOnly, setShowModifiedOnly] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState(() => new Set());
+  const draftRef = useRef(draft);
+  const dirtyRef = useRef(false);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     document.title = adminDocumentTitle(adminText('uiTextsPage.title'));
@@ -145,7 +155,12 @@ export default function AdminTextsPage() {
 
     const unsubscribe = subscribeAppTexts(
       (data) => {
+        if (dirtyRef.current) {
+          setListLoading(false);
+          return;
+        }
         setDraft(data.draft);
+        rememberAutosave(data.draft);
         setListLoading(false);
       },
       () => {
@@ -155,7 +170,7 @@ export default function AdminTextsPage() {
     );
 
     return unsubscribe;
-  }, [canAccessAdmin]);
+  }, [canAccessAdmin, rememberAutosave]);
 
   const groupedFields = useMemo(() => {
     const groupsWithValues = groupFieldsByCategory(APP_TEXT_FIELDS).map((group) => ({
@@ -218,29 +233,41 @@ export default function AdminTextsPage() {
   }
 
   const updateDraft = (fieldId, value) => {
-    setDraft((prev) => ({ ...prev, [fieldId]: value }));
+    dirtyRef.current = true;
+    setDraft((prev) => {
+      const next = { ...prev, [fieldId]: value };
+      draftRef.current = next;
+      return next;
+    });
     setSaveMessage('');
     setSaveError('');
   };
 
   const resetField = (field) => {
     updateDraft(field.id, field.defaultValue);
+    persistTexts();
+  };
+
+  const persistTexts = async ({ close = false } = {}) => {
+    const current = draftRef.current;
+    if (close) setSaving(true);
+    setSaveError('');
+    const ok = await runAutosave(current, async () => {
+      await updateAppTexts(current);
+      dirtyRef.current = false;
+      return true;
+    });
+    if (close) {
+      setSaving(false);
+      if (ok) setSaveMessage(adminText('uiTextsPage.saved'));
+      else setSaveError(adminText('uiTextsPage.saveFailed'));
+    }
+    return ok;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSaving(true);
-    setSaveError('');
-    setSaveMessage('');
-
-    try {
-      await updateAppTexts(draft);
-      setSaveMessage(adminText('uiTextsPage.saved'));
-    } catch (err) {
-      setSaveError(err.message || adminText('uiTextsPage.saveFailed'));
-    } finally {
-      setSaving(false);
-    }
+    await persistTexts({ close: true });
   };
 
   return (
@@ -264,7 +291,12 @@ export default function AdminTextsPage() {
       {listLoading ? (
         <p className="admin-loading">{adminText('uiTextsPage.loading')}</p>
       ) : (
-        <form id={FORM_ID} className="admin-ui-texts" onSubmit={handleSubmit}>
+        <form
+          id={FORM_ID}
+          className="admin-ui-texts"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(() => persistTexts())}
+        >
           <div className="admin-ui-texts__sticky-bar">
             <div className="admin-ui-texts__toolbar">
               <input
@@ -290,6 +322,7 @@ export default function AdminTextsPage() {
                   <span className="admin-toggle__label">{adminText('uiTextsPage.showModifiedOnly')}</span>
                 </label>
 
+                <AutosaveStatus status={autosaveStatus} />
                 <button
                   type="submit"
                   className="btn btn--primary admin-ui-texts__save"

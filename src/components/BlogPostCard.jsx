@@ -4,6 +4,7 @@ import { getEventCoverStyle, resolveCoverPatternSeed } from '../utils/event-cove
 import BlogAuthor from './BlogAuthor';
 import BlogPostStats from './BlogPostStats';
 import ResourceCategoryBadge from './ResourceCategoryBadge';
+import { getBlogPostDisplayTitle } from '../utils/blog-post-format';
 import { siteText } from '../utils/admin-text';
 import { trackNavClick, trackOutboundClick } from '../utils/analytics-track';
 
@@ -59,6 +60,10 @@ function BlogPostCover({ post }) {
 }
 
 function BlogCardContent({ post, authorLinkable = true }) {
+  const displayTitle = getBlogPostDisplayTitle(post, {
+    emptyDraft: siteText('blog.card.emptyDraftTitle'),
+  });
+
   return (
     <div className="blog-card__content">
       <div className="blog-card__meta">
@@ -68,9 +73,13 @@ function BlogCardContent({ post, authorLinkable = true }) {
           className={post.isExternal ? 'blog-author--flat' : ''}
           linkable={authorLinkable}
         />
-        <time className="blog-card__date" dateTime={post.publishedDate}>
-          {post.dateTimeLabel}
-        </time>
+        {post.draft ? (
+          <span className="blog-card__draft">{siteText('blog.card.draft')}</span>
+        ) : (
+          <time className="blog-card__date" dateTime={post.publishedDate}>
+            {post.dateTimeLabel}
+          </time>
+        )}
       </div>
 
       <ResourceCategoryBadge
@@ -80,7 +89,7 @@ function BlogCardContent({ post, authorLinkable = true }) {
       />
 
       <h2 className="blog-card__title">
-        <span className="blog-card__title-text">{post.title}</span>
+        <span className="blog-card__title-text">{displayTitle}</span>
         {post.hasExternalLink && (
           <span
             className="blog-card__external-link"
@@ -117,6 +126,9 @@ export default function BlogPostCard({
 }) {
   const delayClass = ` reveal--delay-${(index % 4) + 1}`;
   const visibleClass = initiallyVisible ? ' reveal--visible' : '';
+  const displayTitle = getBlogPostDisplayTitle(post, {
+    emptyDraft: siteText('blog.card.emptyDraftTitle'),
+  });
 
   return (
     <article className={`blog-card-wrap${delayClass} reveal${visibleClass}`}>
@@ -125,7 +137,7 @@ export default function BlogPostCard({
           <button
             type="button"
             className="blog-card__action"
-            aria-label={siteText('blog.card.editAriaLabel', { title: post.title })}
+            aria-label={siteText('blog.card.editAriaLabel', { title: displayTitle })}
             onClick={() => onEdit?.(post)}
           >
             <EditIcon />
@@ -133,7 +145,7 @@ export default function BlogPostCard({
           <button
             type="button"
             className="blog-card__action blog-card__action--danger"
-            aria-label={siteText('blog.card.deleteAriaLabel', { title: post.title })}
+            aria-label={siteText('blog.card.deleteAriaLabel', { title: displayTitle })}
             onClick={() => onDelete?.(post)}
           >
             <TrashIcon />
@@ -144,11 +156,11 @@ export default function BlogPostCard({
       {post.isExternal ? (
         <a
           href={post.externalUrl}
-          className="blog-card blog-card--external shine-parent"
+          className={`blog-card blog-card--external shine-parent${post.draft ? ' blog-card--draft' : ''}`}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={siteText('blog.card.externalLinkAriaLabel', { title: post.title })}
-          onClick={() => trackOutboundClick(post.externalUrl, post.title)}
+          aria-label={siteText('blog.card.externalLinkAriaLabel', { title: displayTitle })}
+          onClick={() => trackOutboundClick(post.externalUrl, displayTitle)}
         >
           <BlogPostCover post={post} />
           <BlogCardContent post={post} authorLinkable={authorLinkable} />
@@ -156,8 +168,8 @@ export default function BlogPostCard({
       ) : (
         <a
           href={blogPostUrl(post.slug)}
-          className="blog-card shine-parent"
-          onClick={() => trackNavClick(blogPostUrl(post.slug), post.title)}
+          className={`blog-card shine-parent${post.draft ? ' blog-card--draft' : ''}`}
+          onClick={() => trackNavClick(blogPostUrl(post.slug), displayTitle)}
         >
           <BlogPostCover post={post} />
           <BlogCardContent post={post} authorLinkable={authorLinkable} />

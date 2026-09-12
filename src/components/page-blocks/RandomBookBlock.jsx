@@ -18,13 +18,14 @@ export default function RandomBookBlock({ block }) {
   const listLabel = listPage?.title || siteText('publications.random.fallbackTitle');
 
   const publication = useMemo(() => {
-    if (!publications.length) return null;
+    const publicPublications = publications.filter((item) => !item.draft);
+    if (!publicPublications.length) return null;
 
-    if (!pickedIdRef.current || !publications.some((item) => item.id === pickedIdRef.current)) {
-      pickedIdRef.current = publications[Math.floor(Math.random() * publications.length)].id;
+    if (!pickedIdRef.current || !publicPublications.some((item) => item.id === pickedIdRef.current)) {
+      pickedIdRef.current = publicPublications[Math.floor(Math.random() * publicPublications.length)].id;
     }
 
-    return publications.find((item) => item.id === pickedIdRef.current) || null;
+    return publicPublications.find((item) => item.id === pickedIdRef.current) || null;
   }, [publications]);
 
   return (

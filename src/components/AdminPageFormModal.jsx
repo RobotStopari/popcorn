@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   canEditPageSlug,
@@ -12,8 +12,11 @@ import {
   slugifyTitle,
 } from '../data/pages';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers } from '../utils/autosave';
 import { adminText } from '../utils/admin-text';
 import AdminModalPanel from './AdminModalPanel';
+import AutosaveStatus from './AutosaveStatus';
 
 const EMPTY_FORM = {
   title: '',
@@ -34,7 +37,14 @@ export default function AdminPageFormModal({
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
 
   useEffect(() => {
     if (!open) {
@@ -45,20 +55,30 @@ export default function AdminPageFormModal({
       return;
     }
 
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+
     if (page) {
-      setForm({
+      const next = {
         title: page.title,
         slug: page.slug,
         intro: getPageIntro(page),
         seoTitle: page.seoTitle || '',
         seoDescription: page.seoDescription || '',
-      });
+      };
+      setForm(next);
+      formRef.current = next;
+      rememberAutosave(next);
       setSlugTouched(true);
     } else {
       setForm(EMPTY_FORM);
+      formRef.current = EMPTY_FORM;
+      rememberAutosave(EMPTY_FORM);
       setSlugTouched(false);
     }
-  }, [open, page]);
+  }, [open, page, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -91,30 +111,50 @@ export default function AdminPageFormModal({
       if (isCreate && !slugTouched) {
         next.slug = slugifyTitle(value);
       }
+      formRef.current = next;
       return next;
     });
     setError('');
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSaving(true);
+  const persistPage = async ({ close = false } = {}) => {
+    const current = formRef.current;
+    const payload = {
+      title: current.title,
+      slug: current.slug,
+      intro: showIntro ? current.intro : undefined,
+      seoTitle: current.seoTitle,
+      seoDescription: current.seoDescription,
+    };
+
+    if (!close && isCreate && (!payload.title.trim() || !payload.slug.trim())) {
+      return true;
+    }
+
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
     setError('');
 
-    try {
-      await onSave({
-        title: form.title,
-        slug: form.slug,
-        intro: showIntro ? form.intro : undefined,
-        seoTitle: form.seoTitle,
-        seoDescription: form.seoDescription,
-      });
-      onClose();
-    } catch (err) {
-      setError(err.message || adminText('common.saveFailed'));
-    } finally {
+    const ok = await runAutosave(payload, async () => {
+      await onSave(payload, { silent: !close });
+      return true;
+    });
+
+    if (close) {
       setSaving(false);
+      if (ok) onClose();
+      else setError(adminText('common.saveFailed'));
     }
+    return ok;
+  };
+
+  const persistSoon = () => {
+    persistPage();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await persistPage({ close: true });
   };
 
   return createPortal(
@@ -131,6 +171,7 @@ export default function AdminPageFormModal({
           <div className="admin-page-form-modal__footer">
             {error && <p className="admin-error admin-page-form-modal__error">{error}</p>}
             <div className="admin-modal__actions admin-page-form-modal__actions">
+              <AutosaveStatus status={autosaveStatus} />
               <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
                 {adminText('common.cancel')}
               </button>
@@ -158,7 +199,12 @@ export default function AdminPageFormModal({
           )}
         </header>
 
-        <form id="admin-page-form" className="admin-page-form-modal__form" onSubmit={handleSubmit}>
+        <form
+          id="admin-page-form"
+          className="admin-page-form-modal__form"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           <section className="admin-page-form-modal__section">
             <div className="admin-page-form-modal__field">
               <label className="admin-page-form-modal__label" htmlFor="page-title">
@@ -196,7 +242,11 @@ export default function AdminPageFormModal({
                     value={form.slug}
                     onChange={(e) => {
                       setSlugTouched(true);
-                      setForm((prev) => ({ ...prev, slug: e.target.value.trim().toLowerCase() }));
+                      setForm((prev) => {
+                        const next = { ...prev, slug: e.target.value.trim().toLowerCase() };
+                        formRef.current = next;
+                        return next;
+                      });
                       setError('');
                     }}
                     required
@@ -228,7 +278,11 @@ export default function AdminPageFormModal({
                 rows={4}
                 value={form.intro}
                 onChange={(e) => {
-                  setForm((prev) => ({ ...prev, intro: e.target.value }));
+                  setForm((prev) => {
+                    const next = { ...prev, intro: e.target.value };
+                    formRef.current = next;
+                    return next;
+                  });
                   setError('');
                 }}
                 required
@@ -251,7 +305,11 @@ export default function AdminPageFormModal({
                   className="admin-form__input admin-page-meta-control"
                   value={form.seoTitle}
                   onChange={(e) => {
-                    setForm((prev) => ({ ...prev, seoTitle: e.target.value }));
+                    setForm((prev) => {
+                      const next = { ...prev, seoTitle: e.target.value };
+                      formRef.current = next;
+                      return next;
+                    });
                     setError('');
                   }}
                   placeholder={form.title || adminText('pages.form.seoMetaTitlePlaceholder')}
@@ -268,7 +326,11 @@ export default function AdminPageFormModal({
                   rows={3}
                   value={form.seoDescription}
                   onChange={(e) => {
-                    setForm((prev) => ({ ...prev, seoDescription: e.target.value }));
+                    setForm((prev) => {
+                      const next = { ...prev, seoDescription: e.target.value };
+                      formRef.current = next;
+                      return next;
+                    });
                     setError('');
                   }}
                   placeholder={adminText('pages.form.seoMetaDescriptionPlaceholder')}

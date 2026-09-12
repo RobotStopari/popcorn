@@ -148,6 +148,7 @@ export default function RichTextEditor({
   label,
   value,
   onChange,
+  onPersist,
   maxLength,
   tone = 'content',
   features = 'full',
@@ -411,6 +412,7 @@ export default function RichTextEditor({
       lastRangeRef.current = insertRangeRef.current.cloneRange();
     }
     emitChange();
+    onPersist?.();
   };
 
   const applyYoutube = ({ videoId, title }) => {

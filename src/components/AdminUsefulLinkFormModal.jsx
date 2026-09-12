@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers, nextDraftFlag } from '../utils/autosave';
 import {
   formStateToUsefulLinkPayload,
   getDefaultUsefulLinkFormState,
@@ -13,6 +15,7 @@ import { adminText } from '../utils/admin-text';
 import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
 import ResourceCategorySelect from './ResourceCategorySelect';
+import AutosaveStatus from './AutosaveStatus';
 import UrlInput from './UrlInput';
 
 function FieldGroup({ label, htmlFor, required = false, children, hint, error }) {
@@ -41,14 +44,28 @@ export default function AdminUsefulLinkFormModal({
   const [form, setForm] = useState(getDefaultUsefulLinkFormState());
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
 
   useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
     if (!open) return;
-    setForm(link ? usefulLinkToFormState(link) : getDefaultUsefulLinkFormState());
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+    const next = link ? usefulLinkToFormState(link) : getDefaultUsefulLinkFormState();
+    setForm(next);
+    formRef.current = next;
+    rememberAutosave(formStateToUsefulLinkPayload(next));
     setErrors({});
     setSaving(false);
-  }, [open, link?.id]);
+  }, [open, link?.id, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -69,22 +86,43 @@ export default function AdminUsefulLinkFormModal({
   if (!mounted) return null;
 
   const updateField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      formRef.current = next;
+      return next;
+    });
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const persistLink = async ({ close = false } = {}) => {
+    const current = formRef.current;
+    if (close) {
+      const nextErrors = validateUsefulLinkForm(current);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return false;
+      }
+    }
+
+    const payload = {
+      ...formStateToUsefulLinkPayload(current),
+      draft: nextDraftFlag(link, { close }),
+    };
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
+    const ok = await runAutosave(payload, () => onSave(payload, { silent: !close }));
+    if (close) setSaving(false);
+    if (close && ok) onClose();
+    return ok;
+  };
+
+  const persistSoon = () => {
+    persistLink();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const nextErrors = validateUsefulLinkForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setSaving(true);
-    const ok = await onSave(formStateToUsefulLinkPayload(form));
-    setSaving(false);
-    if (ok) onClose();
+    await persistLink({ close: true });
   };
 
   return createPortal(
@@ -114,7 +152,11 @@ export default function AdminUsefulLinkFormModal({
           </div>
         </header>
 
-        <form className="admin-form admin-form--event" onSubmit={handleSubmit}>
+        <form
+          className="admin-form admin-form--event"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           <div className="admin-event-tab">
             <AdminFormBlock
               title={adminText('usefulLinks.form.blockLink')}
@@ -172,7 +214,10 @@ export default function AdminUsefulLinkFormModal({
                   type="usefulLink"
                   id="useful-link-category"
                   value={form.categoryId}
-                  onChange={(value) => updateField('categoryId', value)}
+                  onChange={(value) => {
+                    updateField('categoryId', value);
+                    persistSoon();
+                  }}
                   disabled={saving}
                 />
               </FieldGroup>
@@ -198,6 +243,7 @@ export default function AdminUsefulLinkFormModal({
           )}
 
           <div className="admin-modal__actions admin-event-modal__actions">
+            <AutosaveStatus status={autosaveStatus} />
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               {adminText('common.cancel')}
             </button>

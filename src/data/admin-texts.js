@@ -169,6 +169,10 @@ export const ADMIN_TEXTS = {
         author: 'Autor',
         published: 'Publikováno',
       },
+      badges: {
+        draft: 'Koncept',
+      },
+      emptyDraftTitle: 'Prázdný koncept',
       editAria: 'Upravit příspěvek {title}',
       deleteAria: 'Smazat příspěvek {title}',
       errors: {
@@ -981,6 +985,8 @@ export const SITE_UI_TEXTS = {
     },
     card: {
       readCta: 'Číst příspěvek',
+      draft: 'Koncept',
+      emptyDraftTitle: 'Prázdný koncept',
       editAriaLabel: 'Upravit příspěvek {title}',
       deleteAriaLabel: 'Smazat příspěvek {title}',
       externalLinkTitle: 'Otevřít původní příspěvek',

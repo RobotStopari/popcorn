@@ -11,7 +11,11 @@ import ResourceListToolbar from './ResourceListToolbar';
 import SectionLabel from './SectionLabel';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
-import { filterPostsBySearch } from '../utils/blog-post-format';
+import {
+  filterPostsBySearch,
+  isBlogPostVisibleOnSite,
+  sortBlogPostsDraftsFirst,
+} from '../utils/blog-post-format';
 import { siteDocumentTitle, siteText } from '../utils/admin-text';
 
 const PAGE_SIZE = 20;
@@ -27,6 +31,7 @@ export default function BlogListPage({ page }) {
   const basePath = page ? pagePath(page) : '/blog';
 
   const {
+    user,
     canAuthor,
     canManagePost,
     allowExternalPosts,
@@ -45,8 +50,16 @@ export default function BlogListPage({ page }) {
   } = useBlogAuthoring();
 
   const filteredPosts = useMemo(
-    () => filterPostsBySearch(filterItemsByCategory(posts, categoryId), search),
-    [posts, search, categoryId],
+    () => sortBlogPostsDraftsFirst(
+      filterPostsBySearch(
+        filterItemsByCategory(
+          posts.filter((post) => isBlogPostVisibleOnSite(post, user)),
+          categoryId,
+        ),
+        search,
+      ),
+    ),
+    [posts, search, categoryId, user],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));

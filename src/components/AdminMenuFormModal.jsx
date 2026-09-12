@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   MENU_ITEM_TYPES,
@@ -9,9 +9,12 @@ import {
 } from '../data/site-menu';
 import { pagePath } from '../data/pages';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers } from '../utils/autosave';
 import PageCombobox from './PageCombobox';
 import SortableList from './SortableList';
 import AdminModalPanel from './AdminModalPanel';
+import AutosaveStatus from './AutosaveStatus';
 import UrlInput from './UrlInput';
 
 function Toggle({ id, checked, onChange, label }) {
@@ -41,7 +44,14 @@ export default function AdminMenuLinkFormModal({
   const [form, setForm] = useState(createEmptyLink());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
 
   useEffect(() => {
     if (!open) {
@@ -51,12 +61,16 @@ export default function AdminMenuLinkFormModal({
       return;
     }
 
-    if (link) {
-      setForm({ ...link });
-    } else {
-      setForm(createEmptyLink());
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
     }
-  }, [open, link]);
+
+    const next = link ? { ...link } : createEmptyLink();
+    setForm(next);
+    formRef.current = next;
+    rememberAutosave(next);
+  }, [open, link, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -78,31 +92,52 @@ export default function AdminMenuLinkFormModal({
 
   const isPageLink = form.linkType === MENU_LINK_TYPES.page;
 
-  const handleLinkTypeChange = (linkType) => {
-    setForm((prev) => ({
-      ...prev,
-      linkType,
-      external: linkType === MENU_LINK_TYPES.custom,
-      pageId: linkType === MENU_LINK_TYPES.page ? prev.pageId : '',
-      href: linkType === MENU_LINK_TYPES.custom ? prev.href : '',
-    }));
+  const persistLink = async ({ close = false } = {}) => {
+    const current = formRef.current;
+    try {
+      validateMenuLink(current);
+    } catch (err) {
+      if (close) setError(err.message || 'Uložení se nezdařilo.');
+      return !close;
+    }
+
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
     setError('');
+    const ok = await runAutosave(current, async () => {
+      await onSave(current);
+      return true;
+    });
+    if (close) {
+      setSaving(false);
+      if (ok) onClose();
+    }
+    return ok;
+  };
+
+  const persistSoon = () => {
+    persistLink();
+  };
+
+  const handleLinkTypeChange = (linkType) => {
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        linkType,
+        external: linkType === MENU_LINK_TYPES.custom,
+        pageId: linkType === MENU_LINK_TYPES.page ? prev.pageId : '',
+        href: linkType === MENU_LINK_TYPES.custom ? prev.href : '',
+      };
+      formRef.current = next;
+      return next;
+    });
+    setError('');
+    persistSoon();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSaving(true);
-    setError('');
-
-    try {
-      validateMenuLink(form);
-      await onSave(form);
-      onClose();
-    } catch (err) {
-      setError(err.message || 'Uložení se nezdařilo.');
-    } finally {
-      setSaving(false);
-    }
+    await persistLink({ close: true });
   };
 
   return createPortal(
@@ -118,7 +153,11 @@ export default function AdminMenuLinkFormModal({
           {link ? 'Upravit položku' : 'Nová položka menu'}
         </h2>
 
-        <form className="admin-form admin-page-dialog" onSubmit={handleSubmit}>
+        <form
+          className="admin-form admin-page-dialog"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           <div className="admin-form__group">
             <label className="admin-form__label" htmlFor="menu-link-label">
               Název v menu
@@ -162,7 +201,14 @@ export default function AdminMenuLinkFormModal({
                 id="menu-link-page"
                 pages={pages}
                 value={form.pageId}
-                onChange={(pageId) => setForm((prev) => ({ ...prev, pageId }))}
+                onChange={(pageId) => {
+                  setForm((prev) => {
+                    const next = { ...prev, pageId };
+                    formRef.current = next;
+                    return next;
+                  });
+                  persistSoon();
+                }}
                 required
               />
               {form.pageId && (
@@ -189,7 +235,14 @@ export default function AdminMenuLinkFormModal({
             <Toggle
               id="menu-link-external"
               checked={form.external}
-              onChange={(external) => setForm((prev) => ({ ...prev, external }))}
+              onChange={(external) => {
+                setForm((prev) => {
+                  const next = { ...prev, external };
+                  formRef.current = next;
+                  return next;
+                });
+                persistSoon();
+              }}
               label="Otevřít v novém okně"
             />
           </div>
@@ -197,6 +250,7 @@ export default function AdminMenuLinkFormModal({
           {error && <p className="admin-error">{error}</p>}
 
           <div className="admin-modal__actions">
+            <AutosaveStatus status={autosaveStatus} />
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               Zrušit
             </button>
@@ -224,7 +278,19 @@ export function AdminMenuDropdownFormModal({
   const [editingLink, setEditingLink] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const skipFormResetRef = useRef(false);
+  const labelRef = useRef(label);
+  const itemsRef = useRef(items);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
+
+  useEffect(() => {
+    labelRef.current = label;
+  }, [label]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
     if (!open) {
@@ -237,14 +303,21 @@ export function AdminMenuDropdownFormModal({
       return;
     }
 
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+
     if (dropdown) {
       setLabel(dropdown.label);
       setItems(dropdown.items.map((item) => ({ ...item })));
+      rememberAutosave({ label: dropdown.label, items: dropdown.items });
     } else {
       setLabel('');
       setItems([]);
+      rememberAutosave({ label: '', items: [] });
     }
-  }, [open, dropdown]);
+  }, [open, dropdown, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -271,36 +344,46 @@ export function AdminMenuDropdownFormModal({
 
   if (!mounted) return null;
 
-  const handleSaveLink = async (link) => {
-    if (editingLink) {
-      setItems((prev) => prev.map((item) => (item.id === editingLink.id ? link : item)));
-    } else {
-      setItems((prev) => [...prev, link]);
-    }
-    setLinkModalOpen(false);
-    setEditingLink(null);
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSaving(true);
-    setError('');
+  const persistDropdown = async ({ close = false } = {}) => {
+    const currentLabel = labelRef.current.trim();
+    if (!currentLabel && !close) return true;
 
     const payload = {
       id: dropdown?.id,
       type: MENU_ITEM_TYPES.dropdown,
-      label,
-      items,
+      label: labelRef.current,
+      items: itemsRef.current,
     };
 
-    try {
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
+    setError('');
+    const ok = await runAutosave(payload, async () => {
       await onSave(payload);
-      onClose();
-    } catch (err) {
-      setError(err.message || 'Uložení se nezdařilo.');
-    } finally {
+      return true;
+    });
+    if (close) {
       setSaving(false);
+      if (ok) onClose();
+      else setError('Uložení se nezdařilo.');
     }
+    return ok;
+  };
+
+  const handleSaveLink = async (link) => {
+    const nextItems = editingLink
+      ? itemsRef.current.map((item) => (item.id === editingLink.id ? link : item))
+      : [...itemsRef.current, link];
+    setItems(nextItems);
+    itemsRef.current = nextItems;
+    setLinkModalOpen(false);
+    setEditingLink(null);
+    persistDropdown();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await persistDropdown({ close: true });
   };
 
   return createPortal(
@@ -317,7 +400,11 @@ export function AdminMenuDropdownFormModal({
             {dropdown ? 'Upravit dropdown' : 'Nový dropdown'}
           </h2>
 
-          <form className="admin-form" onSubmit={handleSubmit}>
+          <form
+            className="admin-form"
+            onSubmit={handleSubmit}
+            {...getAutosaveFormHandlers(() => persistDropdown())}
+          >
             <div className="admin-form__group">
               <label className="admin-form__label" htmlFor="menu-dropdown-label">
                 Název dropdownu
@@ -353,7 +440,11 @@ export function AdminMenuDropdownFormModal({
               {items.length > 0 ? (
                 <SortableList
                   items={items}
-                  onReorder={setItems}
+                  onReorder={(nextItems) => {
+                    setItems(nextItems);
+                    itemsRef.current = nextItems;
+                    persistDropdown();
+                  }}
                   listClassName="admin-menu-dropdown-items__list"
                   itemClassName="admin-menu-dropdown-items__row admin-sortable__item"
                   ghostClassName="admin-menu-dropdown-items__row"
@@ -385,7 +476,14 @@ export function AdminMenuDropdownFormModal({
                           type="button"
                           className="admin-events__action admin-events__action--danger"
                           aria-label={`Smazat ${item.label}`}
-                          onClick={() => setItems((prev) => prev.filter((entry) => entry.id !== item.id))}
+                          onClick={() => {
+                            setItems((prev) => {
+                              const next = prev.filter((entry) => entry.id !== item.id);
+                              itemsRef.current = next;
+                              return next;
+                            });
+                            persistDropdown();
+                          }}
                         >
                           ×
                         </button>
@@ -401,6 +499,7 @@ export function AdminMenuDropdownFormModal({
             {error && <p className="admin-error">{error}</p>}
 
             <div className="admin-modal__actions">
+              <AutosaveStatus status={autosaveStatus} />
               <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
                 Zrušit
               </button>

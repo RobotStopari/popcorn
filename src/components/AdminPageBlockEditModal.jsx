@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { PAGE_BLOCK_TYPES } from '../data/page-blocks';
 import { adminText } from '../utils/admin-text';
+import { getAutosaveFormHandlers } from '../utils/autosave';
+import AutosaveStatus from './AutosaveStatus';
 import AdminPageBlockEditor, { getBlockEditorTitle } from './AdminPageBlockEditor';
 import AdminPageBlockWireframe from './AdminPageBlockWireframe';
 import AdminModalPanel from './AdminModalPanel';
@@ -20,8 +22,10 @@ export default function AdminPageBlockEditModal({
   open,
   block,
   saving = false,
+  autosaveStatus = 'idle',
   onClose,
   onDone,
+  onAutosave,
   onChange,
 }) {
   const { mounted, visible } = useAnimatedPresence(open, 240);
@@ -105,6 +109,7 @@ export default function AdminPageBlockEditModal({
         className="admin-modal__panel--page admin-page-block-modal__panel"
         footer={(
           <div className="admin-modal__actions admin-page-block-modal__footer">
+            <AutosaveStatus status={saving ? 'saving' : autosaveStatus} />
             <button
               type="button"
               className="btn btn--primary"
@@ -135,7 +140,11 @@ export default function AdminPageBlockEditModal({
               </section>
             )
           )}
-          <section className="admin-page-block-modal__editor" aria-label="Úprava obsahu">
+          <section
+            className="admin-page-block-modal__editor"
+            aria-label="Úprava obsahu"
+            {...getAutosaveFormHandlers(() => onAutosave?.())}
+          >
             <AdminPageBlockEditor block={block} onChange={onChange} />
           </section>
         </div>

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BLOG_GALLERY_MAX, BLOG_GALLERY_UPLOAD_HINT } from '../data/blog-images';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers, nextDraftFlag } from '../utils/autosave';
 import {
   blogPostToFormState,
   buildAuthorSnapshot,
@@ -20,6 +22,7 @@ import { resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import EventImageUploadList from './EventImageUploadList';
 import ResourceCategorySelect from './ResourceCategorySelect';
 import RichTextEditor from './RichTextEditor';
+import AutosaveStatus from './AutosaveStatus';
 import UrlInput from './UrlInput';
 import UserCombobox from './UserCombobox';
 
@@ -57,7 +60,19 @@ export default function AdminBlogPostFormModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [coverPatternSeed, setCoverPatternSeed] = useState(() => createCoverPatternSeed('blog-cover'));
+  const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
+  const coverPatternSeedRef = useRef(coverPatternSeed);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
+    coverPatternSeedRef.current = coverPatternSeed;
+  }, [coverPatternSeed]);
 
   const eligibleUsers = useMemo(
     () => users.filter((user) => user.name?.trim()),
@@ -85,17 +100,27 @@ export default function AdminBlogPostFormModal({
 
   useEffect(() => {
     if (!open) return;
-    setForm(blogPostToFormState(post));
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+    const next = blogPostToFormState(post);
+    setForm(next);
+    formRef.current = next;
     setAuthorUid(post?.author?.uid || defaultAuthorUid || '');
     setSlugTouched(Boolean(post?.slug));
-    setCoverPatternSeed(
-      post
-        ? resolveCoverPatternSeed(post.coverPatternSeed, post.id, post.slug)
-        : createCoverPatternSeed('blog-cover'),
-    );
+    const nextSeed = post
+      ? resolveCoverPatternSeed(post.coverPatternSeed, post.id, post.slug)
+      : createCoverPatternSeed('blog-cover');
+    setCoverPatternSeed(nextSeed);
+    coverPatternSeedRef.current = nextSeed;
+    rememberAutosave(formStateToBlogPayload({ ...next, coverPatternSeed: nextSeed }, {
+      posts,
+      excludeId: post?.id || null,
+    }));
     setError('');
     setSaving(false);
-  }, [open, post?.id, defaultAuthorUid]);
+  }, [open, post?.id, defaultAuthorUid, posts, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -123,66 +148,95 @@ export default function AdminBlogPostFormModal({
         next.slug = suggestSlugFromTitle(value);
       }
 
+      formRef.current = next;
       return next;
     });
   };
 
   const toggleExternal = (enabled) => {
-    setForm((prev) => ({
-      ...prev,
-      isExternal: enabled,
-      ...(enabled
-        ? {
-          galleryImages: [],
-          externalAuthorName: prev.externalAuthorName || prev.title ? '' : prev.externalAuthorName,
-        }
-        : {
-          externalUrl: '',
-          externalAuthorName: '',
-        }),
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        isExternal: enabled,
+        ...(enabled
+          ? {
+            galleryImages: [],
+            externalAuthorName: prev.externalAuthorName || prev.title ? '' : prev.externalAuthorName,
+          }
+          : {
+            externalUrl: '',
+            externalAuthorName: '',
+          }),
+      };
+      formRef.current = next;
+      return next;
+    });
+    persistSoon();
+  };
+
+  const buildPayload = (current, close) => {
+    let resolvedAuthor = previewAuthor;
+    if (current.isExternal) {
+      resolvedAuthor = buildExternalAuthorSnapshot(current.externalAuthorName);
+    }
+
+    return {
+      ...formStateToBlogPayload({
+        ...current,
+        coverPatternSeed: coverPatternSeedRef.current,
+      }, {
+        author: resolvedAuthor,
+        posts,
+        excludeId: post?.id || null,
+      }),
+      draft: nextDraftFlag(post, { close }),
+    };
+  };
+
+  const persistPost = async ({ close = false } = {}) => {
+    const current = formRef.current;
+
+    if (close) {
+      const validationError = validateBlogForm(current, { allowExternal: allowExternalPosts });
+      if (validationError) {
+        setError(validationError);
+        return false;
+      }
+
+      if (!current.isExternal && allowAuthorPick && !authorUid) {
+        setError(adminText('blog.form.pickAuthor'));
+        return false;
+      }
+    }
+
+    const payload = buildPayload(current, close);
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
+    setError('');
+
+    const ok = await runAutosave(payload, () => onSave(
+      payload,
+      {
+        ...(current.isExternal
+          ? { isExternal: true }
+          : (allowAuthorPick ? { authorUid } : {})),
+        silent: !close,
+        close,
+      },
+    ));
+
+    if (close) setSaving(false);
+    if (close && ok) onClose();
+    return ok;
+  };
+
+  const persistSoon = () => {
+    persistPost();
   };
 
   const handleSubmit = async (submitEvent) => {
     submitEvent.preventDefault();
-
-    const validationError = validateBlogForm(form, { allowExternal: allowExternalPosts });
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    if (!form.isExternal && allowAuthorPick && !authorUid) {
-      setError(adminText('blog.form.pickAuthor'));
-      return;
-    }
-
-    setSaving(true);
-    setError('');
-
-    let resolvedAuthor = previewAuthor;
-    if (form.isExternal) {
-      resolvedAuthor = buildExternalAuthorSnapshot(form.externalAuthorName);
-    }
-
-    const payload = formStateToBlogPayload({
-      ...form,
-      coverPatternSeed,
-    }, {
-      author: resolvedAuthor,
-      posts,
-      excludeId: post?.id || null,
-    });
-
-    const ok = await onSave(
-      payload,
-      form.isExternal
-        ? { isExternal: true }
-        : (allowAuthorPick ? { authorUid } : undefined),
-    );
-    setSaving(false);
-
-    if (ok) onClose();
+    await persistPost({ close: true });
   };
 
   const isExternal = form.isExternal && allowExternalPosts;
@@ -210,7 +264,11 @@ export default function AdminBlogPostFormModal({
           </div>
         </header>
 
-        <form className="admin-form admin-form--event" onSubmit={handleSubmit}>
+        <form
+          className="admin-form admin-form--event"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           <div className="admin-event-tab">
             <AdminFormBlock
               title={adminText('blog.form.blockPost')}
@@ -291,7 +349,10 @@ export default function AdminBlogPostFormModal({
                   type="blog"
                   id="blog-post-category"
                   value={form.categoryId}
-                  onChange={(value) => updateField('categoryId', value)}
+                  onChange={(value) => {
+                    updateField('categoryId', value);
+                    persistSoon();
+                  }}
                   disabled={saving}
                 />
               </FieldGroup>
@@ -320,14 +381,19 @@ export default function AdminBlogPostFormModal({
                   coverImage={form.coverImage}
                   coverPublicId={form.coverPublicId}
                   previewSeed={coverPatternSeed}
-                  onPreviewSeedChange={setCoverPatternSeed}
+                  onPreviewSeedChange={(nextSeed) => {
+                    setCoverPatternSeed(nextSeed);
+                    coverPatternSeedRef.current = nextSeed;
+                    persistSoon();
+                  }}
                   disabled={saving}
                   onChange={({ coverImage, coverPublicId }) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      coverImage,
-                      coverPublicId,
-                    }));
+                    setForm((prev) => {
+                      const next = { ...prev, coverImage, coverPublicId };
+                      formRef.current = next;
+                      return next;
+                    });
+                    persistSoon();
                   }}
                 />
               </FieldGroup>
@@ -340,6 +406,7 @@ export default function AdminBlogPostFormModal({
                   id={post ? `blog-post-body-${post.id}` : 'blog-post-body-new'}
                   value={form.body}
                   onChange={(value) => updateField('body', value)}
+                  onPersist={persistSoon}
                   tone="content"
                   features="full"
                 />
@@ -372,7 +439,10 @@ export default function AdminBlogPostFormModal({
                       id={post ? `blog-post-author-${post.id}` : 'blog-post-author-new'}
                       users={eligibleUsers}
                       value={authorUid}
-                      onChange={setAuthorUid}
+                      onChange={(nextUid) => {
+                        setAuthorUid(nextUid);
+                        persistSoon();
+                      }}
                       required
                     />
                   </FieldGroup>
@@ -401,7 +471,12 @@ export default function AdminBlogPostFormModal({
                     presetType="postGallery"
                     disabled={saving}
                     onChange={(galleryImages) => {
-                      setForm((prev) => ({ ...prev, galleryImages }));
+                      setForm((prev) => {
+                        const next = { ...prev, galleryImages };
+                        formRef.current = next;
+                        return next;
+                      });
+                      persistSoon();
                     }}
                   />
                 </FieldGroup>
@@ -422,6 +497,7 @@ export default function AdminBlogPostFormModal({
           {(error || saveError) && <p className="admin-error admin-form__error">{error || saveError}</p>}
 
           <div className="admin-modal__actions admin-event-modal__actions">
+            <AutosaveStatus status={autosaveStatus} />
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               {adminText('common.cancel')}
             </button>

@@ -15,6 +15,7 @@ import {
   isSlugTaken,
   updateBlogPost,
 } from '../services/blog-posts';
+import { notifyAdminsOfNewBlogPost } from '../services/blog-notify';
 import { siteText } from '../utils/admin-text';
 
 export function useBlogAuthoring() {
@@ -71,7 +72,7 @@ export function useBlogAuthoring() {
     setPostToDelete(null);
   }, []);
 
-  const handleSave = useCallback(async (payload) => {
+  const handleSave = useCallback(async (payload, { silent = false } = {}) => {
     setSaveError('');
 
     if (!user || !profileComplete) {
@@ -84,7 +85,7 @@ export function useBlogAuthoring() {
       return false;
     }
 
-    if (!payload.isExternal && isSlugTaken(posts, payload.slug, editingPost?.id)) {
+    if (!payload.isExternal && payload.slug && isSlugTaken(posts, payload.slug, editingPost?.id)) {
       setSaveError(siteText('blog.authoring.slugTaken'));
       return false;
     }
@@ -107,6 +108,14 @@ export function useBlogAuthoring() {
           ...payload,
           author,
         });
+        if (editingPost.draft && payload.draft !== true) {
+          notifyAdminsOfNewBlogPost(editingPost.id).catch(() => {});
+        }
+        setEditingPost((current) => (
+          current?.id === editingPost.id
+            ? normalizeBlogPost({ ...current, ...payload, author, id: editingPost.id })
+            : current
+        ));
       } else {
         const publishMeta = getPublishTimestamp();
         const author = payload.isExternal
@@ -118,7 +127,7 @@ export function useBlogAuthoring() {
           author,
         });
 
-        prependPost(normalizeBlogPost({
+        const created = normalizeBlogPost({
           id,
           ...payload,
           ...publishMeta,
@@ -128,7 +137,9 @@ export function useBlogAuthoring() {
           coverImage: payload.coverImage || '',
           coverPublicId: payload.coverPublicId || '',
           galleryImages: payload.galleryImages || [],
-        }));
+        });
+        prependPost(created);
+        setEditingPost(created);
       }
 
       return true;
@@ -142,6 +153,7 @@ export function useBlogAuthoring() {
     editingPost,
     posts,
     profile,
+    profileComplete,
     user,
     prependPost,
   ]);
@@ -163,6 +175,7 @@ export function useBlogAuthoring() {
     : buildAuthorSnapshot(profile, user);
 
   return {
+    user,
     canAuthor,
     canCreatePosts,
     canManagePost,

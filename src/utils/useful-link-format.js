@@ -14,7 +14,8 @@ export function normalizeUsefulLink(raw = {}) {
 
   const title = raw.title?.trim() || '';
   const url = raw.url?.trim() || '';
-  if (!title || !url) return null;
+  const draft = raw.draft === true;
+  if (!draft && (!title || !url)) return null;
 
   return {
     id: raw.id,
@@ -23,6 +24,7 @@ export function normalizeUsefulLink(raw = {}) {
     description: raw.description?.trim() || '',
     keywords: normalizeKeywords(raw.keywords),
     categoryId: typeof raw.categoryId === 'string' ? raw.categoryId.trim().slice(0, 40) : '',
+    draft,
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -92,6 +94,7 @@ export function formStateToUsefulLinkPayload(form) {
     description: form.description.trim(),
     keywords: parseKeywordsInput(form.keywordsInput),
     categoryId: typeof form.categoryId === 'string' ? form.categoryId.trim().slice(0, 40) : '',
+    draft: form.draft === true,
   };
 }
 

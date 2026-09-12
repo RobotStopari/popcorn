@@ -19,13 +19,14 @@ export default function RandomLinkBlock({ block }) {
   const listLabel = listPage?.title || siteText('usefulLinks.random.fallbackTitle');
 
   const link = useMemo(() => {
-    if (!links.length) return null;
+    const publicLinks = links.filter((item) => !item.draft);
+    if (!publicLinks.length) return null;
 
-    if (!pickedIdRef.current || !links.some((item) => item.id === pickedIdRef.current)) {
-      pickedIdRef.current = links[Math.floor(Math.random() * links.length)].id;
+    if (!pickedIdRef.current || !publicLinks.some((item) => item.id === pickedIdRef.current)) {
+      pickedIdRef.current = publicLinks[Math.floor(Math.random() * publicLinks.length)].id;
     }
 
-    return links.find((item) => item.id === pickedIdRef.current) || null;
+    return publicLinks.find((item) => item.id === pickedIdRef.current) || null;
   }, [links]);
 
   return (

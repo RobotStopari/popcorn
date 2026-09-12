@@ -6,12 +6,15 @@ import EventsPagination from '../components/EventsPagination';
 import ResourceListToolbar from '../components/ResourceListToolbar';
 import SectionLabel from '../components/SectionLabel';
 import { filterItemsByCategory } from '../data/resource-categories';
+import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import {
   filterPostsByAuthor,
   filterPostsBySearch,
   formatAuthorDisplayName,
+  isBlogPostVisibleOnSite,
   resolveAuthorFromPosts,
+  sortBlogPostsDraftsFirst,
 } from '../utils/blog-post-format';
 import { siteDocumentTitle, siteText } from '../utils/admin-text';
 
@@ -22,23 +25,31 @@ export default function BlogAuthorPage() {
   const decodedAuthorKey = decodeURIComponent(authorKey);
   const [searchParams, setSearchParams] = useSearchParams();
   const { posts, loading } = useBlogPosts();
+  const { user } = useAdminAuth();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const knownPostIdsRef = useRef(new Set());
   const filterKeyRef = useRef(`${search}|${categoryId}`);
 
-  const authorPosts = useMemo(
+  const allAuthorPosts = useMemo(
     () => filterPostsByAuthor(posts, decodedAuthorKey),
     [posts, decodedAuthorKey],
   );
 
+  const authorPosts = useMemo(
+    () => allAuthorPosts.filter((post) => isBlogPostVisibleOnSite(post, user)),
+    [allAuthorPosts, user],
+  );
+
   const author = useMemo(
-    () => resolveAuthorFromPosts(authorPosts, decodedAuthorKey),
-    [authorPosts, decodedAuthorKey],
+    () => resolveAuthorFromPosts(allAuthorPosts, decodedAuthorKey),
+    [allAuthorPosts, decodedAuthorKey],
   );
 
   const filteredPosts = useMemo(
-    () => filterPostsBySearch(filterItemsByCategory(authorPosts, categoryId), search),
+    () => sortBlogPostsDraftsFirst(
+      filterPostsBySearch(filterItemsByCategory(authorPosts, categoryId), search),
+    ),
     [authorPosts, search, categoryId],
   );
 

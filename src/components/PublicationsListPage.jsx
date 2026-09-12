@@ -21,7 +21,10 @@ export default function PublicationsListPage({ page }) {
   const basePath = page ? pagePath(page) : '/publikace';
 
   const filteredPublications = useMemo(
-    () => filterPublicationsBySearch(filterItemsByCategory(publications, categoryId), search),
+    () => filterPublicationsBySearch(
+      filterItemsByCategory(publications.filter((item) => !item.draft), categoryId),
+      search,
+    ),
     [publications, search, categoryId],
   );
 

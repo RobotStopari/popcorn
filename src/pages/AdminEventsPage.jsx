@@ -157,7 +157,7 @@ export default function AdminEventsPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload, { published = true, eventId = null } = {}) => {
+  const handleSave = async (payload, { published = true, eventId = null, silent = false } = {}) => {
     setSaveError('');
     try {
       const fullPayload = { ...payload, published };
@@ -165,12 +165,14 @@ export default function AdminEventsPage() {
 
       if (targetId) {
         await updateEvent(targetId, fullPayload);
-        await logActivity({
-          action: 'update',
-          targetType: 'event',
-          targetId,
-          summary: `Upravena akce „${fullPayload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'update',
+            targetType: 'event',
+            targetId,
+            summary: `Upravena akce „${fullPayload.title}“`,
+          });
+        }
         setEditingEvent((current) => (
           current?.id === targetId
             ? normalizeEvent({ ...current, ...fullPayload, id: targetId })
@@ -178,12 +180,15 @@ export default function AdminEventsPage() {
         ));
       } else {
         const newId = await createEvent(fullPayload);
-        await logActivity({
-          action: 'create',
-          targetType: 'event',
-          targetId: newId,
-          summary: `Vytvořena akce „${fullPayload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'create',
+            targetType: 'event',
+            targetId: newId,
+            summary: `Vytvořena akce „${fullPayload.title}“`,
+          });
+        }
+        setEditingEvent(normalizeEvent({ ...fullPayload, id: newId }));
       }
       return true;
     } catch (err) {

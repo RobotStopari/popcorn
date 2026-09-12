@@ -13,7 +13,8 @@ export function normalizePublication(raw = {}) {
   if (!raw?.id) return null;
 
   const title = raw.title?.trim() || '';
-  if (!title) return null;
+  const draft = raw.draft === true;
+  if (!draft && !title) return null;
 
   return {
     id: raw.id,
@@ -22,6 +23,7 @@ export function normalizePublication(raw = {}) {
     description: raw.description?.trim() || '',
     keywords: normalizeKeywords(raw.keywords),
     categoryId: typeof raw.categoryId === 'string' ? raw.categoryId.trim().slice(0, 40) : '',
+    draft,
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -91,6 +93,7 @@ export function formStateToPublicationPayload(form) {
     description: form.description.trim(),
     keywords: parseKeywordsInput(form.keywordsInput),
     categoryId: typeof form.categoryId === 'string' ? form.categoryId.trim().slice(0, 40) : '',
+    draft: form.draft === true,
   };
 }
 

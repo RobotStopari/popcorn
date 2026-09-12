@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminFooterSocialSlotsEditor from '../components/AdminFooterSocialSlotsEditor';
 import AdminSiteOptionToggles, { AdminBrandLinkFields } from '../components/AdminSiteOptionToggles';
@@ -10,6 +10,9 @@ import {
 } from '../data/site-settings';
 import { subscribeSiteSettings, updateSiteSettings } from '../services/site-settings';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
+import { getAutosaveFormHandlers } from '../utils/autosave';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import AutosaveStatus from '../components/AutosaveStatus';
 
 const FORM_ID = 'admin-settings-form';
 
@@ -20,6 +23,13 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+  const settingsRef = useRef(settings);
+  const dirtyRef = useRef(false);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     document.title = adminDocumentTitle(adminText('settingsPage.title'));
@@ -30,7 +40,12 @@ export default function AdminSettingsPage() {
 
     const unsubscribe = subscribeSiteSettings(
       (data) => {
+        if (dirtyRef.current) {
+          setListLoading(false);
+          return;
+        }
         setSettings(data);
+        rememberAutosave(data);
         setListLoading(false);
       },
       () => {
@@ -40,7 +55,7 @@ export default function AdminSettingsPage() {
     );
 
     return unsubscribe;
-  }, [canAccessAdmin]);
+  }, [canAccessAdmin, rememberAutosave]);
 
   if (loading) {
     return (
@@ -55,25 +70,36 @@ export default function AdminSettingsPage() {
   }
 
   const updateSettings = (patch) => {
-    setSettings((prev) => ({ ...prev, ...patch }));
+    dirtyRef.current = true;
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      settingsRef.current = next;
+      return next;
+    });
     setSaveMessage('');
     setSaveError('');
   };
 
+  const persistSettings = async ({ close = false } = {}) => {
+    const current = settingsRef.current;
+    if (close) setSaving(true);
+    setSaveError('');
+    const ok = await runAutosave(current, async () => {
+      await updateSiteSettings(current);
+      dirtyRef.current = false;
+      return true;
+    });
+    if (close) {
+      setSaving(false);
+      if (ok) setSaveMessage(adminText('settingsPage.saved'));
+      else setSaveError(adminText('settingsPage.saveFailed'));
+    }
+    return ok;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSaving(true);
-    setSaveError('');
-    setSaveMessage('');
-
-    try {
-      await updateSiteSettings(settings);
-      setSaveMessage(adminText('settingsPage.saved'));
-    } catch (err) {
-      setSaveError(err.message || adminText('settingsPage.saveFailed'));
-    } finally {
-      setSaving(false);
-    }
+    await persistSettings({ close: true });
   };
 
   return (
@@ -84,14 +110,17 @@ export default function AdminSettingsPage() {
           <p className="admin-content__subtitle">{adminText('settingsPage.subtitle')}</p>
         </div>
         {!listLoading && (
-          <button
-            type="submit"
-            form={FORM_ID}
-            className="btn btn--primary"
-            disabled={saving}
-          >
-            {saving ? adminText('common.saving') : adminText('settingsPage.save')}
-          </button>
+          <div className="admin-content__header-actions">
+            <AutosaveStatus status={autosaveStatus} />
+            <button
+              type="submit"
+              form={FORM_ID}
+              className="btn btn--primary"
+              disabled={saving}
+            >
+              {saving ? adminText('common.saving') : adminText('settingsPage.save')}
+            </button>
+          </div>
         )}
       </header>
 
@@ -107,7 +136,12 @@ export default function AdminSettingsPage() {
       {listLoading ? (
         <p className="admin-loading">{adminText('settingsPage.loading')}</p>
       ) : (
-        <form id={FORM_ID} className="admin-settings" onSubmit={handleSubmit}>
+        <form
+          id={FORM_ID}
+          className="admin-settings"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(() => persistSettings())}
+        >
           {SITE_SETTINGS_SECTIONS.map((section) => (
             <section key={section.id} className="admin-settings__section">
               <h2 className="admin-settings__section-head">{section.title}</h2>
@@ -124,10 +158,13 @@ export default function AdminSettingsPage() {
                         imagePublicId={settings.logoPublicId}
                         previewSeed="site-logo"
                         uploadType="siteLogo"
-                        onChange={(patch) => updateSettings({
-                          logoUrl: patch.imageUrl || '',
-                          logoPublicId: patch.imagePublicId || '',
-                        })}
+                        onChange={(patch) => {
+                          updateSettings({
+                            logoUrl: patch.imageUrl || '',
+                            logoPublicId: patch.imagePublicId || '',
+                          });
+                          persistSettings();
+                        }}
                       />
                     </div>
 
@@ -220,14 +257,23 @@ export default function AdminSettingsPage() {
                       <span className="admin-settings__label">Ikony sociálních sítí v patičce</span>
                       <AdminFooterSocialSlotsEditor
                         slots={settings.footerSocialSlots}
-                        onChange={(footerSocialSlots) => updateSettings({ footerSocialSlots })}
+                        onChange={(footerSocialSlots) => {
+                          updateSettings({ footerSocialSlots });
+                          persistSettings();
+                        }}
                       />
                     </div>
                   </>
                 )}
 
                 {section.id === 'options' && (
-                  <AdminSiteOptionToggles settings={settings} onChange={updateSettings} />
+                  <AdminSiteOptionToggles
+                    settings={settings}
+                    onChange={(patch) => {
+                      updateSettings(patch);
+                      persistSettings();
+                    }}
+                  />
                 )}
               </div>
             </section>

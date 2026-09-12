@@ -140,25 +140,35 @@ export default function AdminNotificationsPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, { silent = false } = {}) => {
     setSaveError('');
     try {
       if (editingNotification?.id) {
         await updateNotification(editingNotification.id, payload);
-        await logActivity({
-          action: 'update',
-          targetType: 'notification',
-          targetId: editingNotification.id,
-          summary: `Upraveno upozornění „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'update',
+            targetType: 'notification',
+            targetId: editingNotification.id,
+            summary: `Upraveno upozornění „${payload.title}“`,
+          });
+        }
+        setEditingNotification((current) => (
+          current?.id === editingNotification.id
+            ? { ...current, ...payload, id: editingNotification.id }
+            : current
+        ));
       } else {
         const newId = await createNotification(payload);
-        await logActivity({
-          action: 'create',
-          targetType: 'notification',
-          targetId: newId,
-          summary: `Vytvořeno upozornění „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'create',
+            targetType: 'notification',
+            targetId: newId,
+            summary: `Vytvořeno upozornění „${payload.title}“`,
+          });
+        }
+        setEditingNotification({ ...payload, id: newId });
       }
       return true;
     } catch (err) {

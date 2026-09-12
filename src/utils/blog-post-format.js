@@ -212,6 +212,7 @@ export function normalizeBlogPost(raw) {
       : normalizeEventImageList(raw.galleryImages, BLOG_GALLERY_MAX),
     isExternal,
     externalUrl,
+    draft: raw.draft === true,
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
   };
@@ -226,6 +227,7 @@ export function normalizeBlogPost(raw) {
     excerpt: getBlogExcerpt({ body: post.body }),
     hasCoverImage: Boolean(post.coverImage),
     hasExternalLink: isExternal && isValidHttpsUrl(externalUrl),
+    draft: post.draft,
   };
 
   return normalized;
@@ -236,6 +238,36 @@ export function sortPostsByPublished(posts, descending = true) {
     const diff = getBlogPublishedDateTime(a) - getBlogPublishedDateTime(b);
     return descending ? -diff : diff;
   });
+}
+
+export function isBlogPostOwner(post, user) {
+  return Boolean(post?.author?.uid && user?.uid && post.author.uid === user.uid);
+}
+
+export function isBlogPostVisibleOnSite(post, user) {
+  if (!post) return false;
+  if (post.draft !== true) return true;
+  return isBlogPostOwner(post, user);
+}
+
+export function getBlogPostDisplayTitle(post, { emptyDraft = 'Prázdný koncept', empty = 'Bez názvu' } = {}) {
+  const title = post?.title?.trim();
+  if (title) return title;
+  if (post?.draft) return emptyDraft;
+  return empty;
+}
+
+export function sortBlogPostsDraftsFirst(posts, descending = true) {
+  const drafts = [];
+  const published = [];
+  posts.forEach((post) => {
+    if (post.draft) drafts.push(post);
+    else published.push(post);
+  });
+  return [
+    ...sortPostsByPublished(drafts, descending),
+    ...sortPostsByPublished(published, descending),
+  ];
 }
 
 function scorePostMatch(post, query) {

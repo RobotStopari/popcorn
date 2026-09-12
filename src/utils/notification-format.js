@@ -57,6 +57,8 @@ export function getNotificationEndDateTime(notification) {
 }
 
 export function isNotificationActive(notification, now = new Date()) {
+  if (notification.draft) return false;
+
   if (notification.scheduleMode === NOTIFICATION_SCHEDULE_MODES.manual) {
     return Boolean(notification.manualActive);
   }
@@ -180,6 +182,7 @@ export function normalizeNotification(raw = {}) {
     ctaLabel: typeof raw.ctaLabel === 'string' ? raw.ctaLabel.trim() : '',
     ctaHref: typeof raw.ctaHref === 'string' ? raw.ctaHref.trim() : '',
     ctaOpenInNewTab: Boolean(raw.ctaOpenInNewTab),
+    draft: raw.draft === true,
     createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
   };
@@ -240,6 +243,7 @@ export function formStateToNotificationPayload(form) {
     ctaLabel: ctaEnabled ? form.ctaLabel.trim() : '',
     ctaHref: ctaEnabled ? form.ctaHref.trim() : '',
     ctaOpenInNewTab: ctaEnabled ? Boolean(form.ctaOpenInNewTab) : false,
+    draft: form.draft === true,
   };
 }
 

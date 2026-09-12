@@ -27,10 +27,13 @@ import {
   validatePageBlocks,
 } from '../utils/page-blocks';
 import { adminText } from '../utils/admin-text';
+import { getAutosaveFormHandlers } from '../utils/autosave';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
 import { openLivePagePreview } from '../utils/live-page-preview';
 import AdminBlockGapPopover from './AdminBlockGapPopover';
 import AdminDeleteBlockDialog from './AdminDeleteBlockDialog';
 import AdminPageBlockEditModal from './AdminPageBlockEditModal';
+import AutosaveStatus from './AutosaveStatus';
 import SortableList from './SortableList';
 
 const BLOCK_ENTER_MS = 320;
@@ -353,7 +356,12 @@ export default function AdminPageBuilder({
   const previewWindowRef = useRef(null);
   const removeTimeoutsRef = useRef(new Map());
   const skipTitleToH1SyncRef = useRef(false);
+  const formRef = useRef(form);
+  const homeIntroRef = useRef(homeIntro);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   blocksRef.current = blocks;
+  formRef.current = form;
+  homeIntroRef.current = homeIntro;
   editingBlockIdRef.current = editingBlockId;
   paletteOpenRef.current = paletteOpen;
   paletteInsertIndexRef.current = paletteInsertIndex;
@@ -401,7 +409,15 @@ export default function AdminPageBuilder({
 
     removeTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
     removeTimeoutsRef.current.clear();
-  }, [open, page?.id, hasBlocks]);
+
+    rememberAutosave({
+      title: getPageAdminListTitle(page),
+      slug: page.slug,
+      seoTitle: page.seoTitle || '',
+      seoDescription: page.seoDescription || '',
+      blocks: hasBlocks ? nextBlocks : undefined,
+    });
+  }, [open, page?.id, hasBlocks, rememberAutosave]);
 
   useEffect(() => {
     if (!open || !lockedTitleBlock) return;
@@ -563,6 +579,7 @@ export default function AdminPageBuilder({
     if (isBlockEditable(newBlock)) {
       setEditingBlockId(newBlock.id);
     }
+    savePage();
   };
 
   const handleDuplicateBlock = (blockId) => {
@@ -582,11 +599,13 @@ export default function AdminPageBuilder({
       return next;
     });
     markBlockEntering(copy.id);
+    savePage();
   };
 
   const handleReorderBlocks = (next) => {
     blocksRef.current = next;
     setBlocks(next);
+    savePage();
   };
 
   const handleUpdateBlock = (blockId, patch) => {
@@ -628,48 +647,65 @@ export default function AdminPageBuilder({
 
   const handleConfirmRemoveBlock = () => {
     if (!blockToDelete) return;
-    animateRemoveBlock(blockToDelete.id);
+    const blockId = blockToDelete.id;
+    blocksRef.current = blocksRef.current.filter((item) => item.id !== blockId);
+    savePage();
+    animateRemoveBlock(blockId);
     setBlockToDelete(null);
   };
 
-  const savePage = async () => {
-    setSaving(true);
-    setError('');
-    setSaveMessage('');
+  const savePage = async ({ close = false } = {}) => {
+    const currentForm = formRef.current;
+    const currentBlocks = page?.id === 'home'
+      ? applyHomeIntroToBlocks(blocksRef.current, homeIntroRef.current)
+      : blocksRef.current;
+    const h1Block = currentBlocks.find((block) => block.type === PAGE_BLOCK_TYPES.h1);
+    const resolvedTitle = page?.id === NOT_FOUND_PAGE_ID
+      ? NOT_FOUND_PAGE_ADMIN_TITLE
+      : isStandalonePageWithEditableAdminTitle(page) && h1Block?.text?.trim()
+        ? h1Block.text.trim()
+        : currentForm.title.trim();
 
-    try {
-      const currentBlocks = page?.id === 'home'
-        ? applyHomeIntroToBlocks(blocksRef.current, homeIntro)
-        : blocksRef.current;
-      const h1Block = currentBlocks.find((block) => block.type === PAGE_BLOCK_TYPES.h1);
-      const resolvedTitle = page?.id === NOT_FOUND_PAGE_ID
-        ? NOT_FOUND_PAGE_ADMIN_TITLE
-        : isStandalonePageWithEditableAdminTitle(page) && h1Block?.text?.trim()
-          ? h1Block.text.trim()
-          : form.title.trim();
+    const payload = {
+      title: resolvedTitle,
+      slug: pageHasPublicUrl(page) ? currentForm.slug : page.slug,
+      seoTitle: currentForm.seoTitle,
+      seoDescription: currentForm.seoDescription,
+      blocks: hasBlocks
+        ? validatePageBlocks(currentBlocks, page, { pageTitle: currentForm.title })
+        : undefined,
+    };
 
-      await onSave({
-        title: resolvedTitle,
-        slug: pageHasPublicUrl(page) ? form.slug : page.slug,
-        seoTitle: form.seoTitle,
-        seoDescription: form.seoDescription,
-        blocks: hasBlocks
-          ? validatePageBlocks(currentBlocks, page, { pageTitle: form.title })
-          : undefined,
-      });
-      setSaveMessage(adminText('pages.builder.saved'));
-      return true;
-    } catch (err) {
-      setError(err.message || 'Uložení se nezdařilo.');
-      return false;
-    } finally {
-      setSaving(false);
+    if (close) {
+      setSaving(true);
+      setError('');
+      setSaveMessage('');
     }
+
+    const ok = await runAutosave(payload, async () => {
+      await onSave(payload, { silent: !close });
+      return true;
+    });
+
+    if (close) {
+      setSaving(false);
+      if (ok) setSaveMessage(adminText('pages.builder.saved'));
+      else setError('Uložení se nezdařilo.');
+    } else if (!ok) {
+      setError('Uložení se nezdařilo.');
+    }
+
+    return ok;
+  };
+
+  const persistSoon = () => {
+    savePage();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await savePage();
+    const ok = await savePage({ close: true });
+    if (ok) onClose();
   };
 
   const handleLivePreview = () => {
@@ -723,6 +759,7 @@ export default function AdminPageBuilder({
           >
             {adminText('common.settings')}
           </button>
+          <AutosaveStatus status={autosaveStatus} />
           <button type="submit" form="admin-page-builder-form" className="btn btn--primary btn--small" disabled={saving}>
             {saving ? adminText('common.saving') : adminText('common.save')}
           </button>
@@ -760,7 +797,10 @@ export default function AdminPageBuilder({
               </button>
             </header>
 
-            <div className="admin-page-builder__settings-body">
+            <div
+              className="admin-page-builder__settings-body"
+              {...getAutosaveFormHandlers(persistSoon)}
+            >
               <div className={`admin-page-builder__meta-field${showUrlField ? '' : ' admin-page-builder__meta-field--wide'}`}>
                 <label className="admin-page-builder__meta-label" htmlFor="builder-page-title">{adminText('pages.builder.metaName')}</label>
                 <input
@@ -858,7 +898,12 @@ export default function AdminPageBuilder({
         </>
       )}
 
-      <form id="admin-page-builder-form" className="admin-page-builder__body" onSubmit={handleSubmit}>
+      <form
+        id="admin-page-builder-form"
+        className="admin-page-builder__body"
+        onSubmit={handleSubmit}
+        {...getAutosaveFormHandlers(persistSoon)}
+      >
         {hasBlocks ? (
           <div className="admin-page-builder__list-shell">
             {!blocks.length ? (
@@ -1033,11 +1078,13 @@ export default function AdminPageBuilder({
         open={Boolean(editingBlockForModal)}
         block={editingBlockForModal}
         saving={saving}
+        autosaveStatus={autosaveStatus}
         onClose={() => setEditingBlockId(null)}
         onDone={async () => {
           setEditingBlockId(null);
           await savePage();
         }}
+        onAutosave={persistSoon}
         onChange={(patch) => {
           const blockId = editingBlockIdRef.current;
           if (blockId) {

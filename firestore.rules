@@ -165,12 +165,23 @@ service cloud.firestore {
       return data.get('isExternal', false) == true;
     }
 
+    function isDraftDoc(data) {
+      return data.get('draft', false) == true;
+    }
+
+    function validOptionalDraftFlag(data) {
+      return !data.keys().hasAny(['draft']) || data.draft is bool;
+    }
+
     function validBlogPostCore(data) {
-      return data.title is string
-        && data.title.size() > 0
+      let complete = !isDraftDoc(data);
+      return validOptionalDraftFlag(data)
+        && data.title is string
         && data.title.size() <= 200
+        && (!complete || data.title.size() > 0)
         && data.slug is string
-        && data.slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$')
+        && (data.slug.size() == 0 || data.slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$'))
+        && (!complete || data.slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$'))
         && data.body is string
         && data.keywords is list
         && data.get('categoryId', '') is string
@@ -178,16 +189,19 @@ service cloud.firestore {
         && data.get('coverPatternSeed', '') is string
         && data.get('coverPatternSeed', '').size() <= 80
         && data.publishedDate is string
-        && data.publishedDate.size() > 0
+        && (!complete || data.publishedDate.size() > 0)
         && data.publishedTime is string
-        && data.publishedTime.size() > 0
+        && (!complete || data.publishedTime.size() > 0)
         && (
           (!isExternalBlogPost(data)
-            && data.body.size() > 0
-            && validBlogAuthor(data.author))
+            && data.author is map
+            && (!complete || (data.body.size() > 0 && validBlogAuthor(data.author))))
           || (isExternalBlogPost(data)
-            && validExternalBlogAuthor(data.author)
-            && validExternalBlogUrl(data.get('externalUrl', '')))
+            && data.author is map
+            && (!complete || (
+              validExternalBlogAuthor(data.author)
+              && validExternalBlogUrl(data.get('externalUrl', ''))
+            )))
         );
     }
 
@@ -331,12 +345,14 @@ service cloud.firestore {
     }
 
     function validNotificationData(data) {
-      return data.title is string
-        && data.title.size() > 0
+      let complete = !isDraftDoc(data);
+      return validOptionalDraftFlag(data)
+        && data.title is string
         && data.title.size() <= 120
+        && (!complete || data.title.size() > 0)
         && data.text is string
-        && data.text.size() > 0
         && data.text.size() <= 2000
+        && (!complete || data.text.size() > 0)
         && data.scheduleMode is string
         && (data.scheduleMode == 'scheduled' || data.scheduleMode == 'manual')
         && data.manualActive is bool
@@ -883,6 +899,7 @@ service cloud.firestore {
     }
 
     function validUsefulLinkData(data) {
+      let complete = !isDraftDoc(data);
       return data.keys().hasOnly([
           'title',
           'url',
@@ -891,14 +908,16 @@ service cloud.firestore {
           'categoryId',
           'createdAt',
           'updatedAt',
+          'draft',
         ])
+        && validOptionalDraftFlag(data)
         && data.title is string
-        && data.title.size() > 0
         && data.title.size() <= 120
+        && (!complete || data.title.size() > 0)
         && data.url is string
-        && data.url.size() > 0
         && data.url.size() <= 500
-        && data.url.matches('^https?://.+')
+        && (data.url.size() == 0 || data.url.matches('^https?://.+'))
+        && (!complete || (data.url.size() > 0 && data.url.matches('^https?://.+')))
         && data.description is string
         && data.description.size() <= 200
         && validKeywordsList(data.keywords)
@@ -907,6 +926,7 @@ service cloud.firestore {
     }
 
     function validPublicationData(data) {
+      let complete = !isDraftDoc(data);
       return data.keys().hasOnly([
           'title',
           'author',
@@ -915,10 +935,12 @@ service cloud.firestore {
           'categoryId',
           'createdAt',
           'updatedAt',
+          'draft',
         ])
+        && validOptionalDraftFlag(data)
         && data.title is string
-        && data.title.size() > 0
         && data.title.size() <= 120
+        && (!complete || data.title.size() > 0)
         && data.author is string
         && data.author.size() <= 120
         && data.description is string

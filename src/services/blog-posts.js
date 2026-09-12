@@ -45,9 +45,11 @@ export async function createBlogPost(payload) {
     updatedAt: serverTimestamp(),
   });
 
-  notifyAdminsOfNewBlogPost(docRef.id).catch((error) => {
-    console.error('Admin blog notification failed:', error);
-  });
+  if (payload.draft !== true) {
+    notifyAdminsOfNewBlogPost(docRef.id).catch((error) => {
+      console.error('Admin blog notification failed:', error);
+    });
+  }
 
   return docRef.id;
 }

@@ -103,25 +103,35 @@ export default function AdminUsefulLinksPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, { silent = false } = {}) => {
     setSaveError('');
     try {
       if (editingLink?.id) {
         await updateUsefulLink(editingLink.id, payload);
-        await logActivity({
-          action: 'update',
-          targetType: 'usefulLink',
-          targetId: editingLink.id,
-          summary: `Upraven odkaz „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'update',
+            targetType: 'usefulLink',
+            targetId: editingLink.id,
+            summary: `Upraven odkaz „${payload.title}“`,
+          });
+        }
+        setEditingLink((current) => (
+          current?.id === editingLink.id
+            ? { ...current, ...payload, id: editingLink.id }
+            : current
+        ));
       } else {
         const newId = await createUsefulLink(payload);
-        await logActivity({
-          action: 'create',
-          targetType: 'usefulLink',
-          targetId: newId,
-          summary: `Vytvořen odkaz „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'create',
+            targetType: 'usefulLink',
+            targetId: newId,
+            summary: `Vytvořen odkaz „${payload.title}“`,
+          });
+        }
+        setEditingLink({ ...payload, id: newId });
       }
       return true;
     } catch (err) {

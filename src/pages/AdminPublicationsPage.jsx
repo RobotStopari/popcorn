@@ -103,25 +103,35 @@ export default function AdminPublicationsPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, { silent = false } = {}) => {
     setSaveError('');
     try {
       if (editingPublication?.id) {
         await updatePublication(editingPublication.id, payload);
-        await logActivity({
-          action: 'update',
-          targetType: 'publication',
-          targetId: editingPublication.id,
-          summary: `Upravena publikace „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'update',
+            targetType: 'publication',
+            targetId: editingPublication.id,
+            summary: `Upravena publikace „${payload.title}“`,
+          });
+        }
+        setEditingPublication((current) => (
+          current?.id === editingPublication.id
+            ? { ...current, ...payload, id: editingPublication.id }
+            : current
+        ));
       } else {
         const newId = await createPublication(payload);
-        await logActivity({
-          action: 'create',
-          targetType: 'publication',
-          targetId: newId,
-          summary: `Vytvořena publikace „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'create',
+            targetType: 'publication',
+            targetId: newId,
+            summary: `Vytvořena publikace „${payload.title}“`,
+          });
+        }
+        setEditingPublication({ ...payload, id: newId });
       }
       return true;
     } catch (err) {

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBlogPosts } from '../contexts/BlogPostsContext';
 import { useBlogAuthoring } from '../hooks/useBlogAuthoring';
-import { getBlogGalleryImages } from '../utils/blog-post-format';
+import { getBlogGalleryImages, getBlogPostDisplayTitle, isBlogPostVisibleOnSite } from '../utils/blog-post-format';
 import { getEventCoverStyle, resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import { siteText } from '../utils/admin-text';
@@ -71,6 +71,7 @@ export default function BlogPostDetail({ slug }) {
   const post = slug ? getPostBySlug(slug) : null;
 
   const {
+    user,
     canManagePost,
     allowExternalPosts,
     formOpen,
@@ -107,7 +108,11 @@ export default function BlogPostDetail({ slug }) {
     );
   }
 
-  if (!post || post.isExternal) return <NotFoundPage />;
+  if (!post || post.isExternal || !isBlogPostVisibleOnSite(post, user)) return <NotFoundPage />;
+
+  const displayTitle = getBlogPostDisplayTitle(post, {
+    emptyDraft: siteText('blog.card.emptyDraftTitle'),
+  });
 
   return (
     <article className="section blog-detail">
@@ -120,7 +125,7 @@ export default function BlogPostDetail({ slug }) {
               <button
                 type="button"
                 className="blog-detail__action"
-                aria-label={siteText('blog.detail.editAriaLabel', { title: post.title })}
+                aria-label={siteText('blog.detail.editAriaLabel', { title: displayTitle })}
                 onClick={() => openEdit(post)}
               >
                 <EditIcon />
@@ -129,7 +134,7 @@ export default function BlogPostDetail({ slug }) {
               <button
                 type="button"
                 className="blog-detail__action blog-detail__action--danger"
-                aria-label={siteText('blog.detail.deleteAriaLabel', { title: post.title })}
+                aria-label={siteText('blog.detail.deleteAriaLabel', { title: displayTitle })}
                 onClick={() => openDelete(post)}
               >
                 <TrashIcon />
@@ -142,7 +147,12 @@ export default function BlogPostDetail({ slug }) {
         <header className="blog-detail__header reveal">
           <BlogPostCover post={post} />
 
-          <h1 className="blog-detail__title">{post.title}</h1>
+          <h1 className="blog-detail__title">
+            {displayTitle}
+            {post.draft && (
+              <span className="blog-detail__draft">{siteText('blog.card.draft')}</span>
+            )}
+          </h1>
 
           <div className="blog-detail__byline">
             <BlogAuthor author={post.author} size="medium" />

@@ -21,7 +21,10 @@ export default function UsefulLinksListPage({ page }) {
   const basePath = page ? pagePath(page) : '/odkazy';
 
   const filteredLinks = useMemo(
-    () => filterUsefulLinksBySearch(filterItemsByCategory(links, categoryId), search),
+    () => filterUsefulLinksBySearch(
+      filterItemsByCategory(links.filter((item) => !item.draft), categoryId),
+      search,
+    ),
     [links, search, categoryId],
   );
 

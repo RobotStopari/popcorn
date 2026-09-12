@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers } from '../utils/autosave';
 import { eventUrl } from '../data/events';
 import { useEvents } from '../contexts/EventsContext';
 import {
@@ -32,6 +34,7 @@ import RichTextEditor from './RichTextEditor';
 import AdminOrganiserEmailField from './AdminOrganiserEmailField';
 import AdminPlaceMapPicker from './AdminPlaceMapPicker';
 import UrlInput from './UrlInput';
+import AutosaveStatus from './AutosaveStatus';
 import EventCategorySelect from './EventCategorySelect';
 import EventStampSelect from './EventStampSelect';
 import SortableParticipantList from './SortableParticipantList';
@@ -204,6 +207,8 @@ export default function AdminEventFormModal({
   const panelRef = useRef(null);
   const skipFormResetRef = useRef(false);
   const formRef = useRef(form);
+  const persistSoonRef = useRef(() => {});
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const navigate = useNavigate();
   const { events } = useEvents();
   const { mounted, visible } = useAnimatedPresence(open, 240);
@@ -244,6 +249,8 @@ export default function AdminEventFormModal({
       if (!event?.id && !next.coverPatternSeed) {
         next.coverPatternSeed = createCoverPatternSeed('event-cover');
       }
+      formRef.current = next;
+      rememberAutosave(formStateToPayload(next));
       return next;
     });
     setSlugTouched(Boolean(event?.slug && event.slug !== event?.id));
@@ -346,12 +353,14 @@ export default function AdminEventFormModal({
       if (field === 'title' && !slugTouched) {
         next.slug = suggestEventSlugFromTitle(value);
       }
+      formRef.current = next;
       return next;
     });
   };
 
   const handleCategoryChange = (category) => {
     updateField('category', category);
+    persistSoonRef.current();
   };
 
   const requestCalendarOnly = (enabled) => {
@@ -366,6 +375,7 @@ export default function AdminEventFormModal({
   const handleConfirmCalendarOnly = () => {
     setCalendarOnlyConfirmOpen(false);
     updateField('calendarOnly', true);
+    persistSoonRef.current();
   };
 
   const handleDismissCalendarOnlyConfirm = () => {
@@ -373,11 +383,15 @@ export default function AdminEventFormModal({
   };
 
   const handleStartDateChange = (value) => {
-    setForm((prev) => ({
-      ...prev,
-      dateStart: value,
-      dateEnd: suggestEndDate(value),
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        dateStart: value,
+        dateEnd: suggestEndDate(value),
+      };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const handleStartDateBlur = () => {
@@ -387,7 +401,9 @@ export default function AdminEventFormModal({
       // Repair Friday→Sunday when end was left on the same day (missed/stale suggestion).
       if (prev.dateEnd && prev.dateEnd !== prev.dateStart) return prev;
       if (suggested === prev.dateEnd) return prev;
-      return { ...prev, dateEnd: suggested };
+      const next = { ...prev, dateEnd: suggested };
+      formRef.current = next;
+      return next;
     });
   };
 
@@ -400,34 +416,46 @@ export default function AdminEventFormModal({
       if (prev.timeEnd?.trim()) return prev;
       const suggested = suggestEndTime(prev.timeStart, prev.dateStart, prev.dateEnd);
       if (!suggested) return prev;
-      return { ...prev, timeEnd: suggested };
+      const next = { ...prev, timeEnd: suggested };
+      formRef.current = next;
+      return next;
     });
   };
 
   const updateOrganiser = (index, field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      organisers: prev.organisers.map((item, itemIndex) => (
-        itemIndex === index ? { ...item, [field]: value } : item
-      )),
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        organisers: prev.organisers.map((item, itemIndex) => (
+          itemIndex === index ? { ...item, [field]: value } : item
+        )),
+      };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const addOrganiser = () => {
     setForm((prev) => {
       if (prev.organisers.length >= MAX_ORGANISERS) return prev;
-      return {
+      const next = {
         ...prev,
         organisers: [...prev.organisers, createEmptyOrganiser()],
       };
+      formRef.current = next;
+      return next;
     });
   };
 
   const removeOrganiser = (index) => {
-    setForm((prev) => ({
-      ...prev,
-      organisers: prev.organisers.filter((_, itemIndex) => itemIndex !== index),
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        organisers: prev.organisers.filter((_, itemIndex) => itemIndex !== index),
+      };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const addOrganiserFromPreset = (preset) => {
@@ -446,10 +474,14 @@ export default function AdminEventFormModal({
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      organisers: [...prev.organisers, organiserFromPreset(preset)],
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        organisers: [...prev.organisers, organiserFromPreset(preset)],
+      };
+      formRef.current = next;
+      return next;
+    });
     setPresetMessage(`${presetDisplayLabel(preset)} přidán do akce.`);
   };
 
@@ -497,32 +529,48 @@ export default function AdminEventFormModal({
   };
 
   const updateParticipant = (index, value) => {
-    setForm((prev) => ({
-      ...prev,
-      participants: prev.participants.map((item, itemIndex) => (
-        itemIndex === index ? { ...item, name: value } : item
-      )),
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        participants: prev.participants.map((item, itemIndex) => (
+          itemIndex === index ? { ...item, name: value } : item
+        )),
+      };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const addParticipant = () => {
     const participant = createEmptyParticipant();
     setFocusParticipantId(participant.clientId);
-    setForm((prev) => ({
-      ...prev,
-      participants: [...prev.participants, participant],
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        participants: [...prev.participants, participant],
+      };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const removeParticipant = (index) => {
-    setForm((prev) => ({
-      ...prev,
-      participants: prev.participants.filter((_, itemIndex) => itemIndex !== index),
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        participants: prev.participants.filter((_, itemIndex) => itemIndex !== index),
+      };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const reorderParticipants = (participants) => {
-    setForm((prev) => ({ ...prev, participants }));
+    setForm((prev) => {
+      const next = { ...prev, participants };
+      formRef.current = next;
+      return next;
+    });
   };
 
   const handleTabChange = (tabId) => {
@@ -537,10 +585,7 @@ export default function AdminEventFormModal({
     });
   };
 
-  const performSave = async () => {
-    setSaving(true);
-    setError('');
-
+  const persistEvent = async ({ close = false } = {}) => {
     const currentForm = formRef.current;
     const slug = ensureUniqueEventSlug(
       currentForm.title,
@@ -550,23 +595,41 @@ export default function AdminEventFormModal({
     );
     const payload = formStateToPayload({ ...currentForm, slug });
     const published = isEventPublishable(currentForm);
-    const ok = await onSave(payload, {
+    skipFormResetRef.current = true;
+
+    if (close) setSaving(true);
+    setError('');
+
+    const ok = await runAutosave(payload, () => onSave(payload, {
       published,
       eventId: event?.id ?? null,
-    });
-    setSaving(false);
+      silent: !close,
+    }));
 
-    if (ok) {
-      if (fullPage) {
-        setSaveSuccessOpen(true);
-        setError('');
+    if (close) setSaving(false);
+
+    if (close) {
+      if (ok) {
+        if (fullPage) {
+          setSaveSuccessOpen(true);
+          setError('');
+        } else {
+          onClose();
+        }
       } else {
-        onClose();
+        setError('Uložení akce se nezdařilo.');
       }
-    } else {
-      setError('Uložení akce se nezdařilo.');
     }
+
+    return ok;
   };
+
+  const persistSoon = () => {
+    persistEvent();
+  };
+  persistSoonRef.current = persistSoon;
+
+  const performSave = async () => persistEvent({ close: true });
 
   const handleEnsureEventId = async () => {
     if (event?.id) return event.id;
@@ -752,7 +815,11 @@ export default function AdminEventFormModal({
           </div>
         </header>
 
-        <form className={`admin-form admin-form--event${calendarOnlyUi ? ' admin-form--event-calendar-only' : ''}`} onSubmit={handleSubmit}>
+        <form
+          className={`admin-form admin-form--event${calendarOnlyUi ? ' admin-form--event-calendar-only' : ''}`}
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           {!calendarOnlyUi && (
             <AdminTabs
               idPrefix="event"
@@ -804,7 +871,10 @@ export default function AdminEventFormModal({
                     <EventStampSelect
                       id="event-stamp"
                       value={form.stampId || ''}
-                      onChange={(stampId) => updateField('stampId', stampId)}
+                      onChange={(stampId) => {
+                        updateField('stampId', stampId);
+                        persistSoon();
+                      }}
                       disabled={saving}
                     />
                   </FieldGroup>
@@ -826,11 +896,15 @@ export default function AdminEventFormModal({
                           disabled={saving || form.calendarOnly}
                           onChange={(event) => {
                             const enabled = event.target.checked;
-                            setForm((prev) => ({
-                              ...prev,
-                              externalPageEnabled: enabled,
-                              ...(enabled ? {} : { externalPageUrl: '', calendarOnly: false }),
-                            }));
+                            setForm((prev) => {
+                              const next = {
+                                ...prev,
+                                externalPageEnabled: enabled,
+                                ...(enabled ? {} : { externalPageUrl: '', calendarOnly: false }),
+                              };
+                              formRef.current = next;
+                              return next;
+                            });
                           }}
                         />
                         <span className="admin-toggle__track" aria-hidden="true">
@@ -967,11 +1041,16 @@ export default function AdminEventFormModal({
                       lng={form.placeLng}
                       disabled={saving}
                       onChange={(coords) => {
-                        setForm((prev) => ({
-                          ...prev,
-                          placeLat: coords?.lat ?? '',
-                          placeLng: coords?.lng ?? '',
-                        }));
+                        setForm((prev) => {
+                          const next = {
+                            ...prev,
+                            placeLat: coords?.lat ?? '',
+                            placeLng: coords?.lng ?? '',
+                          };
+                          formRef.current = next;
+                          return next;
+                        });
+                        persistSoon();
                       }}
                     />
                   </FieldGroup>
@@ -984,6 +1063,7 @@ export default function AdminEventFormModal({
                     onChange={(value) => updateField('description', value)}
                     tone="content"
                     features="eventDescription"
+                    onPersist={persistSoon}
                   />
                 </TabBlock>
 
@@ -999,14 +1079,20 @@ export default function AdminEventFormModal({
                     )}
                     past={isEventPast(form)}
                     onPreviewSeedChange={(coverPatternSeed) => {
-                      setForm((prev) => ({ ...prev, coverPatternSeed }));
+                      setForm((prev) => {
+                        const next = { ...prev, coverPatternSeed };
+                        formRef.current = next;
+                        return next;
+                      });
+                      persistSoon();
                     }}
                     onChange={({ coverImage, coverPublicId }) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        coverImage,
-                        coverPublicId,
-                      }));
+                      setForm((prev) => {
+                        const next = { ...prev, coverImage, coverPublicId };
+                        formRef.current = next;
+                        return next;
+                      });
+                      persistSoon();
                     }}
                     disabled={saving}
                   />
@@ -1021,7 +1107,12 @@ export default function AdminEventFormModal({
                     presetType="promo"
                     disabled={saving}
                     onChange={(promoImages) => {
-                      setForm((prev) => ({ ...prev, promoImages }));
+                      setForm((prev) => {
+                        const next = { ...prev, promoImages };
+                        formRef.current = next;
+                        return next;
+                      });
+                      persistSoon();
                     }}
                   />
                 </TabBlock>
@@ -1276,6 +1367,7 @@ export default function AdminEventFormModal({
                     onChange={(value) => updateField('report', value)}
                     tone="past"
                     features="eventReport"
+                    onPersist={persistSoon}
                   />
                 </TabBlock>
 
@@ -1297,7 +1389,12 @@ export default function AdminEventFormModal({
                       presetType="gallery"
                       disabled={saving}
                       onChange={(galleryPicks) => {
-                        setForm((prev) => ({ ...prev, galleryPicks }));
+                        setForm((prev) => {
+                          const next = { ...prev, galleryPicks };
+                          formRef.current = next;
+                          return next;
+                        });
+                        persistSoon();
                       }}
                     />
                   </FieldGroup>
@@ -1321,6 +1418,7 @@ export default function AdminEventFormModal({
           {error && <p className="admin-error admin-form__error">{error}</p>}
 
           <div className="admin-modal__actions admin-event-modal__actions">
+            <AutosaveStatus status={autosaveStatus} />
             {!fullPage && (
               <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
                 Zrušit

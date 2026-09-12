@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers, nextDraftFlag } from '../utils/autosave';
 import {
   formStateToPublicationPayload,
   getDefaultPublicationFormState,
@@ -12,6 +14,7 @@ import { MAX_KEYWORDS } from '../utils/keywords-format';
 import { adminText } from '../utils/admin-text';
 import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
+import AutosaveStatus from './AutosaveStatus';
 import ResourceCategorySelect from './ResourceCategorySelect';
 
 function FieldGroup({ label, htmlFor, required = false, children, hint, error }) {
@@ -40,14 +43,28 @@ export default function AdminPublicationFormModal({
   const [form, setForm] = useState(getDefaultPublicationFormState());
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
 
   useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
     if (!open) return;
-    setForm(publication ? publicationToFormState(publication) : getDefaultPublicationFormState());
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+    const next = publication ? publicationToFormState(publication) : getDefaultPublicationFormState();
+    setForm(next);
+    formRef.current = next;
+    rememberAutosave(formStateToPublicationPayload(next));
     setErrors({});
     setSaving(false);
-  }, [open, publication?.id]);
+  }, [open, publication?.id, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -68,22 +85,43 @@ export default function AdminPublicationFormModal({
   if (!mounted) return null;
 
   const updateField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      formRef.current = next;
+      return next;
+    });
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const persistPublication = async ({ close = false } = {}) => {
+    const current = formRef.current;
+    if (close) {
+      const nextErrors = validatePublicationForm(current);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return false;
+      }
+    }
+
+    const payload = {
+      ...formStateToPublicationPayload(current),
+      draft: nextDraftFlag(publication, { close }),
+    };
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
+    const ok = await runAutosave(payload, () => onSave(payload, { silent: !close }));
+    if (close) setSaving(false);
+    if (close && ok) onClose();
+    return ok;
+  };
+
+  const persistSoon = () => {
+    persistPublication();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const nextErrors = validatePublicationForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setSaving(true);
-    const ok = await onSave(formStateToPublicationPayload(form));
-    setSaving(false);
-    if (ok) onClose();
+    await persistPublication({ close: true });
   };
 
   return createPortal(
@@ -113,7 +151,11 @@ export default function AdminPublicationFormModal({
           </div>
         </header>
 
-        <form className="admin-form admin-form--event" onSubmit={handleSubmit}>
+        <form
+          className="admin-form admin-form--event"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           <div className="admin-event-tab">
             <AdminFormBlock
               title={adminText('publications.form.blockBook')}
@@ -173,7 +215,10 @@ export default function AdminPublicationFormModal({
                   type="publication"
                   id="publication-category"
                   value={form.categoryId}
-                  onChange={(value) => updateField('categoryId', value)}
+                  onChange={(value) => {
+                    updateField('categoryId', value);
+                    persistSoon();
+                  }}
                   disabled={saving}
                 />
               </FieldGroup>
@@ -199,6 +244,7 @@ export default function AdminPublicationFormModal({
           )}
 
           <div className="admin-modal__actions admin-event-modal__actions">
+            <AutosaveStatus status={autosaveStatus} />
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               {adminText('common.cancel')}
             </button>

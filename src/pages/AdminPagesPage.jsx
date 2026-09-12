@@ -177,33 +177,46 @@ export default function AdminPagesPage() {
     setBuilderOpen(false);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, { silent = false } = {}) => {
     setSaveError('');
 
     if (editingPage) {
       await updatePage(pages, editingPage, payload);
       upsertPage(editingPage.id, payload);
-      await logActivity({
-        action: 'update',
-        targetType: 'page',
-        targetId: editingPage.id,
-        summary: `Upravena stránka „${payload.title || editingPage.title}“`,
-      });
+      if (!silent) {
+        await logActivity({
+          action: 'update',
+          targetType: 'page',
+          targetId: editingPage.id,
+          summary: `Upravena stránka „${payload.title || editingPage.title}“`,
+        });
+      }
+      setEditingPage((current) => (
+        current ? { ...current, ...payload } : current
+      ));
       return;
     }
 
     const newId = await createPage(pages, payload);
-    await logActivity({
-      action: 'create',
-      targetType: 'page',
-      targetId: newId,
-      summary: `Vytvořena stránka „${payload.title}“`,
+    if (!silent) {
+      await logActivity({
+        action: 'create',
+        targetType: 'page',
+        targetId: newId,
+        summary: `Vytvořena stránka „${payload.title}“`,
+      });
+    }
+    setEditingPage({
+      id: newId,
+      title: payload.title,
+      slug: payload.slug,
+      type: 'content',
     });
   };
 
-  const handleBuilderSave = async (payload) => {
+  const handleBuilderSave = async (payload, { silent = false } = {}) => {
     if (!editingPage) return;
-    await handleSave(payload);
+    await handleSave(payload, { silent });
   };
 
   const handleConfirmDelete = async (pageId) => {

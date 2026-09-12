@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { NOTIFICATION_COLORS, NOTIFICATION_ICON_IDS, NOTIFICATION_SCHEDULE_MODES } from '../data/notifications';
 import { NOTIFICATION_ICONS } from '../data/notification-icons';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
+import { useAutosaveRunner } from '../hooks/useAutosaveRunner';
+import { getAutosaveFormHandlers, nextDraftFlag } from '../utils/autosave';
 import {
   formStateToNotificationPayload,
   getDefaultNotificationFormState,
@@ -13,6 +15,7 @@ import { adminText } from '../utils/admin-text';
 import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
 import RichTextEditor from './RichTextEditor';
+import AutosaveStatus from './AutosaveStatus';
 import UrlInput from './UrlInput';
 
 function FieldGroup({ label, required = false, children, hint, error }) {
@@ -64,14 +67,28 @@ export default function AdminNotificationFormModal({
   const [saving, setSaving] = useState(false);
   const panelRef = useRef(null);
   const pendingScrollTopRef = useRef(null);
+  const skipFormResetRef = useRef(false);
+  const formRef = useRef(form);
+  const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const { mounted, visible } = useAnimatedPresence(open, 240);
 
   useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
     if (!open) return;
-    setForm(notification ? notificationToFormState(notification) : getDefaultNotificationFormState());
+    if (skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      return;
+    }
+    const next = notification ? notificationToFormState(notification) : getDefaultNotificationFormState();
+    setForm(next);
+    formRef.current = next;
+    rememberAutosave(formStateToNotificationPayload(next));
     setErrors({});
     setSaving(false);
-  }, [open, notification?.id]);
+  }, [open, notification?.id, rememberAutosave]);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -98,7 +115,11 @@ export default function AdminNotificationFormModal({
   if (!mounted) return null;
 
   const updateField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      formRef.current = next;
+      return next;
+    });
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
@@ -107,24 +128,42 @@ export default function AdminNotificationFormModal({
     updateField(field, value);
   };
 
+  const persistNotification = async ({ close = false } = {}) => {
+    const current = formRef.current;
+    if (close) {
+      const nextErrors = validateNotificationForm(current);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return false;
+      }
+    }
+
+    const payload = {
+      ...formStateToNotificationPayload(current),
+      draft: nextDraftFlag(notification, { close }),
+    };
+    skipFormResetRef.current = true;
+    if (close) setSaving(true);
+    const ok = await runAutosave(payload, () => onSave(payload, { silent: !close }));
+    if (close) setSaving(false);
+    if (close && ok) onClose();
+    return ok;
+  };
+
+  const persistSoon = () => {
+    persistNotification();
+  };
+
   const handleCtaOpenInNewTabToggle = () => {
     updateFieldPreservingScroll('ctaOpenInNewTab', !form.ctaOpenInNewTab);
+    persistSoon();
   };
 
   const isManual = form.scheduleMode === NOTIFICATION_SCHEDULE_MODES.manual;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const nextErrors = validateNotificationForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setSaving(true);
-    const ok = await onSave(formStateToNotificationPayload(form));
-    setSaving(false);
-    if (ok) onClose();
+    await persistNotification({ close: true });
   };
 
   return createPortal(
@@ -157,7 +196,12 @@ export default function AdminNotificationFormModal({
           </div>
         </header>
 
-        <form id="admin-notification-form" className="admin-form admin-form--event admin-notification-form" onSubmit={handleSubmit}>
+        <form
+          id="admin-notification-form"
+          className="admin-form admin-form--event admin-notification-form"
+          onSubmit={handleSubmit}
+          {...getAutosaveFormHandlers(persistSoon)}
+        >
           <div className="admin-event-tab">
           <AdminFormBlock
             title={adminText('notifications.form.blockContent')}
@@ -180,6 +224,7 @@ export default function AdminNotificationFormModal({
               id={notification ? `notification-text-${notification.id}` : 'notification-text-new'}
               value={form.text}
               onChange={(value) => updateField('text', value)}
+              onPersist={persistSoon}
               features="notificationBody"
             />
           </FieldGroup>
@@ -204,10 +249,16 @@ export default function AdminNotificationFormModal({
                     type="radio"
                     name="notification-schedule-mode"
                     checked={!isManual}
-                    onChange={() => setForm((prev) => ({
-                      ...prev,
-                      scheduleMode: NOTIFICATION_SCHEDULE_MODES.scheduled,
-                    }))}
+                    onChange={() => {
+                      setForm((prev) => {
+                        const next = {
+                          ...prev,
+                          scheduleMode: NOTIFICATION_SCHEDULE_MODES.scheduled,
+                        };
+                        formRef.current = next;
+                        return next;
+                      });
+                    }}
                   />
                   <span className="admin-notification-form__schedule-mode-icon">
                     <ScheduleCalendarIcon />
@@ -226,11 +277,17 @@ export default function AdminNotificationFormModal({
                     type="radio"
                     name="notification-schedule-mode"
                     checked={isManual}
-                    onChange={() => setForm((prev) => ({
-                      ...prev,
-                      scheduleMode: NOTIFICATION_SCHEDULE_MODES.manual,
-                      manualActive: true,
-                    }))}
+                    onChange={() => {
+                      setForm((prev) => {
+                        const next = {
+                          ...prev,
+                          scheduleMode: NOTIFICATION_SCHEDULE_MODES.manual,
+                          manualActive: true,
+                        };
+                        formRef.current = next;
+                        return next;
+                      });
+                    }}
                   />
                   <span className="admin-notification-form__schedule-mode-icon">
                     <ScheduleManualIcon />
@@ -449,6 +506,7 @@ export default function AdminNotificationFormModal({
           )}
 
           <div className="admin-modal__actions admin-event-modal__actions">
+            <AutosaveStatus status={autosaveStatus} />
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               {adminText('common.cancel')}
             </button>

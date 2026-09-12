@@ -138,6 +138,7 @@ export default function AdminMenuPage() {
       : [...items, payload];
 
     await persistItems(nextItems);
+    setEditingLink(payload);
   };
 
   const handleSaveDropdown = async (dropdown) => {
@@ -152,6 +153,7 @@ export default function AdminMenuPage() {
       : [...items, payload];
 
     await persistItems(nextItems);
+    setEditingDropdown(payload);
   };
 
   const handleConfirmDelete = async (itemId) => {

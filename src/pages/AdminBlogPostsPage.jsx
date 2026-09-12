@@ -9,8 +9,10 @@ import { useBlogPosts } from '../contexts/BlogPostsContext';
 import {
   filterPostsBySearch,
   getPublishTimestamp,
+  normalizeBlogPost,
   resolveAuthorForDisplay,
-  sortPostsByPublished,
+  getBlogPostDisplayTitle,
+  sortBlogPostsDraftsFirst,
 } from '../utils/blog-post-format';
 import {
   createBlogPost,
@@ -19,6 +21,7 @@ import {
   isSlugTaken,
   updateBlogPost,
 } from '../services/blog-posts';
+import { notifyAdminsOfNewBlogPost } from '../services/blog-notify';
 import { adminDocumentTitle, adminText } from '../utils/admin-text';
 import { useAdminActivityLogger } from '../hooks/useAdminActivityLogger';
 import useAdminStars from '../hooks/useAdminStars';
@@ -106,7 +109,7 @@ export default function AdminBlogPostsPage() {
 
   const filteredPosts = useMemo(() => {
     const searched = filterPostsBySearch(posts, search);
-    const sorted = sortPostsByPublished(searched);
+    const sorted = sortBlogPostsDraftsFirst(searched);
     return filterStarredOnly(sorted, showStarredOnly, starredIds);
   }, [posts, search, showStarredOnly, starredIds]);
 
@@ -143,10 +146,10 @@ export default function AdminBlogPostsPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, { silent = false } = {}) => {
     setSaveError('');
 
-    if (!payload.isExternal && isSlugTaken(posts, payload.slug, editingPost?.id)) {
+    if (!payload.isExternal && payload.slug && isSlugTaken(posts, payload.slug, editingPost?.id)) {
       setSaveError(adminText('blog.list.errors.slugTaken'));
       return false;
     }
@@ -168,24 +171,44 @@ export default function AdminBlogPostsPage() {
           ...payload,
           author,
         });
-        await logActivity({
-          action: 'update',
-          targetType: 'blogPost',
-          targetId: editingPost.id,
-          summary: `Upraven příspěvek „${payload.title}“`,
-        });
+        if (editingPost.draft && payload.draft !== true) {
+          notifyAdminsOfNewBlogPost(editingPost.id).catch(() => {});
+        }
+        if (!silent) {
+          await logActivity({
+            action: 'update',
+            targetType: 'blogPost',
+            targetId: editingPost.id,
+            summary: `Upraven příspěvek „${payload.title}“`,
+          });
+        }
+        setEditingPost((current) => (
+          current?.id === editingPost.id
+            ? normalizeBlogPost({ ...current, ...payload, author, id: editingPost.id })
+            : current
+        ));
       } else {
         const newId = await createBlogPost({
           ...payload,
           ...getPublishTimestamp(),
           author,
         });
-        await logActivity({
-          action: 'create',
-          targetType: 'blogPost',
-          targetId: newId,
-          summary: `Vytvořen příspěvek „${payload.title}“`,
-        });
+        if (!silent) {
+          await logActivity({
+            action: 'create',
+            targetType: 'blogPost',
+            targetId: newId,
+            summary: `Vytvořen příspěvek „${payload.title}“`,
+          });
+        }
+        setEditingPost(normalizeBlogPost({
+          id: newId,
+          ...payload,
+          ...getPublishTimestamp(),
+          author,
+          likeCount: 0,
+          commentCount: 0,
+        }));
       }
       return true;
     } catch (err) {
@@ -261,14 +284,31 @@ export default function AdminBlogPostsPage() {
             {filteredPosts.map((post) => (
               <li
                 key={post.id}
-                className={`admin-blog-posts__row${post.isExternal ? ' admin-blog-posts__row--external' : ''}`}
+                className={[
+                  'admin-blog-posts__row',
+                  post.isExternal ? 'admin-blog-posts__row--external' : '',
+                  post.draft ? 'admin-blog-posts__row--draft' : '',
+                ].filter(Boolean).join(' ')}
               >
                 <AdminListStarButton
                   starred={isStarred(post.id)}
-                  label={post.title}
+                  label={getBlogPostDisplayTitle(post, {
+                    emptyDraft: adminText('blog.list.emptyDraftTitle'),
+                  })}
                   onToggle={() => toggleStar(post.id)}
                 />
-                <div className="admin-blog-posts__title">{post.title}</div>
+                <div className="admin-blog-posts__title">
+                  <span className="admin-blog-posts__title-text">
+                    {getBlogPostDisplayTitle(post, {
+                      emptyDraft: adminText('blog.list.emptyDraftTitle'),
+                    })}
+                  </span>
+                  {post.draft && (
+                    <span className="admin-events__badge admin-events__badge--draft">
+                      {adminText('blog.list.badges.draft')}
+                    </span>
+                  )}
+                </div>
                 <div className="admin-blog-posts__author">
                   <BlogAuthor
                     author={resolveAuthor(post.author)}
@@ -281,7 +321,11 @@ export default function AdminBlogPostsPage() {
                   <button
                     type="button"
                     className="admin-events__action"
-                    aria-label={adminText('blog.list.editAria', { title: post.title })}
+                    aria-label={adminText('blog.list.editAria', {
+                      title: getBlogPostDisplayTitle(post, {
+                        emptyDraft: adminText('blog.list.emptyDraftTitle'),
+                      }),
+                    })}
                     onClick={() => handleEdit(post)}
                   >
                     <EditIcon />
@@ -289,7 +333,11 @@ export default function AdminBlogPostsPage() {
                   <button
                     type="button"
                     className="admin-events__action admin-events__action--danger"
-                    aria-label={adminText('blog.list.deleteAria', { title: post.title })}
+                    aria-label={adminText('blog.list.deleteAria', {
+                      title: getBlogPostDisplayTitle(post, {
+                        emptyDraft: adminText('blog.list.emptyDraftTitle'),
+                      }),
+                    })}
                     onClick={() => setPostToDelete(post)}
                   >
                     <TrashIcon />
