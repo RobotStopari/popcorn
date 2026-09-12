@@ -13,6 +13,7 @@ import { adminText } from '../utils/admin-text';
 import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
 import ResourceCategorySelect from './ResourceCategorySelect';
+import UrlInput from './UrlInput';
 
 function FieldGroup({ label, htmlFor, required = false, children, hint, error }) {
   return (
@@ -131,14 +132,11 @@ export default function AdminUsefulLinkFormModal({
                 />
               </FieldGroup>
 
-              <FieldGroup label={adminText('usefulLinks.form.urlLabel')} required error={errors.url}>
-                <input
-                  type="url"
-                  className="admin-form__input"
+              <FieldGroup label={adminText('usefulLinks.form.urlLabel')} htmlFor="useful-link-url" required error={errors.url}>
+                <UrlInput
+                  id="useful-link-url"
                   value={form.url}
-                  onChange={(e) => updateField('url', e.target.value)}
-                  placeholder="https://"
-                  inputMode="url"
+                  onChange={(next) => updateField('url', next)}
                 />
                 <p className="admin-form__hint">{adminText('usefulLinks.form.urlHint')}</p>
               </FieldGroup>

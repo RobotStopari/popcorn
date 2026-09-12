@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { BRAND_LINK_FIELDS, SITE_OPTION_TOGGLES } from '../data/site-settings';
 import { SOCIAL_LINK_PRESETS } from '../data/social-link-presets';
 import AdminModalPanel from './AdminModalPanel';
+import UrlInput from './UrlInput';
 
 function SiteOptionConfirmDialog({
   open,
@@ -146,19 +147,33 @@ export function AdminBrandLinkFields({ brandLinks, onChange }) {
               />
               {field.label}
             </span>
-            <input
-              id={`brand-link-${field.id}`}
-              type="text"
-              className="admin-form__input admin-brand-links__input"
-              value={brandLinks[field.id] || ''}
-              onChange={(event) => onChange({
-                brandLinks: {
-                  ...brandLinks,
-                  [field.id]: event.target.value,
-                },
-              })}
-              placeholder={field.id === 'mail' ? 'mailto:…' : 'https://…'}
-            />
+            {field.id === 'mail' ? (
+              <input
+                id={`brand-link-${field.id}`}
+                type="text"
+                className="admin-form__input admin-brand-links__input"
+                value={brandLinks[field.id] || ''}
+                onChange={(event) => onChange({
+                  brandLinks: {
+                    ...brandLinks,
+                    [field.id]: event.target.value,
+                  },
+                })}
+                placeholder="mailto:…"
+              />
+            ) : (
+              <UrlInput
+                id={`brand-link-${field.id}`}
+                className="admin-brand-links__input"
+                value={brandLinks[field.id] || ''}
+                onChange={(next) => onChange({
+                  brandLinks: {
+                    ...brandLinks,
+                    [field.id]: next,
+                  },
+                })}
+              />
+            )}
           </label>
         );
       })}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { parseYoutubeVideoId } from '../utils/rich-text-embeds';
 import AdminModalPanel from './AdminModalPanel';
+import UrlInput from './UrlInput';
 
 export default function RichTextYoutubeDialog({
   open,
@@ -80,13 +81,11 @@ export default function RichTextYoutubeDialog({
             <label className="admin-form__label" htmlFor="rich-text-youtube-url">
               Odkaz na video
             </label>
-            <input
+            <UrlInput
               id="rich-text-youtube-url"
-              type="url"
-              className="admin-form__input"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=…"
+              onChange={setUrl}
+              placeholder="www.youtube.com/watch?v=…"
               autoFocus
             />
             <p className="admin-form__hint rich-text-youtube-dialog__hint">

@@ -97,6 +97,56 @@
   outline-offset: 2px;
 }
 
+.url-input.admin-form__input {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  cursor: text;
+}
+
+.url-input.admin-form__input:focus {
+  outline: none;
+}
+
+.url-input.admin-form__input:focus-within {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.url-input__prefix {
+  flex: 0 0 auto;
+  color: var(--gray);
+  font-weight: 700;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.url-input__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+}
+
+.url-input__field:focus {
+  outline: none;
+}
+
+.url-input--disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.url-input--readonly {
+  cursor: default;
+}
+
 .admin-form__hint {
   font-size: 0.82rem;
   color: var(--gray-muted);
@@ -2245,7 +2295,8 @@
   background: var(--white);
 }
 
-.admin-form--event .admin-form__input:focus {
+.admin-form--event .admin-form__input:focus,
+.admin-form--event .url-input.admin-form__input:focus-within {
   outline: none;
   border-color: var(--orange);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--orange) 22%, transparent);
@@ -3919,7 +3970,8 @@ body.admin-modal-open {
   background: var(--white);
 }
 
-.rich-text-link-dialog .admin-form__input:focus {
+.rich-text-link-dialog .admin-form__input:focus,
+.rich-text-link-dialog .url-input.admin-form__input:focus-within {
   outline: none;
   border-color: var(--orange);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--orange) 22%, transparent);

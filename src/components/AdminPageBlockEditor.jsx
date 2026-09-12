@@ -33,6 +33,7 @@ import AdminParallaxBandFields from './AdminParallaxBandFields';
 import AdminSocialLinksEditor from './AdminSocialLinksEditor';
 import PageBlockImageUpload from './PageBlockImageUpload';
 import RichTextEditor from './RichTextEditor';
+import UrlInput from './UrlInput';
 
 function BlockEditorSection({ title, hint, compact = false, children }) {
   return (
@@ -769,13 +770,12 @@ export default function AdminPageBlockEditor({
             htmlFor={`block-${block.id}-youtube-url`}
             hint="Podporované formáty: youtube.com/watch, youtu.be, /shorts/…"
           >
-            <input
+            <UrlInput
               id={`block-${block.id}-youtube-url`}
-              className="admin-form__input admin-page-block-field__input"
-              type="url"
+              className="admin-page-block-field__input"
               value={block.videoUrl || ''}
-              onChange={(event) => update({ videoUrl: event.target.value })}
-              placeholder="https://www.youtube.com/watch?v=…"
+              onChange={(next) => update({ videoUrl: next })}
+              placeholder="www.youtube.com/watch?v=…"
             />
           </BlockEditorField>
           <BlockEditorField

@@ -12,6 +12,7 @@ import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import PageCombobox from './PageCombobox';
 import SortableList from './SortableList';
 import AdminModalPanel from './AdminModalPanel';
+import UrlInput from './UrlInput';
 
 function Toggle({ id, checked, onChange, label }) {
   return (
@@ -175,12 +176,10 @@ export default function AdminMenuLinkFormModal({
               <label className="admin-form__label" htmlFor="menu-link-href">
                 URL adresa
               </label>
-              <input
+              <UrlInput
                 id="menu-link-href"
-                className="admin-form__input"
                 value={form.href}
-                onChange={(e) => setForm((prev) => ({ ...prev, href: e.target.value }))}
-                placeholder="https://"
+                onChange={(next) => setForm((prev) => ({ ...prev, href: next }))}
                 required
               />
             </div>

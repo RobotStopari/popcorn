@@ -5,6 +5,7 @@ import {
 import { useSiteSettings } from '../contexts/SiteSettingsContext';
 import { getBrandLinkHref } from '../data/site-settings';
 import { normalizeSocialLinkSlots } from '../utils/page-blocks';
+import UrlInput from './UrlInput';
 
 export default function AdminSocialLinksEditor({ links = [], onChange }) {
   const { settings } = useSiteSettings();
@@ -85,13 +86,11 @@ export default function AdminSocialLinksEditor({ links = [], onChange }) {
                 {link.preset === 'web' ? (
                   <label className="admin-social-links__field" htmlFor={`social-link-${index}-href`}>
                     <span className="admin-social-links__field-label">Odkaz</span>
-                    <input
+                    <UrlInput
                       id={`social-link-${index}-href`}
-                      type="text"
-                      className="admin-form__input admin-social-links__input"
+                      className="admin-social-links__input"
                       value={link.href || ''}
-                      onChange={(event) => updateSlot(index, { href: event.target.value })}
-                      placeholder="https://…"
+                      onChange={(next) => updateSlot(index, { href: next })}
                     />
                   </label>
                 ) : (

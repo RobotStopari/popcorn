@@ -20,6 +20,7 @@ import { resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import EventImageUploadList from './EventImageUploadList';
 import ResourceCategorySelect from './ResourceCategorySelect';
 import RichTextEditor from './RichTextEditor';
+import UrlInput from './UrlInput';
 import UserCombobox from './UserCombobox';
 
 function FieldGroup({ label, htmlFor, required = false, children, hint }) {
@@ -255,11 +256,9 @@ export default function AdminBlogPostFormModal({
                   hint={adminText('blog.form.externalUrlHint')}
                   required
                 >
-                  <input
-                    type="url"
-                    className="admin-form__input"
+                  <UrlInput
                     value={form.externalUrl}
-                    onChange={(event) => updateField('externalUrl', event.target.value)}
+                    onChange={(next) => updateField('externalUrl', next)}
                     placeholder={adminText('blog.form.externalUrlPlaceholder')}
                     required
                   />

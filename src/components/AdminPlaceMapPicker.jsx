@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  buildMapyCzPointUrl,
   geocodePlaceQuery,
   hasValidPlaceCoords,
   normalizePlaceCoords,
@@ -56,7 +55,6 @@ export default function AdminPlaceMapPicker({
 
   const coords = normalizePlaceCoords(lat, lng);
   const hasCoords = Boolean(coords);
-  const previewUrl = hasCoords ? buildMapyCzPointUrl(coords.lat, coords.lng) : '';
 
   const emitCoords = useCallback((nextCoords) => {
     onChangeRef.current(nextCoords);
@@ -233,14 +231,6 @@ export default function AdminPlaceMapPicker({
             Souřadnice: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
           </p>
           <div className="admin-place-map__actions">
-            <a
-              href={previewUrl}
-              className="btn btn--outline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Otevřít na Mapy.cz
-            </a>
             <button
               type="button"
               className="btn btn--outline"

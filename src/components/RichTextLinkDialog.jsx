@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import AdminModalPanel from './AdminModalPanel';
+import UrlInput from './UrlInput';
 
 function normalizeHref(value) {
   const trimmed = value.trim();
   if (!trimmed) return '';
   if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed;
   return `https://${trimmed}`;
 }
 
@@ -94,13 +96,12 @@ export default function RichTextLinkDialog({
             <label className="admin-form__label" htmlFor="rich-text-link-href">
               Adresa odkazu
             </label>
-            <input
+            <UrlInput
               id="rich-text-link-href"
-              type="url"
-              className="admin-form__input"
               value={href}
-              onChange={(e) => setHref(e.target.value)}
-              placeholder="https://"
+              onChange={setHref}
+              allowRelative
+              allowSpecialSchemes
               autoFocus
             />
           </div>

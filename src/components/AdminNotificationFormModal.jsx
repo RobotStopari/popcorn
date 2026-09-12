@@ -13,6 +13,7 @@ import { adminText } from '../utils/admin-text';
 import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
 import RichTextEditor from './RichTextEditor';
+import UrlInput from './UrlInput';
 
 function FieldGroup({ label, required = false, children, hint, error }) {
   return (
@@ -414,13 +415,10 @@ export default function AdminNotificationFormModal({
               />
             </FieldGroup>
             <FieldGroup label={adminText('notifications.form.ctaHrefLabel')} error={errors.ctaHref}>
-              <input
-                type="url"
-                className="admin-form__input"
+              <UrlInput
                 value={form.ctaHref}
-                onChange={(e) => updateField('ctaHref', e.target.value)}
-                placeholder="https://"
-                inputMode="url"
+                onChange={(next) => updateField('ctaHref', next)}
+                allowRelative
               />
             </FieldGroup>
             <FieldGroup label={adminText('notifications.form.ctaTargetLabel')}>

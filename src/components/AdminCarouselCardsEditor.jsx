@@ -9,6 +9,7 @@ import { usePages } from '../contexts/PagesContext';
 import { createBlockId } from '../utils/page-blocks';
 import PageBlockImageUpload from './PageBlockImageUpload';
 import PageCombobox from './PageCombobox';
+import UrlInput from './UrlInput';
 
 function ExternalToggle({ checked, onChange }) {
   return (
@@ -149,12 +150,10 @@ function CardFields({ card, index, canRemove, onChange, onRemove, pages }) {
             <label className="admin-form__label" htmlFor={`${prefix}-href`}>
               URL adresa
             </label>
-            <input
+            <UrlInput
               id={`${prefix}-href`}
-              className="admin-form__input"
               value={card.href || ''}
-              onChange={(event) => onChange({ ...card, href: event.target.value })}
-              placeholder="https://"
+              onChange={(next) => onChange({ ...card, href: next })}
             />
             <p className="admin-form__hint">
               Externí odkaz se vždy otevře v novém okně.

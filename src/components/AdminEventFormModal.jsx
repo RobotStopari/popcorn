@@ -31,6 +31,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import AdminOrganiserEmailField from './AdminOrganiserEmailField';
 import AdminPlaceMapPicker from './AdminPlaceMapPicker';
+import UrlInput from './UrlInput';
 import EventCategorySelect from './EventCategorySelect';
 import EventStampSelect from './EventStampSelect';
 import SortableParticipantList from './SortableParticipantList';
@@ -850,13 +851,10 @@ export default function AdminEventFormModal({
                               : 'Odkaz se zobrazí na stránce akce jako tlačítko.'
                           }
                         >
-                          <input
-                            type="url"
-                            className="admin-form__input"
+                          <UrlInput
                             value={form.externalPageUrl}
-                            onChange={(e) => updateField('externalPageUrl', e.target.value)}
-                            placeholder="https://example.com/akce"
-                            inputMode="url"
+                            onChange={(next) => updateField('externalPageUrl', next)}
+                            placeholder="example.com/akce"
                             required
                             readOnly={form.calendarOnly}
                             disabled={saving || form.calendarOnly}
@@ -1225,12 +1223,10 @@ export default function AdminEventFormModal({
               <div className="admin-event-tab">
                 <TabBlock title="Přihláška" hint="Externí odkaz pro tlačítko Přihlásit se." accent="signup">
                   <FieldGroup label="Odkaz na přihlášku">
-                    <input
-                      type="url"
-                      className="admin-form__input"
+                    <UrlInput
                       value={form.registrationLink}
-                      onChange={(e) => updateField('registrationLink', e.target.value)}
-                      placeholder="https://forms.google.com/..."
+                      onChange={(next) => updateField('registrationLink', next)}
+                      placeholder="forms.google.com/..."
                     />
                   </FieldGroup>
                 </TabBlock>
@@ -1285,12 +1281,10 @@ export default function AdminEventFormModal({
 
                 <TabBlock title="Galerie" hint="Odkaz na složku s fotografiemi z akce a výběr nejlepších fotek pro stránku proběhlé akce." accent="media">
                   <FieldGroup label="Odkaz na galerii">
-                    <input
-                      type="url"
-                      className="admin-form__input"
+                    <UrlInput
                       value={form.galleryLink}
-                      onChange={(e) => updateField('galleryLink', e.target.value)}
-                      placeholder="https://drive.google.com/..."
+                      onChange={(next) => updateField('galleryLink', next)}
+                      placeholder="drive.google.com/..."
                     />
                   </FieldGroup>
 

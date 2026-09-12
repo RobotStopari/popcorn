@@ -57,7 +57,7 @@ export function isValidHttpsUrl(value) {
 
   try {
     const url = new URL(trimmed);
-    return url.protocol === 'https:' && Boolean(url.hostname);
+    return (url.protocol === 'https:' || url.protocol === 'http:') && Boolean(url.hostname);
   } catch {
     return false;
   }

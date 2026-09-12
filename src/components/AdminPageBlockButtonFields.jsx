@@ -1,4 +1,5 @@
 import { PAGE_BLOCK_BUTTON_COLORS } from '../data/page-block-button-colors';
+import UrlInput from './UrlInput';
 
 function BlockEditorField({ label, htmlFor, hint, children }) {
   const Tag = htmlFor ? 'label' : 'div';
@@ -40,13 +41,13 @@ export default function AdminPageBlockButtonFields({
         htmlFor={`${prefix}-href`}
         hint="Interní stránka (/kontakt) nebo celá URL."
       >
-        <input
+        <UrlInput
           id={`${prefix}-href`}
-          className="admin-form__input admin-page-block-field__input"
-          type="text"
+          className="admin-page-block-field__input"
           value={button.href || ''}
-          onChange={(event) => update({ href: event.target.value })}
-          placeholder="https://… nebo /stranka"
+          onChange={(next) => update({ href: next })}
+          placeholder="example.com nebo /stranka"
+          allowRelative
         />
       </BlockEditorField>
 
