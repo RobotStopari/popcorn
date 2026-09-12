@@ -46,6 +46,7 @@ export const DEFAULT_SITE_SETTINGS = {
   blogCategories: [],
   publicationCategories: [],
   usefulLinkCategories: [],
+  eventStamps: [],
   eventCategoryPublicLabel: EVENT_CATEGORIES.public.label,
   eventCategoryPublicDescription: EVENT_CATEGORIES.public.description,
   eventCategoryPrivateLabel: EVENT_CATEGORIES.private.label,

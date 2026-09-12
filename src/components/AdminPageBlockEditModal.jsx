@@ -13,6 +13,7 @@ const COMPACT_PREVIEW_BLOCK_TYPES = new Set([
   PAGE_BLOCK_TYPES.cardCarousel,
   PAGE_BLOCK_TYPES.buttonPair,
   PAGE_BLOCK_TYPES.imageText,
+  PAGE_BLOCK_TYPES.buttonText,
 ]);
 
 export default function AdminPageBlockEditModal({
@@ -78,9 +79,7 @@ export default function AdminPageBlockEditModal({
   if (!mounted || !block) return null;
 
   const isWidgetEditor = block.type === PAGE_BLOCK_TYPES.socials
-    || block.type === PAGE_BLOCK_TYPES.parallaxImage
-    || block.type === PAGE_BLOCK_TYPES.space
-    || block.type === PAGE_BLOCK_TYPES.negativeSpace;
+    || block.type === PAGE_BLOCK_TYPES.parallaxImage;
   const useCompactPreview = !isWidgetEditor && COMPACT_PREVIEW_BLOCK_TYPES.has(block.type);
 
   const preview = (

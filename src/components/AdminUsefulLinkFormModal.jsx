@@ -10,6 +10,7 @@ import {
 } from '../utils/useful-link-format';
 import { MAX_KEYWORDS } from '../utils/keywords-format';
 import { adminText } from '../utils/admin-text';
+import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
 import ResourceCategorySelect from './ResourceCategorySelect';
 
@@ -87,86 +88,118 @@ export default function AdminUsefulLinkFormModal({
 
   return createPortal(
     <div
-      className={`admin-modal${visible ? ' admin-modal--visible' : ''}`}
+      className={`admin-modal admin-modal--wide admin-modal--event-form admin-modal--resource-form${visible ? ' admin-modal--visible' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-useful-link-form-title"
     >
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
-      <AdminModalPanel className="admin-modal__panel--resource-form">
-        <h2 id="admin-useful-link-form-title" className="admin-modal__title">
-          {link
-            ? adminText('usefulLinks.form.editTitle')
-            : adminText('usefulLinks.form.newTitle')}
-        </h2>
+      <AdminModalPanel className="admin-modal__panel--wide admin-modal__panel--event-form">
+        <header className="admin-event-modal__header">
+          <div className="admin-event-modal__header-copy">
+            <p className="admin-event-modal__eyebrow">
+              {link
+                ? adminText('usefulLinks.form.editEyebrow')
+                : adminText('usefulLinks.form.newEyebrow')}
+            </p>
+            <h2 id="admin-useful-link-form-title" className="admin-modal__title admin-event-modal__title">
+              {link
+                ? adminText('usefulLinks.form.editTitle')
+                : adminText('usefulLinks.form.newTitle')}
+            </h2>
+            <p className="admin-event-modal__lede">
+              {adminText('usefulLinks.form.lede')}
+            </p>
+          </div>
+        </header>
 
-        <form className="admin-form" onSubmit={handleSubmit}>
-          <FieldGroup label={adminText('usefulLinks.form.titleLabel')} required error={errors.title}>
-            <input
-              type="text"
-              className="admin-form__input"
-              value={form.title}
-              onChange={(e) => updateField('title', e.target.value)}
-              placeholder={adminText('usefulLinks.form.titlePlaceholder')}
-              maxLength={120}
-            />
-          </FieldGroup>
+        <form className="admin-form admin-form--event" onSubmit={handleSubmit}>
+          <div className="admin-event-tab">
+            <AdminFormBlock
+              title={adminText('usefulLinks.form.blockLink')}
+              hint={adminText('usefulLinks.form.blockLinkHint')}
+              accent="identity"
+            >
+              <FieldGroup label={adminText('usefulLinks.form.titleLabel')} required error={errors.title}>
+                <input
+                  type="text"
+                  className="admin-form__input"
+                  value={form.title}
+                  onChange={(e) => updateField('title', e.target.value)}
+                  placeholder={adminText('usefulLinks.form.titlePlaceholder')}
+                  maxLength={120}
+                />
+              </FieldGroup>
 
-          <FieldGroup label={adminText('usefulLinks.form.urlLabel')} required error={errors.url}>
-            <input
-              type="url"
-              className="admin-form__input"
-              value={form.url}
-              onChange={(e) => updateField('url', e.target.value)}
-              placeholder="https://"
-              inputMode="url"
-            />
-            <p className="admin-form__hint">{adminText('usefulLinks.form.urlHint')}</p>
-          </FieldGroup>
+              <FieldGroup label={adminText('usefulLinks.form.urlLabel')} required error={errors.url}>
+                <input
+                  type="url"
+                  className="admin-form__input"
+                  value={form.url}
+                  onChange={(e) => updateField('url', e.target.value)}
+                  placeholder="https://"
+                  inputMode="url"
+                />
+                <p className="admin-form__hint">{adminText('usefulLinks.form.urlHint')}</p>
+              </FieldGroup>
+            </AdminFormBlock>
 
-          <FieldGroup label={adminText('usefulLinks.form.descriptionLabel')} error={errors.description}>
-            <textarea
-              className="admin-form__input admin-form__textarea"
-              value={form.description}
-              onChange={(e) => updateField('description', e.target.value)}
-              placeholder={adminText('usefulLinks.form.descriptionPlaceholder')}
-              maxLength={MAX_USEFUL_LINK_DESCRIPTION}
-              rows={4}
-            />
-          </FieldGroup>
+            <AdminFormBlock
+              title={adminText('usefulLinks.form.blockCopy')}
+              hint={adminText('usefulLinks.form.blockCopyHint')}
+              accent="copy"
+            >
+              <FieldGroup label={adminText('usefulLinks.form.descriptionLabel')} error={errors.description}>
+                <textarea
+                  className="admin-form__input admin-form__textarea"
+                  value={form.description}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  placeholder={adminText('usefulLinks.form.descriptionPlaceholder')}
+                  maxLength={MAX_USEFUL_LINK_DESCRIPTION}
+                  rows={4}
+                />
+              </FieldGroup>
+            </AdminFormBlock>
 
-          <FieldGroup
-            label={adminText('usefulLinks.form.categoryLabel')}
-            htmlFor="useful-link-category"
-          >
-            <ResourceCategorySelect
-              type="usefulLink"
-              id="useful-link-category"
-              value={form.categoryId}
-              onChange={(value) => updateField('categoryId', value)}
-              disabled={saving}
-            />
-          </FieldGroup>
+            <AdminFormBlock
+              title={adminText('usefulLinks.form.blockMeta')}
+              hint={adminText('usefulLinks.form.blockMetaHint')}
+              accent="place"
+            >
+              <FieldGroup
+                label={adminText('usefulLinks.form.categoryLabel')}
+                htmlFor="useful-link-category"
+              >
+                <ResourceCategorySelect
+                  type="usefulLink"
+                  id="useful-link-category"
+                  value={form.categoryId}
+                  onChange={(value) => updateField('categoryId', value)}
+                  disabled={saving}
+                />
+              </FieldGroup>
 
-          <FieldGroup
-            label={adminText('usefulLinks.form.keywordsLabel')}
-            hint={adminText('usefulLinks.form.keywordsHint', { max: MAX_KEYWORDS })}
-            error={errors.keywordsInput}
-          >
-            <input
-              type="text"
-              className="admin-form__input"
-              value={form.keywordsInput}
-              onChange={(e) => updateField('keywordsInput', e.target.value)}
-              placeholder={adminText('usefulLinks.form.keywordsPlaceholder')}
-            />
-          </FieldGroup>
+              <FieldGroup
+                label={adminText('usefulLinks.form.keywordsLabel')}
+                hint={adminText('usefulLinks.form.keywordsHint', { max: MAX_KEYWORDS })}
+                error={errors.keywordsInput}
+              >
+                <input
+                  type="text"
+                  className="admin-form__input"
+                  value={form.keywordsInput}
+                  onChange={(e) => updateField('keywordsInput', e.target.value)}
+                  placeholder={adminText('usefulLinks.form.keywordsPlaceholder')}
+                />
+              </FieldGroup>
+            </AdminFormBlock>
+          </div>
 
           {(saveError || Object.keys(errors).length > 0) && (
-            <p className="admin-error">{saveError || adminText('usefulLinks.form.validationFailed')}</p>
+            <p className="admin-error admin-form__error">{saveError || adminText('usefulLinks.form.validationFailed')}</p>
           )}
 
-          <div className="admin-modal__actions">
+          <div className="admin-modal__actions admin-event-modal__actions">
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               {adminText('common.cancel')}
             </button>

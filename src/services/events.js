@@ -66,6 +66,7 @@ const EMPTY_EVENT_FIELDS = {
   promoImages: [],
   galleryPicks: [],
   category: DEFAULT_EVENT_CATEGORY,
+  stampId: '',
   externalPageEnabled: false,
   externalPageUrl: '',
   calendarOnly: false,

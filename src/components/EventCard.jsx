@@ -4,6 +4,7 @@ import { getEventCoverStyle, resolveCoverPatternSeed } from '../utils/event-cove
 import { siteText } from '../utils/admin-text';
 import { trackNavClick } from '../utils/analytics-track';
 import EventCategoryLabel from './EventCategoryLabel';
+import EventStampBadge from './EventStampBadge';
 
 function EventCardPlaceholder({ seed, past }) {
   const style = useMemo(() => getEventCoverStyle(seed, { past }), [seed, past]);
@@ -50,6 +51,10 @@ export default function EventCard({ event, index, past = false }) {
         className={`event-card shine-parent${pastClass}${noImageClass}`}
         onClick={() => trackNavClick(href, event.name)}
       >
+        <EventStampBadge
+          stampId={event.stampId}
+          className="event-card__stamp"
+        />
         <div className="event-card__media">
           {hasCover ? (
             <EventCardImage event={event} />

@@ -10,6 +10,7 @@ import {
   RESOURCE_CATEGORY_TYPES,
   normalizeResourceCategoriesList,
 } from '../data/resource-categories';
+import { normalizeEventStampsList } from '../data/event-stamps';
 import { db } from '../firebase';
 import {
   collection,
@@ -75,6 +76,7 @@ export function normalizeSiteSettings(data = {}) {
       DEFAULT_SITE_SETTINGS.membersCanCreateBlogPosts,
     ),
     blogNotifyEmails: normalizeBlogNotifyEmails(data.blogNotifyEmails),
+    eventStamps: normalizeEventStampsList(data.eventStamps),
     ...normalizeResourceCategorySettings(data),
     ...EVENT_CATEGORY_FIELD_IDS.reduce((acc, fieldId) => {
       acc[fieldId] = typeof data[fieldId] === 'string' && data[fieldId].trim()
@@ -103,6 +105,7 @@ export function serializeSiteSettings(settings) {
     anonymousBlogLikesEnabled: normalized.anonymousBlogLikesEnabled,
     membersCanCreateBlogPosts: normalized.membersCanCreateBlogPosts,
     blogNotifyEmails: normalized.blogNotifyEmails,
+    eventStamps: normalized.eventStamps,
     ...normalizeResourceCategorySettings(normalized),
     ...EVENT_CATEGORY_FIELD_IDS.reduce((acc, fieldId) => {
       acc[fieldId] = normalized[fieldId];
@@ -157,6 +160,17 @@ export async function updateEventCategorySettings(patch) {
     siteSettingsRef,
     {
       ...payload,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function updateEventStamps(stamps) {
+  await setDoc(
+    siteSettingsRef,
+    {
+      eventStamps: normalizeEventStampsList(stamps),
       updatedAt: serverTimestamp(),
     },
     { merge: true },

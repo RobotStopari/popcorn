@@ -511,6 +511,54 @@ service cloud.firestore {
         && item.label.size() <= 80;
     }
 
+    function validEventStampItem(item) {
+      return item is map
+        && item.keys().hasOnly(['id', 'icon', 'name'])
+        && item.id is string
+        && item.id.size() > 0
+        && item.id.size() <= 64
+        && item.icon is string
+        && item.icon.size() > 0
+        && item.icon.size() <= 32
+        && item.name is string
+        && item.name.size() > 0
+        && item.name.size() <= 80;
+    }
+
+    function validEventStampsList(stamps) {
+      return stamps is list
+        && stamps.size() <= 24
+        && (
+          stamps.size() == 0
+          || (
+            validEventStampItem(stamps[0])
+            && (stamps.size() < 2 || validEventStampItem(stamps[1]))
+            && (stamps.size() < 3 || validEventStampItem(stamps[2]))
+            && (stamps.size() < 4 || validEventStampItem(stamps[3]))
+            && (stamps.size() < 5 || validEventStampItem(stamps[4]))
+            && (stamps.size() < 6 || validEventStampItem(stamps[5]))
+            && (stamps.size() < 7 || validEventStampItem(stamps[6]))
+            && (stamps.size() < 8 || validEventStampItem(stamps[7]))
+            && (stamps.size() < 9 || validEventStampItem(stamps[8]))
+            && (stamps.size() < 10 || validEventStampItem(stamps[9]))
+            && (stamps.size() < 11 || validEventStampItem(stamps[10]))
+            && (stamps.size() < 12 || validEventStampItem(stamps[11]))
+            && (stamps.size() < 13 || validEventStampItem(stamps[12]))
+            && (stamps.size() < 14 || validEventStampItem(stamps[13]))
+            && (stamps.size() < 15 || validEventStampItem(stamps[14]))
+            && (stamps.size() < 16 || validEventStampItem(stamps[15]))
+            && (stamps.size() < 17 || validEventStampItem(stamps[16]))
+            && (stamps.size() < 18 || validEventStampItem(stamps[17]))
+            && (stamps.size() < 19 || validEventStampItem(stamps[18]))
+            && (stamps.size() < 20 || validEventStampItem(stamps[19]))
+            && (stamps.size() < 21 || validEventStampItem(stamps[20]))
+            && (stamps.size() < 22 || validEventStampItem(stamps[21]))
+            && (stamps.size() < 23 || validEventStampItem(stamps[22]))
+            && (stamps.size() < 24 || validEventStampItem(stamps[23]))
+          )
+        );
+    }
+
     function validResourceCategoriesList(categories) {
       return categories is list
         && categories.size() <= 40
@@ -589,6 +637,7 @@ service cloud.firestore {
           'eventCategoryPrivateDescription',
           'eventCategoryExternalLabel',
           'eventCategoryExternalDescription',
+          'eventStamps',
           'updatedAt',
         ])
         && (!keys.hasAny(['logoUrl']) || data.logoUrl is string)
@@ -614,7 +663,8 @@ service cloud.firestore {
         && (!keys.hasAny(['eventCategoryPrivateLabel']) || data.eventCategoryPrivateLabel is string)
         && (!keys.hasAny(['eventCategoryPrivateDescription']) || data.eventCategoryPrivateDescription is string)
         && (!keys.hasAny(['eventCategoryExternalLabel']) || data.eventCategoryExternalLabel is string)
-        && (!keys.hasAny(['eventCategoryExternalDescription']) || data.eventCategoryExternalDescription is string);
+        && (!keys.hasAny(['eventCategoryExternalDescription']) || data.eventCategoryExternalDescription is string)
+        && (!keys.hasAny(['eventStamps']) || validEventStampsList(data.eventStamps));
     }
 
     function validSiteSettingsCreate() {
@@ -644,6 +694,7 @@ service cloud.firestore {
           'eventCategoryPrivateDescription',
           'eventCategoryExternalLabel',
           'eventCategoryExternalDescription',
+          'eventStamps',
           'updatedAt',
         ])
         && data.logoUrl is string
@@ -669,7 +720,8 @@ service cloud.firestore {
         && data.eventCategoryPrivateLabel is string
         && data.eventCategoryPrivateDescription is string
         && data.eventCategoryExternalLabel is string
-        && data.eventCategoryExternalDescription is string;
+        && data.eventCategoryExternalDescription is string
+        && validEventStampsList(data.get('eventStamps', []));
     }
 
     match /siteSettings/{docId} {

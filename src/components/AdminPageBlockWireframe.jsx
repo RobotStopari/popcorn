@@ -6,6 +6,7 @@ import { useSiteColors } from '../contexts/SiteColorsContext';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
 import { getPageBlockButtonColorStyle } from '../utils/page-block-button-color';
 import {
+  getButtonTextGridStyle,
   getImageTextGridStyle,
   getImageTripletBlockStyle,
   getReferenceGridStyle,
@@ -152,6 +153,38 @@ function WireImageText({ block }) {
   );
 }
 
+function WireButtonText({ block }) {
+  const reversed = block.reversed;
+  const hasText = Boolean(stripHtml(block.html));
+  const gridStyle = getButtonTextGridStyle({
+    buttonSharePercent: block.buttonSharePercent,
+    gapRem: block.gapRem,
+  });
+
+  return (
+    <div
+      className={`block-wireframe__button-text${reversed ? ' block-wireframe__button-text--reversed' : ''}`}
+      style={gridStyle}
+    >
+      <div className="block-wireframe__button-text-action">
+        <WireButton
+          label={block.label}
+          external={block.openInNewTab}
+          color={block.color}
+          large
+        />
+      </div>
+      <div className="block-wireframe__button-text-copy">
+        {hasText ? (
+          <WireParagraph html={block.html} align={block.align} />
+        ) : (
+          <WireLines lines={3} align={block.align} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WireReference({ block }) {
   const reversed = block.reversed;
   const wideClass = isReferenceWideLayout(block.text) ? ' block-wireframe__reference--wide' : '';
@@ -269,6 +302,19 @@ function WireParallaxBand({ block, imageOnly = false }) {
   );
 }
 
+function WireSocialButtons({ block }) {
+  const { settings } = useSiteSettings();
+  const iconCount = Math.min(Math.max(getEnabledSocialLinkCount(block?.links, settings), 1), 4);
+
+  return (
+    <div className="block-wireframe__social-buttons">
+      {Array.from({ length: iconCount }, (_, index) => (
+        <span key={index} className="block-wireframe__social-icon" />
+      ))}
+    </div>
+  );
+}
+
 function WireInstagram() {
   return (
     <div className="block-wireframe__instagram">
@@ -278,28 +324,6 @@ function WireInstagram() {
           <span key={index} className="block-wireframe__instagram-tile" />
         ))}
       </div>
-    </div>
-  );
-}
-
-function WireSpace({ block }) {
-  const heightRem = block.heightRem ?? 3;
-  return (
-    <div
-      className="block-wireframe__space"
-      style={{ height: `${Math.max(1.5, heightRem * 0.55)}rem` }}
-      aria-hidden="true"
-    >
-      <span className="block-wireframe__space-label">{heightRem} rem</span>
-    </div>
-  );
-}
-
-function WireNegativeSpace({ block }) {
-  const pullRem = block.pullRem ?? 1.5;
-  return (
-    <div className="block-wireframe__negative-space" aria-hidden="true">
-      <span className="block-wireframe__negative-space-label">−{pullRem} rem</span>
     </div>
   );
 }
@@ -492,6 +516,13 @@ export default function AdminPageBlockWireframe({ block }) {
         </WireNarrow>
       );
       break;
+    case PAGE_BLOCK_TYPES.buttonText:
+      preview = (
+        <WireNarrow>
+          <WireButtonText block={block} />
+        </WireNarrow>
+      );
+      break;
     case PAGE_BLOCK_TYPES.divider:
       preview = <WireDivider />;
       break;
@@ -526,6 +557,13 @@ export default function AdminPageBlockWireframe({ block }) {
       break;
     case PAGE_BLOCK_TYPES.socials:
       preview = <WireParallaxBand block={block} />;
+      break;
+    case PAGE_BLOCK_TYPES.socialButtons:
+      preview = (
+        <WireNarrow>
+          <WireSocialButtons block={block} />
+        </WireNarrow>
+      );
       break;
     case PAGE_BLOCK_TYPES.parallaxImage:
       preview = <WireParallaxBand block={block} imageOnly />;
@@ -565,12 +603,6 @@ export default function AdminPageBlockWireframe({ block }) {
           <WireYoutube block={block} />
         </WireNarrow>
       );
-      break;
-    case PAGE_BLOCK_TYPES.space:
-      preview = <WireSpace block={block} />;
-      break;
-    case PAGE_BLOCK_TYPES.negativeSpace:
-      preview = <WireNegativeSpace block={block} />;
       break;
     case PAGE_BLOCK_TYPES.citationSmall:
       preview = (

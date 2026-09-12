@@ -4,7 +4,7 @@ import AdminDeleteEventDialog from '../components/AdminDeleteEventDialog';
 import AdminEventFormModal from '../components/AdminEventFormModal';
 import AdminEventSettingsModal from '../components/AdminEventSettingsModal';
 import EventCategoryBadge from '../components/EventCategoryBadge';
-import EventCategoryIcon from '../components/EventCategoryIcon';
+import EventStampBadge from '../components/EventStampBadge';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { createDraftEvent, createEvent, deleteEvent, fetchEventById, updateEvent } from '../services/events';
 import { useEvents } from '../contexts/EventsContext';
@@ -95,6 +95,8 @@ export default function AdminEventsPage() {
           || event.place.toLowerCase().includes(query)
           || event.organisers.some((organiser) => (
             organiser.name.toLowerCase().includes(query)
+              || organiser.nick?.toLowerCase().includes(query)
+              || organiser.zapalovacYear?.toLowerCase().includes(query)
               || organiser.email.toLowerCase().includes(query)
           ));
       });
@@ -283,13 +285,11 @@ export default function AdminEventsPage() {
             <span>{adminText('common.columns.name')}</span>
             <span>{adminText('events.list.columns.date')}</span>
             <span>{adminText('events.list.columns.category')}</span>
-            <span>{adminText('events.list.columns.status')}</span>
             <span>{adminText('common.columns.actions')}</span>
           </div>
 
           <ul className={`admin-events__list${showPastDivider ? ' admin-events__list--with-past-divider' : ''}`}>
             {flatEvents.map((event) => {
-              const past = isEventPast(event);
               const displayTitle = getAdminEventTitle(event);
               const isPastSectionStart = showPastDivider && event.id === pastSectionStartId;
               return (
@@ -298,7 +298,6 @@ export default function AdminEventsPage() {
                   className={[
                     'admin-events__row',
                     event.isDraft ? 'admin-events__row--draft' : '',
-                    event.calendarOnly ? 'admin-events__row--calendar-only' : '',
                     isPastSectionStart ? 'admin-events__row--past-divider' : '',
                   ].filter(Boolean).join(' ')}
                 >
@@ -308,7 +307,20 @@ export default function AdminEventsPage() {
                     onToggle={() => toggleStar(event.id)}
                   />
                   <div className="admin-events__title">
-                    <EventCategoryIcon category={event.category} size="md" />
+                    {event.calendarOnly ? (
+                      <span
+                        className="event-stamp admin-events__stamp admin-events__stamp--calendar"
+                        title={adminText('events.list.badges.calendarOnlyTitle')}
+                        aria-label={adminText('events.list.badges.calendarOnlyTitle')}
+                      >
+                        <span className="event-stamp__icon" aria-hidden="true">📅</span>
+                      </span>
+                    ) : (
+                      <EventStampBadge
+                        stampId={event.stampId}
+                        className="admin-events__stamp"
+                      />
+                    )}
                     <span className="admin-events__title-text">{displayTitle}</span>
                     {eventHasMissingTimes(event) && (
                       <span
@@ -324,19 +336,6 @@ export default function AdminEventsPage() {
                     <div className="admin-events__date">{formatEventDateLabel(event)}</div>
                     <div className="admin-events__category">
                       <EventCategoryBadge category={event.category} />
-                    </div>
-                    <div className="admin-events__status">
-                      {event.isDraft ? (
-                        <span className="admin-events__badge admin-events__badge--draft">
-                          {adminText('events.list.badges.draft')}
-                        </span>
-                      ) : (
-                        <span className={`admin-events__badge${past ? ' admin-events__badge--past' : ''}`}>
-                          {past
-                            ? adminText('events.list.badges.past')
-                            : adminText('events.list.badges.upcoming')}
-                        </span>
-                      )}
                       {event.calendarOnly && (
                         <span
                           className="admin-events__badge admin-events__badge--calendar-only"

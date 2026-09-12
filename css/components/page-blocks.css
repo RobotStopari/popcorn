@@ -238,6 +238,77 @@
   }
 }
 
+.page-block--button-text {
+  padding: 2rem 0 3rem;
+}
+
+.page-block__button-text-grid {
+  display: grid;
+  gap: var(--button-text-gap, 1.5rem);
+  align-items: center;
+}
+
+.page-block__button-text-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.page-block__button-text-action .page-block__link-btn {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.page-block__button-text-copy {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .page-block__button-text-grid {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--button-text-gap, 1.25rem);
+  }
+
+  .page-block__button-text-copy {
+    width: 100%;
+  }
+
+  .page-block__button-text-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-block__button-text-action .page-block__link-btn {
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .page-block__button-text-grid {
+    grid-template-columns: minmax(0, var(--button-text-button-share, 38%)) minmax(0, 1fr);
+    gap: var(--button-text-gap, 2rem);
+    align-items: center;
+  }
+
+  .page-block__button-text--reversed .page-block__button-text-grid {
+    direction: rtl;
+  }
+
+  .page-block__button-text--reversed .page-block__button-text-grid > * {
+    direction: ltr;
+  }
+}
+
 .page-block--wide-image {
   padding: 2rem 0 2.5rem;
 }
@@ -386,7 +457,8 @@
 }
 
 .page-block--button,
-.page-block--button-pair {
+.page-block--button-pair,
+.page-block--social-buttons {
   padding: 1.5rem 0 2.5rem;
 }
 
@@ -434,7 +506,8 @@
   }
 
   .page-block--button,
-  .page-block--button-pair {
+  .page-block--button-pair,
+  .page-block--social-buttons {
     padding: 1rem 0 1.5rem;
   }
 
@@ -471,16 +544,6 @@
     padding: 0.85rem 1.15rem;
     font-size: clamp(0.95rem, 2.8vw, 1.05rem);
   }
-}
-
-.page-block--space {
-  width: 100%;
-}
-
-.page-block--negative-space {
-  width: 100%;
-  overflow: visible;
-  pointer-events: none;
 }
 
 .page-block--citation-small {

@@ -8,11 +8,13 @@ export const PAGE_BLOCK_TYPES = {
   h2: 'h2',
   citation: 'citation',
   imageText: 'imageText',
+  buttonText: 'buttonText',
   upcomingEvents: 'upcomingEvents',
   pastEvents: 'pastEvents',
   calendar: 'calendar',
   divider: 'divider',
   socials: 'socials',
+  socialButtons: 'socialButtons',
   parallaxImage: 'parallaxImage',
   instagramFeed: 'instagramFeed',
   wideImage: 'wideImage',
@@ -20,8 +22,6 @@ export const PAGE_BLOCK_TYPES = {
   button: 'button',
   buttonPair: 'buttonPair',
   youtube: 'youtube',
-  space: 'space',
-  negativeSpace: 'negativeSpace',
   citationSmall: 'citationSmall',
   reference: 'reference',
   medallions: 'medallions',
@@ -34,13 +34,15 @@ export const CARD_CAROUSEL_MIN_CARDS = 2;
 export const CARD_CAROUSEL_MAX_CARDS = 20;
 export const CARD_CAROUSEL_DESCRIPTION_MAX = 300;
 
-export const PAGE_BLOCK_SPACE_HEIGHT_DEFAULT = 3;
-export const PAGE_BLOCK_SPACE_HEIGHT_MIN = 0.5;
-export const PAGE_BLOCK_SPACE_HEIGHT_MAX = 12;
+/** Extra space after a block, before the next (−6…+6 rem). Replaces space / negativeSpace blocks. */
+export const PAGE_BLOCK_GAP_AFTER_DEFAULT = 0;
+export const PAGE_BLOCK_GAP_AFTER_MIN = -6;
+export const PAGE_BLOCK_GAP_AFTER_MAX = 6;
+export const PAGE_BLOCK_GAP_AFTER_STEP = 0.25;
 
-export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT = 1.5;
-export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN = 0.5;
-export const PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX = 8;
+/** @deprecated Legacy block types — migrated to gapAfterRem on load. */
+export const LEGACY_PAGE_BLOCK_SPACE = 'space';
+export const LEGACY_PAGE_BLOCK_NEGATIVE_SPACE = 'negativeSpace';
 
 export const PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS = ['left', 'right'];
 export const PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT = 'left';
@@ -68,6 +70,11 @@ export const PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT = 2;
 export const PAGE_BLOCK_IMAGE_TEXT_GAP_MIN = 0.5;
 export const PAGE_BLOCK_IMAGE_TEXT_GAP_MAX = 8;
 
+/** Share of row width for the button column in button+text blocks (desktop). */
+export const PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT = 38;
+export const PAGE_BLOCK_BUTTON_TEXT_SHARE_MIN = 20;
+export const PAGE_BLOCK_BUTTON_TEXT_SHARE_MAX = 50;
+
 export const PAGE_BLOCK_REFERENCE_GAP_DEFAULT = 1.5;
 export const PAGE_BLOCK_REFERENCE_PORTRAIT_SIZE_REM = 7.5;
 export const PAGE_BLOCK_REFERENCE_STACKED_PORTRAIT_SIZE_REM = 10;
@@ -87,11 +94,13 @@ export const PAGE_BLOCK_LABELS = {
   [PAGE_BLOCK_TYPES.h2]: PAGE_BLOCK_COPY.labels.h2,
   [PAGE_BLOCK_TYPES.citation]: PAGE_BLOCK_COPY.labels.citation,
   [PAGE_BLOCK_TYPES.imageText]: PAGE_BLOCK_COPY.labels.imageText,
+  [PAGE_BLOCK_TYPES.buttonText]: PAGE_BLOCK_COPY.labels.buttonText,
   [PAGE_BLOCK_TYPES.upcomingEvents]: PAGE_BLOCK_COPY.labels.upcomingEvents,
   [PAGE_BLOCK_TYPES.pastEvents]: PAGE_BLOCK_COPY.labels.pastEvents,
   [PAGE_BLOCK_TYPES.calendar]: PAGE_BLOCK_COPY.labels.calendar,
   [PAGE_BLOCK_TYPES.divider]: PAGE_BLOCK_COPY.labels.divider,
   [PAGE_BLOCK_TYPES.socials]: PAGE_BLOCK_COPY.labels.socials,
+  [PAGE_BLOCK_TYPES.socialButtons]: PAGE_BLOCK_COPY.labels.socialButtons,
   [PAGE_BLOCK_TYPES.parallaxImage]: PAGE_BLOCK_COPY.labels.parallaxImage,
   [PAGE_BLOCK_TYPES.instagramFeed]: PAGE_BLOCK_COPY.labels.instagramFeed,
   [PAGE_BLOCK_TYPES.wideImage]: PAGE_BLOCK_COPY.labels.wideImage,
@@ -99,8 +108,6 @@ export const PAGE_BLOCK_LABELS = {
   [PAGE_BLOCK_TYPES.button]: PAGE_BLOCK_COPY.labels.button,
   [PAGE_BLOCK_TYPES.buttonPair]: PAGE_BLOCK_COPY.labels.buttonPair,
   [PAGE_BLOCK_TYPES.youtube]: PAGE_BLOCK_COPY.labels.youtube,
-  [PAGE_BLOCK_TYPES.space]: PAGE_BLOCK_COPY.labels.space,
-  [PAGE_BLOCK_TYPES.negativeSpace]: PAGE_BLOCK_COPY.labels.negativeSpace,
   [PAGE_BLOCK_TYPES.citationSmall]: PAGE_BLOCK_COPY.labels.citationSmall,
   [PAGE_BLOCK_TYPES.reference]: PAGE_BLOCK_COPY.labels.reference,
   [PAGE_BLOCK_TYPES.medallions]: PAGE_BLOCK_COPY.labels.medallions,
@@ -116,11 +123,13 @@ export const PAGE_BLOCK_DESCRIPTIONS = {
   [PAGE_BLOCK_TYPES.h2]: PAGE_BLOCK_COPY.descriptions.h2,
   [PAGE_BLOCK_TYPES.citation]: PAGE_BLOCK_COPY.descriptions.citation,
   [PAGE_BLOCK_TYPES.imageText]: PAGE_BLOCK_COPY.descriptions.imageText,
+  [PAGE_BLOCK_TYPES.buttonText]: PAGE_BLOCK_COPY.descriptions.buttonText,
   [PAGE_BLOCK_TYPES.upcomingEvents]: PAGE_BLOCK_COPY.descriptions.upcomingEvents,
   [PAGE_BLOCK_TYPES.pastEvents]: PAGE_BLOCK_COPY.descriptions.pastEvents,
   [PAGE_BLOCK_TYPES.calendar]: PAGE_BLOCK_COPY.descriptions.calendar,
   [PAGE_BLOCK_TYPES.divider]: PAGE_BLOCK_COPY.descriptions.divider,
   [PAGE_BLOCK_TYPES.socials]: PAGE_BLOCK_COPY.descriptions.socials,
+  [PAGE_BLOCK_TYPES.socialButtons]: PAGE_BLOCK_COPY.descriptions.socialButtons,
   [PAGE_BLOCK_TYPES.parallaxImage]: PAGE_BLOCK_COPY.descriptions.parallaxImage,
   [PAGE_BLOCK_TYPES.instagramFeed]: PAGE_BLOCK_COPY.descriptions.instagramFeed,
   [PAGE_BLOCK_TYPES.wideImage]: PAGE_BLOCK_COPY.descriptions.wideImage,
@@ -128,8 +137,6 @@ export const PAGE_BLOCK_DESCRIPTIONS = {
   [PAGE_BLOCK_TYPES.button]: PAGE_BLOCK_COPY.descriptions.button,
   [PAGE_BLOCK_TYPES.buttonPair]: PAGE_BLOCK_COPY.descriptions.buttonPair,
   [PAGE_BLOCK_TYPES.youtube]: PAGE_BLOCK_COPY.descriptions.youtube,
-  [PAGE_BLOCK_TYPES.space]: PAGE_BLOCK_COPY.descriptions.space,
-  [PAGE_BLOCK_TYPES.negativeSpace]: PAGE_BLOCK_COPY.descriptions.negativeSpace,
   [PAGE_BLOCK_TYPES.citationSmall]: PAGE_BLOCK_COPY.descriptions.citationSmall,
   [PAGE_BLOCK_TYPES.reference]: PAGE_BLOCK_COPY.descriptions.reference,
   [PAGE_BLOCK_TYPES.medallions]: PAGE_BLOCK_COPY.descriptions.medallions,
@@ -145,11 +152,10 @@ export const PAGE_BLOCK_PALETTE = [
   PAGE_BLOCK_TYPES.h1,
   PAGE_BLOCK_TYPES.h2,
   PAGE_BLOCK_TYPES.imageText,
+  PAGE_BLOCK_TYPES.buttonText,
   PAGE_BLOCK_TYPES.citation,
   PAGE_BLOCK_TYPES.citationSmall,
   PAGE_BLOCK_TYPES.reference,
-  PAGE_BLOCK_TYPES.space,
-  PAGE_BLOCK_TYPES.negativeSpace,
   PAGE_BLOCK_TYPES.divider,
   PAGE_BLOCK_TYPES.button,
   PAGE_BLOCK_TYPES.buttonPair,
@@ -161,6 +167,7 @@ export const PAGE_BLOCK_PALETTE = [
   PAGE_BLOCK_TYPES.pastEvents,
   PAGE_BLOCK_TYPES.calendar,
   PAGE_BLOCK_TYPES.socials,
+  PAGE_BLOCK_TYPES.socialButtons,
   PAGE_BLOCK_TYPES.instagramFeed,
   PAGE_BLOCK_TYPES.medallions,
   PAGE_BLOCK_TYPES.cardCarousel,
@@ -174,15 +181,15 @@ export const PAGE_BLOCK_EDITABLE_TYPES = new Set([
   PAGE_BLOCK_TYPES.h2,
   PAGE_BLOCK_TYPES.citation,
   PAGE_BLOCK_TYPES.imageText,
+  PAGE_BLOCK_TYPES.buttonText,
   PAGE_BLOCK_TYPES.socials,
+  PAGE_BLOCK_TYPES.socialButtons,
   PAGE_BLOCK_TYPES.parallaxImage,
   PAGE_BLOCK_TYPES.wideImage,
   PAGE_BLOCK_TYPES.imageTriplet,
   PAGE_BLOCK_TYPES.button,
   PAGE_BLOCK_TYPES.buttonPair,
   PAGE_BLOCK_TYPES.youtube,
-  PAGE_BLOCK_TYPES.space,
-  PAGE_BLOCK_TYPES.negativeSpace,
   PAGE_BLOCK_TYPES.citationSmall,
   PAGE_BLOCK_TYPES.reference,
   PAGE_BLOCK_TYPES.medallions,
@@ -206,6 +213,7 @@ export const PAGE_BLOCK_PALETTE_GROUPS = [
       PAGE_BLOCK_TYPES.h1,
       PAGE_BLOCK_TYPES.h2,
       PAGE_BLOCK_TYPES.imageText,
+      PAGE_BLOCK_TYPES.buttonText,
       PAGE_BLOCK_TYPES.citation,
       PAGE_BLOCK_TYPES.citationSmall,
       PAGE_BLOCK_TYPES.reference,
@@ -215,8 +223,6 @@ export const PAGE_BLOCK_PALETTE_GROUPS = [
     id: 'elements',
     label: PAGE_BLOCK_COPY.paletteGroups.elements,
     items: [
-      PAGE_BLOCK_TYPES.space,
-      PAGE_BLOCK_TYPES.negativeSpace,
       PAGE_BLOCK_TYPES.divider,
       PAGE_BLOCK_TYPES.button,
       PAGE_BLOCK_TYPES.buttonPair,
@@ -246,6 +252,7 @@ export const PAGE_BLOCK_PALETTE_GROUPS = [
     id: 'interaction',
     label: PAGE_BLOCK_COPY.paletteGroups.interaction,
     items: [
+      PAGE_BLOCK_TYPES.socialButtons,
       PAGE_BLOCK_TYPES.socials,
       PAGE_BLOCK_TYPES.instagramFeed,
       PAGE_BLOCK_TYPES.medallions,

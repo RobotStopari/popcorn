@@ -43,6 +43,34 @@
   line-height: 1.28;
   margin-bottom: 0.3rem;
   padding-top: 0.1rem;
+  max-width: 100%;
+}
+
+.event-detail__title-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+.event-stamp.event-detail__stamp {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  min-width: 1em;
+  min-height: 1em;
+  padding: 0;
+  border-width: 0.06em;
+  background: var(--white);
+  box-shadow: 0.06em 0.06em 0 var(--black);
+  transform: translateY(-0.04em);
+}
+
+.event-stamp.event-detail__stamp .event-stamp__icon {
+  font-size: 0.55em;
+  line-height: 1;
 }
 
 .event-detail__meta {
@@ -442,6 +470,12 @@
   color: var(--gray);
 }
 
+.event-detail__organiser-year {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
 .event-detail__organiser-link {
   position: relative;
   display: inline-flex;
@@ -562,9 +596,38 @@
 /* Image grids */
 .event-detail__media,
 .event-detail__gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.25rem;
+  --gallery-gap: 1.25rem;
+  --gallery-cols: 1;
+  container: event-gallery / inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gallery-gap);
+}
+
+.event-detail__media > .event-detail__figure,
+.event-detail__gallery > .event-detail__figure {
+  flex: 0 0 calc((100% - (var(--gallery-cols) - 1) * var(--gallery-gap)) / var(--gallery-cols));
+  width: calc((100% - (var(--gallery-cols) - 1) * var(--gallery-gap)) / var(--gallery-cols));
+  max-width: 100%;
+}
+
+@container event-gallery (min-width: 340px) {
+  .event-detail__figure {
+    --gallery-cols: 2;
+  }
+}
+
+@container event-gallery (min-width: 700px) {
+  .event-detail__figure {
+    --gallery-cols: 3;
+  }
+}
+
+@container event-gallery (min-width: 940px) {
+  .event-detail__figure {
+    --gallery-cols: 4;
+  }
 }
 
 .event-detail__figure {
@@ -822,10 +885,5 @@
     flex-direction: row;
     justify-content: center;
     padding: 0.85rem 1rem;
-  }
-
-  .event-detail__media,
-  .event-detail__gallery {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 }

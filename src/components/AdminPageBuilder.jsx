@@ -5,8 +5,6 @@ import {
   PAGE_BLOCK_DESCRIPTIONS,
   PAGE_BLOCK_LABELS,
   PAGE_BLOCK_PALETTE_GROUPS,
-  PAGE_BLOCK_SPACE_HEIGHT_DEFAULT,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
   PAGE_BLOCK_TYPES,
 } from '../data/page-blocks';
 import { canEditPageSlug, canEditPageTitle, getPageAdminListTitle, getPageIntroFieldCopy, isStandalonePageWithEditableAdminTitle, pageHasPublicUrl, pagePath, PAGE_TYPES, NOT_FOUND_PAGE_ADMIN_TITLE, NOT_FOUND_PAGE_ID } from '../data/pages';
@@ -14,7 +12,9 @@ import {
   applyHomeIntroToBlocks,
   canPageHaveBlocks,
   carouselCardHasContent,
+  clampGapAfterRem,
   createBlock,
+  duplicatePageBlock,
   ensureLockedPageTitleBlock,
   getBlocksForPage,
   getHomeIntroFromBlocks,
@@ -28,6 +28,7 @@ import {
 } from '../utils/page-blocks';
 import { adminText } from '../utils/admin-text';
 import { openLivePagePreview } from '../utils/live-page-preview';
+import AdminBlockGapPopover from './AdminBlockGapPopover';
 import AdminDeleteBlockDialog from './AdminDeleteBlockDialog';
 import AdminPageBlockEditModal from './AdminPageBlockEditModal';
 import SortableList from './SortableList';
@@ -59,9 +60,18 @@ function EditIcon() {
   );
 }
 
-function PlusIcon() {
+function DuplicateIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="8" y="8" width="11" height="11" rx="1.5" />
+      <path d="M5 15V6.5A1.5 1.5 0 0 1 6.5 5H15" />
+    </svg>
+  );
+}
+
+function PlusIcon({ size = 18 }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
       <path d="M12 5v14M5 12h14" />
     </svg>
   );
@@ -102,6 +112,10 @@ function getBlockSummary(block) {
     case PAGE_BLOCK_TYPES.imageText:
       if (stripHtml(block.html)) return stripHtml(block.html);
       return block.imageUrl ? 'Obrázek s textem' : 'Obrázek + text';
+    case PAGE_BLOCK_TYPES.buttonText:
+      if (block.label?.trim()) return block.label.trim();
+      if (stripHtml(block.html)) return stripHtml(block.html);
+      return 'Tlačítko + text';
     case PAGE_BLOCK_TYPES.divider:
       return 'Oddělovač';
     case PAGE_BLOCK_TYPES.upcomingEvents:
@@ -114,6 +128,8 @@ function getBlockSummary(block) {
       return block.imageUrl ? 'Vlastní parallax obrázek' : 'Parallax textura';
     case PAGE_BLOCK_TYPES.socials:
       return block.imageUrl ? 'Parallax s vlastním obrázkem' : 'Parallax s texturou';
+    case PAGE_BLOCK_TYPES.socialButtons:
+      return 'Sociální tlačítka';
     case PAGE_BLOCK_TYPES.instagramFeed:
       return 'Poslední čtyři příspěvky z Instagramu';
     case PAGE_BLOCK_TYPES.wideImage:
@@ -132,10 +148,6 @@ function getBlockSummary(block) {
     }
     case PAGE_BLOCK_TYPES.youtube:
       return block.title?.trim() || (block.videoId ? 'YouTube video' : 'Prázdné video');
-    case PAGE_BLOCK_TYPES.space:
-      return `Výška ${block.heightRem ?? PAGE_BLOCK_SPACE_HEIGHT_DEFAULT} rem`;
-    case PAGE_BLOCK_TYPES.negativeSpace:
-      return `Zmenšení −${block.pullRem ?? PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT} rem`;
     case PAGE_BLOCK_TYPES.medallions: {
       const count = (block.people || []).filter((person) => person?.name?.trim()).length;
       return count ? `${count} ${count === 1 ? 'osoba' : count < 5 ? 'osoby' : 'osob'}` : 'Medailonky';
@@ -153,6 +165,52 @@ function getBlockSummary(block) {
     default:
       return '';
   }
+}
+
+function GapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M4 8h16M4 16h16" />
+      <path d="M12 10v4" />
+      <path d="M9 12h6" />
+    </svg>
+  );
+}
+
+function formatGapBadge(value) {
+  const gap = clampGapAfterRem(value);
+  if (gap === 0) return null;
+  return gap > 0 ? `+${gap}` : `${gap}`;
+}
+
+function BlockGapButton({ topBlock, bottomBlock, onEditGap, onInsert }) {
+  const badge = formatGapBadge(topBlock?.gapAfterRem);
+  const topLabel = PAGE_BLOCK_LABELS[topBlock?.type] || topBlock?.type || '';
+  const bottomLabel = PAGE_BLOCK_LABELS[bottomBlock?.type] || bottomBlock?.type || '';
+
+  return (
+    <div className="admin-page-builder__gap-slot">
+      <button
+        type="button"
+        className={`admin-page-builder__gap-btn${badge ? ' admin-page-builder__gap-btn--active' : ''}`}
+        onClick={onEditGap}
+        aria-label={adminText('pages.builder.gapButtonAria', { from: topLabel, to: bottomLabel })}
+        title={adminText('pages.builder.gapButton')}
+      >
+        <GapIcon />
+        <span>{badge || adminText('pages.builder.gapButton')}</span>
+      </button>
+      <button
+        type="button"
+        className="admin-page-builder__gap-insert"
+        onClick={onInsert}
+        aria-label={adminText('pages.builder.addBlockBetweenAria', { from: topLabel, to: bottomLabel })}
+        title={adminText('pages.builder.addBlockBetween')}
+      >
+        <PlusIcon size={14} />
+      </button>
+    </div>
+  );
 }
 
 function DragHandleIcon() {
@@ -173,6 +231,7 @@ function BlockListRow({
   index,
   locked = false,
   onEdit,
+  onDuplicate,
   onRemove,
   onHandlePointerDown,
   ghost = false,
@@ -235,7 +294,7 @@ function BlockListRow({
             <button
               type="button"
               className="admin-page-builder__icon-btn"
-              aria-label={`Upravit prvek ${label}`}
+              aria-label={adminText('pages.builder.editBlock', { label })}
               onClick={() => onEdit(block.id)}
             >
               <EditIcon />
@@ -243,8 +302,16 @@ function BlockListRow({
           )}
           <button
             type="button"
+            className="admin-page-builder__icon-btn"
+            aria-label={adminText('pages.builder.duplicateBlock', { label })}
+            onClick={() => onDuplicate(block.id)}
+          >
+            <DuplicateIcon />
+          </button>
+          <button
+            type="button"
             className="admin-page-builder__icon-btn admin-page-builder__icon-btn--danger"
-            aria-label={`Odstranit prvek ${label}`}
+            aria-label={adminText('pages.builder.removeBlock', { label })}
             onClick={() => onRemove(block.id)}
           >
             <TrashIcon />
@@ -269,15 +336,19 @@ export default function AdminPageBuilder({
   const [saveMessage, setSaveMessage] = useState('');
   const [metaOpen, setMetaOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteInsertIndex, setPaletteInsertIndex] = useState(null);
   const [editingBlockId, setEditingBlockId] = useState(null);
   const [enteringBlockIds, setEnteringBlockIds] = useState(() => new Set());
   const [removingBlockIds, setRemovingBlockIds] = useState(() => new Set());
   const [blockToDelete, setBlockToDelete] = useState(null);
+  const [gapEditIndex, setGapEditIndex] = useState(null);
   const editingBlockIdRef = useRef(null);
   const blocksRef = useRef([]);
   const paletteOpenRef = useRef(null);
+  const paletteInsertIndexRef = useRef(null);
   const metaOpenRef = useRef(false);
   const blockToDeleteRef = useRef(null);
+  const gapEditIndexRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const previewWindowRef = useRef(null);
   const removeTimeoutsRef = useRef(new Map());
@@ -285,8 +356,10 @@ export default function AdminPageBuilder({
   blocksRef.current = blocks;
   editingBlockIdRef.current = editingBlockId;
   paletteOpenRef.current = paletteOpen;
+  paletteInsertIndexRef.current = paletteInsertIndex;
   metaOpenRef.current = metaOpen;
   blockToDeleteRef.current = blockToDelete;
+  gapEditIndexRef.current = gapEditIndex;
   onCloseRef.current = onClose;
 
   const hasBlocks = canPageHaveBlocks(page);
@@ -319,10 +392,12 @@ export default function AdminPageBuilder({
     setSaveMessage('');
     setMetaOpen(false);
     setPaletteOpen(false);
+    setPaletteInsertIndex(null);
     setEditingBlockId(null);
     setEnteringBlockIds(new Set());
     setRemovingBlockIds(new Set());
     setBlockToDelete(null);
+    setGapEditIndex(null);
 
     removeTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
     removeTimeoutsRef.current.clear();
@@ -380,8 +455,13 @@ export default function AdminPageBuilder({
         setBlockToDelete(null);
         return;
       }
+      if (gapEditIndexRef.current !== null) {
+        setGapEditIndex(null);
+        return;
+      }
       if (paletteOpenRef.current) {
         setPaletteOpen(false);
+        setPaletteInsertIndex(null);
         return;
       }
       if (metaOpenRef.current) {
@@ -453,20 +533,55 @@ export default function AdminPageBuilder({
     removeTimeoutsRef.current.set(blockId, timeoutId);
   };
 
+  const closePalette = () => {
+    setPaletteOpen(false);
+    setPaletteInsertIndex(null);
+  };
+
+  const openPalette = (insertIndex = null) => {
+    setPaletteInsertIndex(insertIndex);
+    setPaletteOpen(true);
+  };
+
   const handleAddBlock = (type) => {
-    const newBlock = type === PAGE_BLOCK_TYPES.imageText
+    const newBlock = type === PAGE_BLOCK_TYPES.imageText || type === PAGE_BLOCK_TYPES.buttonText
       ? createBlock(type, { reversed: true })
       : createBlock(type);
+    const insertAt = paletteInsertIndexRef.current;
+
     setBlocks((prev) => {
-      const next = [...prev, newBlock];
+      const next = [...prev];
+      const at = insertAt == null
+        ? next.length
+        : Math.min(Math.max(insertAt, 0), next.length);
+      next.splice(at, 0, newBlock);
       blocksRef.current = next;
       return next;
     });
     markBlockEntering(newBlock.id);
-    setPaletteOpen(false);
+    closePalette();
     if (isBlockEditable(newBlock)) {
       setEditingBlockId(newBlock.id);
     }
+  };
+
+  const handleDuplicateBlock = (blockId) => {
+    const sourceIndex = blocksRef.current.findIndex((block) => block.id === blockId);
+    if (sourceIndex < 0) return;
+
+    const source = blocksRef.current[sourceIndex];
+    if (isLockedPageTitleBlock(page, source, sourceIndex)) return;
+
+    const copy = duplicatePageBlock(source);
+    if (!copy) return;
+
+    setBlocks((prev) => {
+      const next = [...prev];
+      next.splice(sourceIndex + 1, 0, copy);
+      blocksRef.current = next;
+      return next;
+    });
+    markBlockEntering(copy.id);
   };
 
   const handleReorderBlocks = (next) => {
@@ -517,8 +632,7 @@ export default function AdminPageBuilder({
     setBlockToDelete(null);
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const savePage = async () => {
     setSaving(true);
     setError('');
     setSaveMessage('');
@@ -544,11 +658,18 @@ export default function AdminPageBuilder({
           : undefined,
       });
       setSaveMessage(adminText('pages.builder.saved'));
+      return true;
     } catch (err) {
       setError(err.message || 'Uložení se nezdařilo.');
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await savePage();
   };
 
   const handleLivePreview = () => {
@@ -759,22 +880,46 @@ export default function AdminPageBuilder({
                   if (removingBlockIds.has(item.id)) classes.push('admin-page-builder__frame--removing');
                   return classes.join(' ');
                 }}
+                getItemStyle={(_item, index) => ({
+                  // Earlier rows stack above later ones so gap pills aren't covered by the next card.
+                  zIndex: blocks.length - index,
+                })}
                 isItemDraggable={(item, index) => !isLockedPageTitleBlock(page, item, index)}
                 renderItem={(block, index, onHandlePointerDown) => (
-                  <BlockListRow
-                    block={block}
-                    index={index}
-                    locked={isLockedPageTitleBlock(page, block, index)}
-                    onEdit={setEditingBlockId}
-                    onRemove={handleRequestRemoveBlock}
-                    onHandlePointerDown={onHandlePointerDown}
-                  />
+                  <>
+                    <BlockListRow
+                      block={block}
+                      index={index}
+                      locked={isLockedPageTitleBlock(page, block, index)}
+                      onEdit={setEditingBlockId}
+                      onDuplicate={handleDuplicateBlock}
+                      onRemove={handleRequestRemoveBlock}
+                      onHandlePointerDown={onHandlePointerDown}
+                    />
+                    {index < blocks.length - 1 && (
+                      <BlockGapButton
+                        topBlock={block}
+                        bottomBlock={blocks[index + 1]}
+                        onEditGap={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setGapEditIndex(index);
+                        }}
+                        onInsert={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          openPalette(index + 1);
+                        }}
+                      />
+                    )}
+                  </>
                 )}
                 renderGhostItem={(block, index, onHandlePointerDown) => (
                   <BlockListRow
                     block={block}
                     index={index ?? 0}
                     onEdit={() => {}}
+                    onDuplicate={() => {}}
                     onRemove={() => {}}
                     onHandlePointerDown={onHandlePointerDown || (() => {})}
                     ghost
@@ -803,21 +948,25 @@ export default function AdminPageBuilder({
               <button
                 type="button"
                 className="admin-page-builder__palette-overlay"
-                aria-label="Zavřít nabídku prvků"
-                onClick={() => setPaletteOpen(false)}
+                aria-label={adminText('pages.builder.closePalette')}
+                onClick={closePalette}
               />
               <div
                 className="admin-page-builder__palette-panel"
                 role="dialog"
-                aria-label="Vyberte prvek"
+                aria-label={adminText('pages.builder.paletteAria')}
               >
                 <div className="admin-page-builder__palette-head">
-                  <h3 className="admin-page-builder__palette-title">Přidat prvek</h3>
+                  <h3 className="admin-page-builder__palette-title">
+                    {paletteInsertIndex == null
+                      ? adminText('pages.builder.paletteTitle')
+                      : adminText('pages.builder.addBlockBetween')}
+                  </h3>
                   <button
                     type="button"
                     className="admin-page-builder__palette-close"
                     aria-label="Zavřít"
-                    onClick={() => setPaletteOpen(false)}
+                    onClick={closePalette}
                   >
                     <CloseIcon />
                   </button>
@@ -861,14 +1010,20 @@ export default function AdminPageBuilder({
           <footer className="admin-page-builder__footer-bar">
             <button
               type="button"
-              className={`admin-page-builder__add-btn${paletteOpen ? ' is-open' : ''}`}
-              aria-expanded={paletteOpen}
+              className={`admin-page-builder__add-btn${paletteOpen && paletteInsertIndex == null ? ' is-open' : ''}`}
+              aria-expanded={paletteOpen && paletteInsertIndex == null}
               aria-haspopup="dialog"
-              onClick={() => setPaletteOpen((value) => !value)}
+              onClick={() => {
+                if (paletteOpen && paletteInsertIndex == null) {
+                  closePalette();
+                  return;
+                }
+                openPalette(null);
+              }}
             >
               <PlusIcon />
               <span>{adminText('pages.builder.addBlock')}</span>
-              <ChevronIcon open={paletteOpen} />
+              <ChevronIcon open={paletteOpen && paletteInsertIndex == null} />
             </button>
           </footer>
         </>
@@ -893,6 +1048,31 @@ export default function AdminPageBuilder({
         hasContent={blockToDelete ? !isBlockEmpty(blockToDelete) : false}
         onClose={() => setBlockToDelete(null)}
         onConfirm={handleConfirmRemoveBlock}
+      />
+
+      <AdminBlockGapPopover
+        open={gapEditIndex !== null && Boolean(blocks[gapEditIndex] && blocks[gapEditIndex + 1])}
+        topBlock={gapEditIndex !== null ? blocks[gapEditIndex] : null}
+        bottomBlock={gapEditIndex !== null ? blocks[gapEditIndex + 1] : null}
+        variant={page?.type === PAGE_TYPES.home ? 'home' : 'content'}
+        initialGap={gapEditIndex !== null ? blocks[gapEditIndex]?.gapAfterRem : 0}
+        onClose={() => {
+          setGapEditIndex(null);
+        }}
+        onSave={async (nextGap) => {
+          const index = gapEditIndex;
+          if (index === null) return;
+
+          const nextBlocks = blocksRef.current.map((block, blockIndex) => (
+            blockIndex === index
+              ? { ...block, gapAfterRem: clampGapAfterRem(nextGap) }
+              : block
+          ));
+          blocksRef.current = nextBlocks;
+          setBlocks(nextBlocks);
+          setGapEditIndex(null);
+          await savePage();
+        }}
       />
     </div>
   );

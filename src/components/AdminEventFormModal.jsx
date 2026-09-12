@@ -29,11 +29,14 @@ import {
   subscribeOrganiserPresets,
 } from '../services/organiser-presets';
 import RichTextEditor from './RichTextEditor';
+import AdminOrganiserEmailField from './AdminOrganiserEmailField';
 import AdminPlaceMapPicker from './AdminPlaceMapPicker';
 import EventCategorySelect from './EventCategorySelect';
+import EventStampSelect from './EventStampSelect';
 import SortableParticipantList from './SortableParticipantList';
 import AdminEventSharingTab from './AdminEventSharingTab';
 import AdminModalPanel from './AdminModalPanel';
+import AdminTabs, { AdminTabPanel, getAdminTabDirection } from './AdminTabs';
 import EventCoverUpload, { createCoverPatternSeed } from './EventCoverUpload';
 import { resolveCoverPatternSeed } from '../utils/event-cover-pattern';
 import EventImageUploadList from './EventImageUploadList';
@@ -56,11 +59,15 @@ function Icon({ svg }) {
   );
 }
 
-function TabBlock({ title, hint, children }) {
+function TabBlock({ title, hint, accent = '', children }) {
   return (
-    <section className="admin-event-block">
-      {title && <h3 className="admin-event-block__title">{title}</h3>}
-      {hint && <p className="admin-event-block__hint">{hint}</p>}
+    <section className={`admin-event-block${accent ? ` admin-event-block--${accent}` : ''}`}>
+      {(title || hint) && (
+        <div className="admin-event-block__head">
+          {title && <h3 className="admin-event-block__title">{title}</h3>}
+          {hint && <p className="admin-event-block__hint">{hint}</p>}
+        </div>
+      )}
       <div className="admin-event-block__content">{children}</div>
     </section>
   );
@@ -84,11 +91,36 @@ function FieldGroup({ label, required = false, children, hint }) {
 const PARTICIPANTS_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 
 const TABS = [
-  { id: 'basic', label: 'Základní' },
-  { id: 'organisers', label: 'Organizátoři' },
-  { id: 'registration', label: 'Přihlašování' },
-  { id: 'past', label: 'Po akci' },
-  { id: 'sharing', label: 'Sdílení' },
+  {
+    id: 'basic',
+    label: 'Základní',
+    hint: 'Název a termín',
+    icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg>',
+  },
+  {
+    id: 'organisers',
+    label: 'Organizátoři',
+    hint: 'Kdo akci vede',
+    icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  },
+  {
+    id: 'registration',
+    label: 'Přihlašování',
+    hint: 'Odkaz a jména',
+    icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  },
+  {
+    id: 'past',
+    label: 'Po akci',
+    hint: 'Zápis a fotky',
+    icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
+  },
+  {
+    id: 'sharing',
+    label: 'Sdílení',
+    hint: 'Odkaz k úpravě',
+    icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5"/></svg>',
+  },
 ];
 
 function organiserHasContent(item) {
@@ -96,6 +128,7 @@ function organiserHasContent(item) {
     item.name.trim()
     || item.email.trim()
     || item.nick.trim()
+    || item.zapalovacYear?.trim()
     || item.phone.trim()
     || item.instagram.trim()
     || item.facebook.trim(),
@@ -139,42 +172,6 @@ function buildIncompleteTabsMessage(tabIds) {
   return 'Opravdu chcete akci uložit?';
 }
 
-function EventFormTabs({ activeTab, onChange, attentionTabs = new Set(), tabs = TABS }) {
-  return (
-    <div className="admin-event-tabs" role="tablist" aria-label="Sekce formuláře akce">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          role="tab"
-          id={`event-tab-${tab.id}`}
-          aria-selected={activeTab === tab.id}
-          aria-controls={`event-panel-${tab.id}`}
-          className={`admin-event-tabs__tab${activeTab === tab.id ? ' admin-event-tabs__tab--active' : ''}${attentionTabs.has(tab.id) ? ' admin-event-tabs__tab--attention' : ''}`}
-          onClick={() => onChange(tab.id)}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function TabPanel({ id, activeTab, children }) {
-  if (activeTab !== id) return null;
-
-  return (
-    <div
-      id={`event-panel-${id}`}
-      role="tabpanel"
-      aria-labelledby={`event-tab-${id}`}
-      className="admin-event-tabs__panel"
-    >
-      {children}
-    </div>
-  );
-}
-
 export default function AdminEventFormModal({
   open,
   event,
@@ -188,6 +185,7 @@ export default function AdminEventFormModal({
   const [form, setForm] = useState(eventToFormState());
   const [slugTouched, setSlugTouched] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  const [tabDirection, setTabDirection] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [organiserPresets, setOrganiserPresets] = useState([]);
@@ -249,6 +247,7 @@ export default function AdminEventFormModal({
     });
     setSlugTouched(Boolean(event?.slug && event.slug !== event?.id));
     setActiveTab('basic');
+    setTabDirection(0);
     setError('');
     setPresetMessage('');
     setPresetPendingDelete(null);
@@ -456,7 +455,7 @@ export default function AdminEventFormModal({
   const handleSaveOrganiserPreset = async (index) => {
     const organiser = form.organisers[index];
     if (!isCompleteOrganiser(organiser)) {
-      setPresetMessage('Pro uložení předvolby vyplňte jméno a e-mail.');
+      setPresetMessage('Pro uložení předvolby vyplňte jméno.');
       return;
     }
 
@@ -526,6 +525,7 @@ export default function AdminEventFormModal({
   };
 
   const handleTabChange = (tabId) => {
+    setTabDirection(getAdminTabDirection(visibleTabs, activeTab, tabId));
     setActiveTab(tabId);
     setVisitedTabs((prev) => new Set(prev).add(tabId));
     setAttentionTabs((prev) => {
@@ -688,17 +688,18 @@ export default function AdminEventFormModal({
         item.name.trim()
         || item.email.trim()
         || item.nick.trim()
+        || item.zapalovacYear?.trim()
         || item.phone.trim()
         || item.instagram.trim()
         || item.facebook.trim(),
       );
-      const hasRequired = item.name.trim() && item.email.trim();
+      const hasRequired = item.name.trim();
       return hasAny && !hasRequired;
     });
 
     if (incompleteOrganiser) {
       return {
-        message: 'U každého organizátora vyplňte jméno i e-mail, nebo prázdný záznam odeberte.',
+        message: 'U každého organizátora vyplňte jméno, nebo prázdný záznam odeberte.',
         tab: 'organisers',
       };
     }
@@ -724,40 +725,49 @@ export default function AdminEventFormModal({
   };
 
   const calendarOnlyUi = form.calendarOnly === true;
+  const filledOrganisers = form.organisers.filter(organiserHasContent).length;
+  const filledParticipants = form.participants.filter((participant) => participant.name.trim()).length;
+  const tabBadges = {
+    organisers: filledOrganisers || undefined,
+    registration: filledParticipants || undefined,
+  };
 
   const formBody = (
     <>
-      <AdminModalPanel ref={panelRef} className="admin-modal__panel--wide" bare={fullPage}>
+      <AdminModalPanel ref={panelRef} className="admin-modal__panel--wide admin-modal__panel--event-form" bare={fullPage}>
         <header className="admin-event-modal__header">
-          <div>
+          <div className="admin-event-modal__header-copy">
             <p className="admin-event-modal__eyebrow">
               {shareMode ? 'Sdílený odkaz' : event ? 'Úprava akce' : 'Vytvoření akce'}
             </p>
             <h2 id="admin-event-form-title" className="admin-modal__title admin-event-modal__title">
               {shareMode ? 'Upravit akci' : event ? 'Upravit akci' : 'Nová akce'}
             </h2>
-            {shareMode && (
-              <p className="admin-event-modal__share-note">
-                Upravujete akci přes zabezpečený odkaz. Změny se uloží přímo na web.
-              </p>
-            )}
+            <p className="admin-event-modal__lede">
+              {shareMode
+                ? 'Upravujete akci přes zabezpečený odkaz. Změny se uloží přímo na web.'
+                : 'Projděte záložky a doplňte, co návštěvníci uvidí na webu.'}
+            </p>
           </div>
         </header>
 
         <form className={`admin-form admin-form--event${calendarOnlyUi ? ' admin-form--event-calendar-only' : ''}`} onSubmit={handleSubmit}>
           {!calendarOnlyUi && (
-            <EventFormTabs
+            <AdminTabs
+              idPrefix="event"
+              label="Sekce formuláře akce"
+              tabs={visibleTabs}
               activeTab={activeTab}
               onChange={handleTabChange}
               attentionTabs={attentionTabs}
-              tabs={visibleTabs}
+              badges={tabBadges}
             />
           )}
 
           <div className="admin-event-tabs__panels">
-            <TabPanel id="basic" activeTab={calendarOnlyUi ? 'basic' : activeTab}>
+            <AdminTabPanel id="basic" idPrefix="event" activeTab={calendarOnlyUi ? 'basic' : activeTab} direction={tabDirection}>
               <div className="admin-event-tab">
-                <TabBlock>
+                <TabBlock title="O akci" hint="Název, adresa, razítko a kategorie." accent="identity">
                   <FieldGroup label="Název akce" required>
                     <input
                       type="text"
@@ -784,6 +794,17 @@ export default function AdminEventFormModal({
                       }}
                       placeholder="letni-setkani-popcorn"
                       required
+                    />
+                  </FieldGroup>
+                  <FieldGroup
+                    label="Razítko"
+                    hint="Volitelné. Ikona se zobrazí na kartě akce a na stránce akce."
+                  >
+                    <EventStampSelect
+                      id="event-stamp"
+                      value={form.stampId || ''}
+                      onChange={(stampId) => updateField('stampId', stampId)}
+                      disabled={saving}
                     />
                   </FieldGroup>
                   <FieldGroup label="Kategorie akce">
@@ -875,7 +896,7 @@ export default function AdminEventFormModal({
                   </div>
                 </TabBlock>
 
-                <TabBlock title="Termín">
+                <TabBlock title="Termín" hint="Kdy akce začíná a končí." accent="dates">
                   <div className="admin-form__row admin-form__row--dates">
                     <FieldGroup label="Datum začátku" required>
                       <input
@@ -918,7 +939,7 @@ export default function AdminEventFormModal({
 
                 {!calendarOnlyUi && (
                   <>
-                <TabBlock title="Místo a cena">
+                <TabBlock title="Místo a cena" hint="Kde se potkáte a kolik to stojí." accent="place">
                   <div className="admin-form__row">
                     <FieldGroup label="Místo">
                       <input
@@ -958,7 +979,7 @@ export default function AdminEventFormModal({
                   </FieldGroup>
                 </TabBlock>
 
-                <TabBlock title="Popis" hint="Text pro nadcházející akce — formátování, odkazy a seznamy včetně vnořených úrovní.">
+                <TabBlock title="Popis" hint="Text pro nadcházející akce — formátování, odkazy a seznamy včetně vnořených úrovní." accent="copy">
                   <RichTextEditor
                     id="event-description"
                     value={form.description}
@@ -968,7 +989,7 @@ export default function AdminEventFormModal({
                   />
                 </TabBlock>
 
-                <TabBlock title="Titulní fotka" hint="Zobrazí se na kartě akce. Bez fotky se použije automatická textura.">
+                <TabBlock title="Titulní fotka" hint="Zobrazí se na kartě akce. Bez fotky se použije automatická textura." accent="media">
                   <EventCoverUpload
                     coverImage={form.coverImage}
                     coverPublicId={form.coverPublicId}
@@ -993,7 +1014,7 @@ export default function AdminEventFormModal({
                   />
                 </TabBlock>
 
-                <TabBlock title="Propagační materiály" hint="Obrázky pro nadcházející akci — zobrazí se v galerii na stránce akce vedle titulní fotky.">
+                <TabBlock title="Propagační materiály" hint="Obrázky pro nadcházející akci — zobrazí se v galerii na stránce akce vedle titulní fotky." accent="media">
                   <EventImageUploadList
                     images={form.promoImages}
                     maxCount={EVENT_PROMO_MAX}
@@ -1009,15 +1030,17 @@ export default function AdminEventFormModal({
                   </>
                 )}
               </div>
-            </TabPanel>
+            </AdminTabPanel>
 
             {!calendarOnlyUi && (
             <>
-            <TabPanel id="organisers" activeTab={activeTab}>
+            <AdminTabPanel id="organisers" idPrefix="event" activeTab={activeTab} direction={tabDirection}>
               <div className="admin-event-tab">
-                <p className="admin-event-tab__intro">
-                  Volitelně přidejte organizátory (0–{MAX_ORGANISERS}). U vyplněného záznamu jsou jméno a e-mail povinné.
-                </p>
+                <TabBlock
+                  title="Organizátoři"
+                  hint={`Volitelně přidejte organizátory (0–${MAX_ORGANISERS}). U vyplněného záznamu je jméno povinné.`}
+                  accent="people"
+                >
 
                 {!shareMode && organiserPresets.length > 0 && (
                   <div className="admin-form__presets">
@@ -1123,12 +1146,22 @@ export default function AdminEventFormModal({
                         </FieldGroup>
                       </div>
                       <div className="admin-form__row">
-                        <FieldGroup label="E-mail" required>
+                        <FieldGroup label="Ročník Zapalovače">
                           <input
-                            type="email"
+                            type="text"
                             className="admin-form__input"
+                            value={organiser.zapalovacYear || ''}
+                            onChange={(e) => updateOrganiser(index, 'zapalovacYear', e.target.value)}
+                            placeholder="např. 2022"
+                            inputMode="numeric"
+                          />
+                        </FieldGroup>
+                      </div>
+                      <div className="admin-form__row">
+                        <FieldGroup label="E-mail">
+                          <AdminOrganiserEmailField
                             value={organiser.email}
-                            onChange={(e) => updateOrganiser(index, 'email', e.target.value)}
+                            onChange={(email) => updateOrganiser(index, 'email', email)}
                           />
                         </FieldGroup>
                         <FieldGroup label="Telefon">
@@ -1184,12 +1217,13 @@ export default function AdminEventFormModal({
                     </div>
                   ))}
                 </div>
+                </TabBlock>
               </div>
-            </TabPanel>
+            </AdminTabPanel>
 
-            <TabPanel id="registration" activeTab={activeTab}>
+            <AdminTabPanel id="registration" idPrefix="event" activeTab={activeTab} direction={tabDirection}>
               <div className="admin-event-tab">
-                <TabBlock title="Přihláška" hint="Externí odkaz pro tlačítko Přihlásit se.">
+                <TabBlock title="Přihláška" hint="Externí odkaz pro tlačítko Přihlásit se." accent="signup">
                   <FieldGroup label="Odkaz na přihlášku">
                     <input
                       type="url"
@@ -1201,7 +1235,7 @@ export default function AdminEventFormModal({
                   </FieldGroup>
                 </TabBlock>
 
-                <TabBlock title="Účastníci" hint="Volitelný seznam jmen pro zobrazení na stránce akce. Pořadí přetáhněte za úchyt.">
+                <TabBlock title="Účastníci" hint="Volitelný seznam jmen pro zobrazení na stránce akce. Pořadí přetáhněte za úchyt." accent="people">
                   <div className="admin-form__repeatable admin-form__repeatable--participants">
                     <div className="admin-form__repeatable-head">
                       <span className="admin-form__repeatable-count admin-form__repeatable-count--participants">
@@ -1235,11 +1269,11 @@ export default function AdminEventFormModal({
                   </div>
                 </TabBlock>
               </div>
-            </TabPanel>
+            </AdminTabPanel>
 
-            <TabPanel id="past" activeTab={activeTab}>
+            <AdminTabPanel id="past" idPrefix="event" activeTab={activeTab} direction={tabDirection}>
               <div className="admin-event-tab">
-                <TabBlock title="Zápis z akce" hint="Obsah pro proběhlé akce — formátování, seznamy, odkazy a YouTube videa.">
+                <TabBlock title="Zápis z akce" hint="Obsah pro proběhlé akce — formátování, seznamy, odkazy a YouTube videa." accent="copy">
                   <RichTextEditor
                     id="event-report"
                     value={form.report}
@@ -1249,7 +1283,7 @@ export default function AdminEventFormModal({
                   />
                 </TabBlock>
 
-                <TabBlock title="Galerie" hint="Odkaz na složku s fotografiemi z akce a výběr nejlepších fotek pro stránku proběhlé akce.">
+                <TabBlock title="Galerie" hint="Odkaz na složku s fotografiemi z akce a výběr nejlepších fotek pro stránku proběhlé akce." accent="media">
                   <FieldGroup label="Odkaz na galerii">
                     <input
                       type="url"
@@ -1275,16 +1309,16 @@ export default function AdminEventFormModal({
                   </FieldGroup>
                 </TabBlock>
               </div>
-            </TabPanel>
+            </AdminTabPanel>
 
             {!shareMode && (
-              <TabPanel id="sharing" activeTab={activeTab}>
+              <AdminTabPanel id="sharing" idPrefix="event" activeTab={activeTab} direction={tabDirection}>
                 <AdminEventSharingTab
                   eventId={event?.id}
                   isDraft={event?.isDraft}
                   onEnsureEventId={handleEnsureEventId}
                 />
-              </TabPanel>
+              </AdminTabPanel>
             )}
             </>
             )}
@@ -1474,7 +1508,7 @@ export default function AdminEventFormModal({
 
   return createPortal(
     <div
-      className={`admin-modal admin-modal--wide${visible ? ' admin-modal--visible' : ''}`}
+      className={`admin-modal admin-modal--wide admin-modal--event-form${visible ? ' admin-modal--visible' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-event-form-title"

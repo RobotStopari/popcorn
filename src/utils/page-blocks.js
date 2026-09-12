@@ -18,17 +18,19 @@ import {
   PAGE_BLOCK_IMAGE_TEXT_SHARE_DEFAULT,
   PAGE_BLOCK_IMAGE_TEXT_SHARE_MAX,
   PAGE_BLOCK_IMAGE_TEXT_SHARE_MIN,
+  PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT,
+  PAGE_BLOCK_BUTTON_TEXT_SHARE_MAX,
+  PAGE_BLOCK_BUTTON_TEXT_SHARE_MIN,
   PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT,
   PAGE_BLOCK_REFERENCE_GAP_DEFAULT,
   PAGE_BLOCK_REFERENCE_WIDE_TEXT_THRESHOLD,
   PAGE_BLOCK_IMAGE_TEXT_GAP_MAX,
   PAGE_BLOCK_IMAGE_TEXT_GAP_MIN,
-  PAGE_BLOCK_SPACE_HEIGHT_DEFAULT,
-  PAGE_BLOCK_SPACE_HEIGHT_MAX,
-  PAGE_BLOCK_SPACE_HEIGHT_MIN,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN,
+  PAGE_BLOCK_GAP_AFTER_DEFAULT,
+  PAGE_BLOCK_GAP_AFTER_MAX,
+  PAGE_BLOCK_GAP_AFTER_MIN,
+  LEGACY_PAGE_BLOCK_NEGATIVE_SPACE,
+  LEGACY_PAGE_BLOCK_SPACE,
   PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT,
   PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS,
   PAGE_BLOCK_WIDE_IMAGE_MAX_REM,
@@ -84,22 +86,25 @@ function clampHeightVh(value) {
   return Math.min(PARALLAX_BAND_HEIGHT_MAX, Math.max(PARALLAX_BAND_HEIGHT_MIN, Math.round(parsed)));
 }
 
-function clampSpaceHeightRem(value) {
+export function clampGapAfterRem(value) {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return PAGE_BLOCK_SPACE_HEIGHT_DEFAULT;
+  if (!Number.isFinite(parsed)) return PAGE_BLOCK_GAP_AFTER_DEFAULT;
   return Math.min(
-    PAGE_BLOCK_SPACE_HEIGHT_MAX,
-    Math.max(PAGE_BLOCK_SPACE_HEIGHT_MIN, Math.round(parsed * 2) / 2),
+    PAGE_BLOCK_GAP_AFTER_MAX,
+    Math.max(PAGE_BLOCK_GAP_AFTER_MIN, Math.round(parsed * 4) / 4),
   );
 }
 
-function clampNegativeSpacePullRem(value) {
+function legacySpaceHeightRem(value) {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT;
-  return Math.min(
-    PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX,
-    Math.max(PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN, Math.round(parsed * 2) / 2),
-  );
+  if (!Number.isFinite(parsed)) return 3;
+  return Math.min(12, Math.max(0.5, Math.round(parsed * 2) / 2));
+}
+
+function legacyNegativeSpacePullRem(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 1.5;
+  return Math.min(8, Math.max(0.5, Math.round(parsed * 2) / 2));
 }
 
 function clampImageLayoutWidthPercent(value, { defaultValue = PAGE_BLOCK_WIDE_IMAGE_WIDTH_DEFAULT } = {}) {
@@ -126,6 +131,15 @@ function clampImageTextSharePercent(value) {
   return Math.min(
     PAGE_BLOCK_IMAGE_TEXT_SHARE_MAX,
     Math.max(PAGE_BLOCK_IMAGE_TEXT_SHARE_MIN, Math.round(parsed)),
+  );
+}
+
+function clampButtonTextSharePercent(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT;
+  return Math.min(
+    PAGE_BLOCK_BUTTON_TEXT_SHARE_MAX,
+    Math.max(PAGE_BLOCK_BUTTON_TEXT_SHARE_MIN, Math.round(parsed)),
   );
 }
 
@@ -160,6 +174,17 @@ function normalizeImageTextBlock(raw = {}) {
     gapRem: clampImageTextGapRem(raw.gapRem),
     lightboxEnabled: normalizeLightboxEnabled(raw.lightboxEnabled),
     borderEnabled: normalizeBorderEnabled(raw.borderEnabled),
+  };
+}
+
+function normalizeButtonTextBlock(raw = {}) {
+  return {
+    html: typeof raw.html === 'string' ? raw.html : '',
+    reversed: Boolean(raw.reversed),
+    align: normalizeAlignment(raw.align),
+    buttonSharePercent: clampButtonTextSharePercent(raw.buttonSharePercent),
+    gapRem: clampImageTextGapRem(raw.gapRem),
+    ...normalizePageBlockButton(raw),
   };
 }
 
@@ -238,6 +263,17 @@ export function getImageTextGridStyle({
   return {
     '--image-text-image-share': `${share}%`,
     '--image-text-gap': `${clampImageTextGapRem(gapRem)}rem`,
+  };
+}
+
+export function getButtonTextGridStyle({
+  buttonSharePercent = PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT,
+  gapRem = PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT,
+} = {}) {
+  const share = clampButtonTextSharePercent(buttonSharePercent);
+  return {
+    '--button-text-button-share': `${share}%`,
+    '--button-text-gap': `${clampImageTextGapRem(gapRem)}rem`,
   };
 }
 
@@ -403,18 +439,9 @@ export function carouselCardHasContent(card) {
   );
 }
 
-export function getSpaceBlockStyle(heightRem = PAGE_BLOCK_SPACE_HEIGHT_DEFAULT) {
-  return {
-    height: `${clampSpaceHeightRem(heightRem)}rem`,
-  };
-}
-
-export function getNegativeSpaceBlockStyle(pullRem = PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT) {
-  const pull = clampNegativeSpacePullRem(pullRem);
-  return {
-    marginTop: `calc(-1 * ${pull}rem)`,
-    height: 0,
-  };
+export function getBlockGapAfterStyle(gapAfterRem = PAGE_BLOCK_GAP_AFTER_DEFAULT) {
+  const gap = clampGapAfterRem(gapAfterRem);
+  return { marginBottom: `${gap}rem` };
 }
 
 export function stripMedallionDescriptionPreview(html) {
@@ -469,148 +496,232 @@ function normalizeBlock(raw) {
 
   const id = typeof raw.id === 'string' && raw.id ? raw.id : createBlockId();
   const type = raw.type;
+  const gapAfterRem = clampGapAfterRem(raw.gapAfterRem);
+  let core = null;
 
   switch (type) {
     case PAGE_BLOCK_TYPES.paragraph:
-      return {
+      core = {
         id,
         type,
         html: typeof raw.html === 'string' ? raw.html : '',
         align: normalizeAlignment(raw.align),
       };
+      break;
     case PAGE_BLOCK_TYPES.h1:
-      return {
+      core = {
         id,
         type,
         text: typeof raw.text === 'string' ? raw.text : '',
       };
+      break;
     case PAGE_BLOCK_TYPES.h2:
-      return {
+      core = {
         id,
         type,
         text: typeof raw.text === 'string' ? raw.text : '',
         align: normalizeAlignment(raw.align),
       };
+      break;
     case PAGE_BLOCK_TYPES.citation:
-      return {
+      core = {
         id,
         type,
         text: typeof raw.text === 'string' ? raw.text : '',
         bold: normalizeCitationBold(raw.bold),
       };
+      break;
     case PAGE_BLOCK_TYPES.imageText:
-      return {
+      core = {
         id,
         type,
         ...normalizeImageTextBlock(raw),
       };
+      break;
+    case PAGE_BLOCK_TYPES.buttonText:
+      core = {
+        id,
+        type,
+        ...normalizeButtonTextBlock(raw),
+      };
+      break;
     case PAGE_BLOCK_TYPES.reference:
-      return {
+      core = {
         id,
         type,
         ...normalizeReferenceBlock(raw),
       };
+      break;
     case PAGE_BLOCK_TYPES.divider:
-      return { id, type };
+      core = { id, type };
+      break;
     case PAGE_BLOCK_TYPES.upcomingEvents:
     case PAGE_BLOCK_TYPES.pastEvents:
     case PAGE_BLOCK_TYPES.calendar:
     case PAGE_BLOCK_TYPES.instagramFeed:
+      core = { id, type };
+      break;
     case PAGE_BLOCK_TYPES.randomLink:
     case PAGE_BLOCK_TYPES.randomBook:
-      return {
+      core = {
         id,
         type,
         align: normalizeRandomPickAlign(raw.align),
       };
+      break;
     case PAGE_BLOCK_TYPES.socials:
-      return {
+      core = {
         id,
         type,
         ...normalizeParallaxBandFields(raw),
         links: normalizeSocialLinks(raw.links),
       };
+      break;
+    case PAGE_BLOCK_TYPES.socialButtons:
+      core = {
+        id,
+        type,
+        links: normalizeSocialLinks(raw.links),
+      };
+      break;
     case PAGE_BLOCK_TYPES.parallaxImage:
-      return {
+      core = {
         id,
         type,
         ...normalizeParallaxBandFields(raw),
       };
+      break;
     case PAGE_BLOCK_TYPES.wideImage:
-      return {
+      core = {
         id,
         type,
         ...normalizeWideImageFields(raw),
       };
+      break;
     case PAGE_BLOCK_TYPES.imageTriplet:
-      return {
+      core = {
         id,
         type,
         ...normalizeImageTripletBlock(raw),
       };
+      break;
     case PAGE_BLOCK_TYPES.button:
-      return {
+      core = {
         id,
         type,
         ...normalizePageBlockButton(raw),
       };
+      break;
     case PAGE_BLOCK_TYPES.buttonPair:
-      return {
+      core = {
         id,
         type,
         buttons: normalizeButtonPair(raw.buttons),
       };
+      break;
     case PAGE_BLOCK_TYPES.youtube:
-      return {
+      core = {
         id,
         type,
         ...normalizeYoutubeFields(raw),
       };
-    case PAGE_BLOCK_TYPES.space:
-      return {
-        id,
-        type,
-        heightRem: clampSpaceHeightRem(raw.heightRem),
-      };
-    case PAGE_BLOCK_TYPES.negativeSpace:
-      return {
-        id,
-        type,
-        pullRem: clampNegativeSpacePullRem(raw.pullRem),
-      };
+      break;
     case PAGE_BLOCK_TYPES.citationSmall:
-      return {
+      core = {
         id,
         type,
         text: typeof raw.text === 'string' ? raw.text : '',
         bold: normalizeCitationBold(raw.bold),
       };
+      break;
     case PAGE_BLOCK_TYPES.medallions:
-      return {
+      core = {
         id,
         type,
         people: normalizeMedallionPeople(raw.people),
       };
+      break;
     case PAGE_BLOCK_TYPES.cardCarousel:
-      return {
+      core = {
         id,
         type,
         cards: normalizeCarouselCards(raw.cards),
       };
+      break;
     default:
       return null;
   }
+
+  return { ...core, gapAfterRem };
 }
 
 export function normalizePageBlocks(blocks, { maxBlocks } = {}) {
   if (!Array.isArray(blocks)) return [];
 
   const limit = maxBlocks ?? MAX_BLOCKS;
+  const result = [];
+  let pendingGap = 0;
 
-  return blocks
-    .map((block) => normalizeBlock(block))
-    .filter(Boolean)
-    .slice(0, limit);
+  for (const raw of blocks) {
+    if (!raw || typeof raw !== 'object' || !raw.type) continue;
+
+    if (raw.type === LEGACY_PAGE_BLOCK_SPACE || raw.type === 'space') {
+      pendingGap += legacySpaceHeightRem(raw.heightRem);
+      continue;
+    }
+
+    if (raw.type === LEGACY_PAGE_BLOCK_NEGATIVE_SPACE || raw.type === 'negativeSpace') {
+      pendingGap -= legacyNegativeSpacePullRem(raw.pullRem);
+      continue;
+    }
+
+    const normalized = normalizeBlock(raw);
+    if (!normalized) continue;
+
+    if (result.length > 0 && pendingGap !== 0) {
+      const prev = result[result.length - 1];
+      result[result.length - 1] = {
+        ...prev,
+        gapAfterRem: clampGapAfterRem((prev.gapAfterRem || 0) + pendingGap),
+      };
+    }
+    pendingGap = 0;
+
+    result.push(normalized);
+    if (result.length >= limit) break;
+  }
+
+  return result;
+}
+
+/** Deep-copy a block with fresh ids (block + nested people/cards). */
+export function duplicatePageBlock(block) {
+  if (!block || typeof block !== 'object' || !block.type) return null;
+
+  let raw;
+  try {
+    raw = JSON.parse(JSON.stringify(block));
+  } catch {
+    return null;
+  }
+
+  raw.id = createBlockId();
+
+  if (Array.isArray(raw.people)) {
+    raw.people = raw.people.map((person) => ({
+      ...person,
+      id: createBlockId(),
+    }));
+  }
+
+  if (Array.isArray(raw.cards)) {
+    raw.cards = raw.cards.map((card) => ({
+      ...card,
+      id: createBlockId(),
+    }));
+  }
+
+  return normalizeBlock(raw);
 }
 
 export function createBlock(type, data = {}) {
@@ -682,6 +793,20 @@ export function createBlock(type, data = {}) {
         lightboxEnabled: true,
         borderEnabled: true,
       };
+    case PAGE_BLOCK_TYPES.buttonText:
+      return {
+        id: createBlockId(),
+        type,
+        html: data.html || '<p></p>',
+        reversed: Boolean(data.reversed),
+        align: normalizeAlignment(data.align),
+        buttonSharePercent: PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT,
+        gapRem: PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT,
+        label: data.label || '',
+        href: data.href || '',
+        openInNewTab: Boolean(data.openInNewTab),
+        color: normalizePageBlockButtonColor(data.color),
+      };
     case PAGE_BLOCK_TYPES.divider:
       return { id: createBlockId(), type };
     case PAGE_BLOCK_TYPES.wideImage:
@@ -726,18 +851,6 @@ export function createBlock(type, data = {}) {
         videoId: '',
         videoUrl: '',
         title: '',
-      };
-    case PAGE_BLOCK_TYPES.space:
-      return {
-        id: createBlockId(),
-        type,
-        heightRem: PAGE_BLOCK_SPACE_HEIGHT_DEFAULT,
-      };
-    case PAGE_BLOCK_TYPES.negativeSpace:
-      return {
-        id: createBlockId(),
-        type,
-        pullRem: PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
       };
     case PAGE_BLOCK_TYPES.medallions:
       return {
@@ -914,6 +1027,8 @@ export function isBlockEmpty(block) {
       return !block.imageUrl?.trim() && !block.text?.trim();
     case PAGE_BLOCK_TYPES.imageText:
       return !block.imageUrl && !stripBlockHtml(block.html);
+    case PAGE_BLOCK_TYPES.buttonText:
+      return (!block.label?.trim() || !block.href?.trim()) && !stripBlockHtml(block.html);
     case PAGE_BLOCK_TYPES.wideImage:
       return !block.imageUrl?.trim();
     case PAGE_BLOCK_TYPES.imageTriplet:
@@ -924,9 +1039,6 @@ export function isBlockEmpty(block) {
       return !(block.buttons || []).some((button) => button?.label?.trim() && button?.href?.trim());
     case PAGE_BLOCK_TYPES.youtube:
       return !block.videoId?.trim();
-    case PAGE_BLOCK_TYPES.space:
-    case PAGE_BLOCK_TYPES.negativeSpace:
-      return false;
     case PAGE_BLOCK_TYPES.medallions:
       return !(block.people || []).some((person) => person?.name?.trim());
     case PAGE_BLOCK_TYPES.cardCarousel:

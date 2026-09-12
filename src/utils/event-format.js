@@ -107,12 +107,13 @@ export function normalizeEvent(raw) {
     .map((item) => ({
       name: item.name?.trim() || '',
       nick: item.nick?.trim() || '',
+      zapalovacYear: item.zapalovacYear?.trim() || '',
       email: item.email?.trim() || '',
       phone: item.phone?.trim() || '',
       instagram: item.instagram?.trim() || '',
       facebook: item.facebook?.trim() || '',
     }))
-    .filter((item) => item.name || item.email);
+    .filter((item) => item.name);
 
   const participants = (raw.participants || [])
     .map((item) => (typeof item === 'string' ? item : item.name)?.trim())
@@ -146,6 +147,7 @@ export function normalizeEvent(raw) {
     promoImages: normalizeEventImageList(raw.promoImages, 10),
     galleryPicks: normalizeEventImageList(raw.galleryPicks, 10),
     category: normalizeEventCategory(raw.category),
+    stampId: typeof raw.stampId === 'string' ? raw.stampId.trim().slice(0, 64) : '',
     ...(function normalizeCategoryFields() {
       const externalPage = normalizeExternalPageFields(raw.category, raw);
       return {
@@ -221,7 +223,15 @@ export function toCalendarEvent(event) {
 }
 
 export function createEmptyOrganiser() {
-  return { name: '', nick: '', email: '', phone: '', instagram: '', facebook: '' };
+  return {
+    name: '',
+    nick: '',
+    zapalovacYear: '',
+    email: '',
+    phone: '',
+    instagram: '',
+    facebook: '',
+  };
 }
 
 function createParticipantId() {
@@ -271,6 +281,7 @@ export function eventToFormState(event) {
       promoImages: [],
       galleryPicks: [],
       category: DEFAULT_EVENT_CATEGORY,
+      stampId: '',
       externalPageEnabled: false,
       externalPageUrl: '',
       calendarOnly: false,
@@ -289,7 +300,13 @@ export function eventToFormState(event) {
     placeLng: event.placeLng ?? '',
     price: event.price === '' || event.price === null ? '' : String(event.price),
     description: event.description || '',
-    organisers: event.organisers?.length ? event.organisers : [],
+    organisers: event.organisers?.length
+      ? event.organisers.map((item) => ({
+        ...createEmptyOrganiser(),
+        ...item,
+        zapalovacYear: item.zapalovacYear || '',
+      }))
+      : [],
     participants: event.participants?.map(toFormParticipant) || [],
     registrationLink: event.registrationLink || '',
     report: event.report || '',
@@ -301,6 +318,7 @@ export function eventToFormState(event) {
     promoImages: event.promoImages || [],
     galleryPicks: event.galleryPicks || [],
     category: normalizeEventCategory(event.category),
+    stampId: event.stampId || '',
     externalPageEnabled: event.externalPageEnabled === true,
     externalPageUrl: event.externalPageUrl || '',
     calendarOnly: event.calendarOnly === true,
@@ -330,15 +348,22 @@ export function formStateToPayload(form) {
     price: form.price.trim(),
     description: form.description,
     organisers: form.organisers
-      .map((item) => ({
-        name: item.name.trim(),
-        nick: item.nick.trim(),
-        email: item.email.trim(),
-        phone: item.phone.trim(),
-        instagram: item.instagram.trim(),
-        facebook: item.facebook.trim(),
-      }))
-      .filter((item) => item.name || item.email),
+      .map((item) => {
+        const email = item.email.trim();
+        const at = email.lastIndexOf('@');
+        const safeEmail = at > 0 && at < email.length - 1 ? email : '';
+
+        return {
+          name: item.name.trim(),
+          nick: item.nick.trim(),
+          zapalovacYear: item.zapalovacYear?.trim() || '',
+          email: safeEmail,
+          phone: item.phone.trim(),
+          instagram: item.instagram.trim(),
+          facebook: item.facebook.trim(),
+        };
+      })
+      .filter((item) => item.name),
     participants: form.participants
       .map((item) => ({ name: item.name.trim() }))
       .filter((item) => item.name),
@@ -353,6 +378,7 @@ export function formStateToPayload(form) {
     promoImages: form.promoImages,
     galleryPicks: form.galleryPicks,
     category,
+    stampId: typeof form.stampId === 'string' ? form.stampId.trim().slice(0, 64) : '',
     externalPageEnabled,
     externalPageUrl,
     calendarOnly,

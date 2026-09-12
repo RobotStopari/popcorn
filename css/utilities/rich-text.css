@@ -13,3 +13,23 @@
 .site-notification-card__text * {
   font-family: inherit !important;
 }
+
+.rich-text-color {
+  font-weight: 800;
+}
+
+.rich-text-color--black {
+  color: var(--black);
+}
+
+.rich-text-color--yellow {
+  color: var(--yellow);
+}
+
+.rich-text-color--red {
+  color: var(--red);
+}
+
+.rich-text-color--blue {
+  color: var(--blue);
+}

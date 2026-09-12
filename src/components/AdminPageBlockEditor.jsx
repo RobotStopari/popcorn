@@ -12,16 +12,13 @@ import {
   PAGE_BLOCK_IMAGE_TEXT_SHARE_DEFAULT,
   PAGE_BLOCK_IMAGE_TEXT_SHARE_MAX,
   PAGE_BLOCK_IMAGE_TEXT_SHARE_MIN,
+  PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT,
+  PAGE_BLOCK_BUTTON_TEXT_SHARE_MAX,
+  PAGE_BLOCK_BUTTON_TEXT_SHARE_MIN,
   PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT,
   PAGE_BLOCK_IMAGE_TEXT_GAP_MAX,
   PAGE_BLOCK_IMAGE_TEXT_GAP_MIN,
   PAGE_BLOCK_REFERENCE_GAP_DEFAULT,
-  PAGE_BLOCK_SPACE_HEIGHT_DEFAULT,
-  PAGE_BLOCK_SPACE_HEIGHT_MAX,
-  PAGE_BLOCK_SPACE_HEIGHT_MIN,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX,
-  PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN,
   PAGE_BLOCK_RANDOM_PICK_ALIGNMENTS,
   PAGE_BLOCK_RANDOM_PICK_ALIGN_DEFAULT,
   PAGE_BLOCK_WIDE_IMAGE_MAX_REM,
@@ -189,23 +186,29 @@ function AlignmentPicker({ value, onChange }) {
   );
 }
 
-function LayoutPicker({ reversed, onChange }) {
+function LayoutPicker({
+  reversed,
+  onChange,
+  leftLabel = 'Obrázek vlevo',
+  rightLabel = 'Obrázek vpravo',
+  ariaLabel = 'Rozložení obrázku a textu',
+}) {
   return (
     <BlockEditorField label="Rozložení">
-      <div className="admin-page-block-segment admin-page-block-segment--two" role="group" aria-label="Rozložení obrázku a textu">
+      <div className="admin-page-block-segment admin-page-block-segment--two" role="group" aria-label={ariaLabel}>
         <button
           type="button"
           className={`admin-page-block-segment__btn${!reversed ? ' is-active' : ''}`}
           onClick={() => onChange(false)}
         >
-          Obrázek vlevo
+          {leftLabel}
         </button>
         <button
           type="button"
           className={`admin-page-block-segment__btn${reversed ? ' is-active' : ''}`}
           onClick={() => onChange(true)}
         >
-          Obrázek vpravo
+          {rightLabel}
         </button>
       </div>
     </BlockEditorField>
@@ -431,6 +434,68 @@ export default function AdminPageBlockEditor({
     );
   }
 
+  if (block.type === PAGE_BLOCK_TYPES.buttonText) {
+    const buttonSharePercent = block.buttonSharePercent ?? PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT;
+    const gapRem = block.gapRem ?? PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT;
+
+    return (
+      <div className="admin-page-block-editor">
+        <BlockEditorSection title="Tlačítko" hint="Odkaz vedle textu — stejné ovládání jako u samotného tlačítka.">
+          <AdminPageBlockButtonFields
+            prefix={`block-${block.id}`}
+            button={block}
+            onChange={(button) => update(button)}
+          />
+        </BlockEditorSection>
+
+        <BlockEditorSection title="Text a rozložení">
+          <LayoutPicker
+            reversed={block.reversed}
+            onChange={(reversed) => update({ reversed })}
+            leftLabel="Tlačítko vlevo"
+            rightLabel="Tlačítko vpravo"
+            ariaLabel="Rozložení tlačítka a textu"
+          />
+          <BlockEditorRange
+            id={`block-${block.id}-button-text-share`}
+            label="Poměr"
+            value={buttonSharePercent}
+            min={PAGE_BLOCK_BUTTON_TEXT_SHARE_MIN}
+            max={PAGE_BLOCK_BUTTON_TEXT_SHARE_MAX}
+            step={1}
+            formatValue={(value) => `${value} % tlačítko · ${100 - value} % text`}
+            scaleStart={`${PAGE_BLOCK_BUTTON_TEXT_SHARE_MIN} %`}
+            scaleMiddle={`Výchozí ${PAGE_BLOCK_BUTTON_TEXT_SHARE_DEFAULT} %`}
+            scaleEnd={`${PAGE_BLOCK_BUTTON_TEXT_SHARE_MAX} %`}
+            onChange={(value) => update({ buttonSharePercent: value })}
+            ariaLabel="Poměr šířky tlačítka a textu"
+          />
+          <BlockEditorRange
+            id={`block-${block.id}-button-text-gap`}
+            label="Mezera mezi tlačítkem a textem"
+            value={gapRem}
+            min={PAGE_BLOCK_IMAGE_TEXT_GAP_MIN}
+            max={PAGE_BLOCK_IMAGE_TEXT_GAP_MAX}
+            step={0.25}
+            formatValue={(value) => `${value} rem`}
+            scaleStart={`${PAGE_BLOCK_IMAGE_TEXT_GAP_MIN} rem`}
+            scaleMiddle={`Výchozí ${PAGE_BLOCK_IMAGE_TEXT_GAP_DEFAULT} rem`}
+            scaleEnd={`${PAGE_BLOCK_IMAGE_TEXT_GAP_MAX} rem`}
+            onChange={(value) => update({ gapRem: value })}
+            ariaLabel="Mezera mezi tlačítkem a textem v rem"
+          />
+          <AlignmentPicker value={block.align} onChange={(align) => update({ align })} />
+          <RichTextEditor
+            value={block.html}
+            onChange={(html) => update({ html })}
+            features="pageParagraph"
+            label="Text vedle tlačítka"
+          />
+        </BlockEditorSection>
+      </div>
+    );
+  }
+
   if (block.type === PAGE_BLOCK_TYPES.socials) {
     return (
       <div className="admin-page-block-editor admin-page-block-editor--widget">
@@ -449,6 +514,22 @@ export default function AdminPageBlockEditor({
           compact
           title="Sociální tlačítka"
           hint="Zapněte až 4 tlačítka. Odkazy (kromě Web) se berou z Nastavení webu."
+        >
+          <AdminSocialLinksEditor
+            links={block.links}
+            onChange={update}
+          />
+        </BlockEditorSection>
+      </div>
+    );
+  }
+
+  if (block.type === PAGE_BLOCK_TYPES.socialButtons) {
+    return (
+      <div className="admin-page-block-editor">
+        <BlockEditorSection
+          title="Sociální tlačítka"
+          hint="Zapněte až 4 tlačítka v řadě. Odkazy (kromě Web) se berou z Nastavení webu."
         >
           <AdminSocialLinksEditor
             links={block.links}
@@ -709,88 +790,6 @@ export default function AdminPageBlockEditor({
               placeholder="Např. Jak jsme natočili reportáž"
             />
           </BlockEditorField>
-        </BlockEditorSection>
-      </div>
-    );
-  }
-
-  if (block.type === PAGE_BLOCK_TYPES.space) {
-    const heightRem = block.heightRem ?? PAGE_BLOCK_SPACE_HEIGHT_DEFAULT;
-
-    return (
-      <div className="admin-page-block-editor">
-        <BlockEditorSection
-          title="Mezera"
-          hint="Prázdný bílý prostor pro vizuální oddělení sekcí."
-        >
-          <div className="admin-parallax-fields__height">
-            <div className="admin-parallax-fields__height-top">
-              <span className="admin-parallax-fields__height-label">Výška mezery</span>
-              <span className="admin-parallax-fields__height-value">{heightRem} rem</span>
-            </div>
-
-            <input
-              id={`block-${block.id}-space-height`}
-              type="range"
-              className="admin-parallax-fields__range"
-              min={PAGE_BLOCK_SPACE_HEIGHT_MIN}
-              max={PAGE_BLOCK_SPACE_HEIGHT_MAX}
-              step={0.5}
-              value={heightRem}
-              onChange={(event) => update({ heightRem: Number(event.target.value) })}
-              aria-valuemin={PAGE_BLOCK_SPACE_HEIGHT_MIN}
-              aria-valuemax={PAGE_BLOCK_SPACE_HEIGHT_MAX}
-              aria-valuenow={heightRem}
-              aria-label="Výška mezery v rem"
-            />
-
-            <div className="admin-parallax-fields__height-scale" aria-hidden="true">
-              <span>{PAGE_BLOCK_SPACE_HEIGHT_MIN} rem</span>
-              <span>Výchozí {PAGE_BLOCK_SPACE_HEIGHT_DEFAULT} rem</span>
-              <span>{PAGE_BLOCK_SPACE_HEIGHT_MAX} rem</span>
-            </div>
-          </div>
-        </BlockEditorSection>
-      </div>
-    );
-  }
-
-  if (block.type === PAGE_BLOCK_TYPES.negativeSpace) {
-    const pullRem = block.pullRem ?? PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT;
-
-    return (
-      <div className="admin-page-block-editor">
-        <BlockEditorSection
-          title="Záporná mezera"
-          hint="Zmenší vzdálenost mezi prvkem nad a pod touto mezerou. Vložte mezi dva bloky."
-        >
-          <div className="admin-parallax-fields__height">
-            <div className="admin-parallax-fields__height-top">
-              <span className="admin-parallax-fields__height-label">Zmenšení mezery</span>
-              <span className="admin-parallax-fields__height-value">−{pullRem} rem</span>
-            </div>
-
-            <input
-              id={`block-${block.id}-negative-space-pull`}
-              type="range"
-              className="admin-parallax-fields__range"
-              min={PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN}
-              max={PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX}
-              step={0.5}
-              value={pullRem}
-              onChange={(event) => update({ pullRem: Number(event.target.value) })}
-              aria-valuemin={PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN}
-              aria-valuemax={PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX}
-              aria-valuenow={pullRem}
-              aria-label="Zmenšení mezery v rem"
-            />
-
-            <div className="admin-parallax-fields__height-scale" aria-hidden="true">
-              <span>{PAGE_BLOCK_NEGATIVE_SPACE_PULL_MIN} rem</span>
-              <span>Výchozí {PAGE_BLOCK_NEGATIVE_SPACE_PULL_DEFAULT} rem</span>
-              <span>{PAGE_BLOCK_NEGATIVE_SPACE_PULL_MAX} rem</span>
-            </div>
-          </div>
         </BlockEditorSection>
       </div>
     );

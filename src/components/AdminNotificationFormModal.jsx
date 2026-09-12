@@ -10,6 +10,7 @@ import {
   validateNotificationForm,
 } from '../utils/notification-format';
 import { adminText } from '../utils/admin-text';
+import AdminFormBlock from './AdminFormBlock';
 import AdminModalPanel from './AdminModalPanel';
 import RichTextEditor from './RichTextEditor';
 
@@ -127,7 +128,7 @@ export default function AdminNotificationFormModal({
 
   return createPortal(
     <div
-      className={`admin-modal admin-modal--wide${visible ? ' admin-modal--visible' : ''}`}
+      className={`admin-modal admin-modal--wide admin-modal--event-form${visible ? ' admin-modal--visible' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-notification-form-title"
@@ -135,15 +136,33 @@ export default function AdminNotificationFormModal({
       <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
       <AdminModalPanel
         panelRef={panelRef}
-        className="admin-modal__panel--wide admin-modal__panel--notification-form"
+        className="admin-modal__panel--wide admin-modal__panel--event-form admin-modal__panel--notification-form"
       >
-        <h2 id="admin-notification-form-title" className="admin-modal__title">
-          {notification
-            ? adminText('notifications.form.editTitle')
-            : adminText('notifications.form.newTitle')}
-        </h2>
+        <header className="admin-event-modal__header">
+          <div className="admin-event-modal__header-copy">
+            <p className="admin-event-modal__eyebrow">
+              {notification
+                ? adminText('notifications.form.editEyebrow')
+                : adminText('notifications.form.newEyebrow')}
+            </p>
+            <h2 id="admin-notification-form-title" className="admin-modal__title admin-event-modal__title">
+              {notification
+                ? adminText('notifications.form.editTitle')
+                : adminText('notifications.form.newTitle')}
+            </h2>
+            <p className="admin-event-modal__lede">
+              {adminText('notifications.form.lede')}
+            </p>
+          </div>
+        </header>
 
-        <form id="admin-notification-form" className="admin-form admin-notification-form" onSubmit={handleSubmit}>
+        <form id="admin-notification-form" className="admin-form admin-form--event admin-notification-form" onSubmit={handleSubmit}>
+          <div className="admin-event-tab">
+          <AdminFormBlock
+            title={adminText('notifications.form.blockContent')}
+            hint={adminText('notifications.form.blockContentHint')}
+            accent="identity"
+          >
           <FieldGroup label={adminText('notifications.form.titleLabel')} required error={errors.title}>
             <input
               type="text"
@@ -163,9 +182,14 @@ export default function AdminNotificationFormModal({
               features="notificationBody"
             />
           </FieldGroup>
+          </AdminFormBlock>
 
+          <AdminFormBlock
+            title={adminText('notifications.form.blockSchedule')}
+            hint={adminText('notifications.form.blockScheduleHint')}
+            accent="dates"
+          >
           <div className="admin-form__group admin-notification-form__schedule">
-            <p className="admin-form__label">{adminText('notifications.form.scheduleLabel')}</p>
             <div className="admin-notification-form__schedule-panel">
               <div
                 className="admin-notification-form__schedule-modes"
@@ -321,7 +345,13 @@ export default function AdminNotificationFormModal({
               </div>
             </div>
           </div>
+          </AdminFormBlock>
 
+          <AdminFormBlock
+            title={adminText('notifications.form.blockLook')}
+            hint={adminText('notifications.form.blockLookHint')}
+            accent="media"
+          >
           <FieldGroup label={adminText('notifications.form.colorLabel')}>
             <div className="admin-notification-form__swatches">
               {NOTIFICATION_COLORS.map((color) => (
@@ -366,10 +396,14 @@ export default function AdminNotificationFormModal({
               ))}
             </div>
           </FieldGroup>
+          </AdminFormBlock>
 
+          <AdminFormBlock
+            title={adminText('notifications.form.blockCta')}
+            hint={adminText('notifications.form.ctaHint')}
+            accent="signup"
+          >
           <div className="admin-form__group admin-notification-form__cta">
-            <p className="admin-form__label">{adminText('notifications.form.ctaLabel')}</p>
-            <p className="admin-form__hint">{adminText('notifications.form.ctaHint')}</p>
             <FieldGroup label={adminText('notifications.form.ctaTextLabel')} error={errors.ctaLabel}>
               <input
                 type="text"
@@ -409,12 +443,14 @@ export default function AdminNotificationFormModal({
               </div>
             </FieldGroup>
           </div>
+          </AdminFormBlock>
+          </div>
 
           {(saveError || Object.keys(errors).length > 0) && (
-            <p className="admin-error">{saveError || adminText('notifications.form.validationFailed')}</p>
+            <p className="admin-error admin-form__error">{saveError || adminText('notifications.form.validationFailed')}</p>
           )}
 
-          <div className="admin-modal__actions admin-notification-form__actions">
+          <div className="admin-modal__actions admin-event-modal__actions">
             <button type="button" className="btn btn--outline" onClick={onClose} disabled={saving}>
               {adminText('common.cancel')}
             </button>

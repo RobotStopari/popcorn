@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  applyColorBold,
+  COLOR_BOLD_COLORS,
+  getActiveColorBold,
+  getColorBoldLabel,
+} from '../utils/rich-text-color-bold';
+import {
   exitYoutubeMarkerOnEnter,
   indentList,
   outdentList,
@@ -160,6 +166,7 @@ export default function RichTextEditor({
     newTab: true,
     isEdit: false,
   });
+  const [activeColorBold, setActiveColorBold] = useState(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -168,6 +175,17 @@ export default function RichTextEditor({
       editorRef.current.innerHTML = next;
     }
   }, [value]);
+
+  useEffect(() => {
+    if (!enabled.colorBold) return undefined;
+
+    const updateActiveColor = () => {
+      setActiveColorBold(getActiveColorBold(editorRef.current));
+    };
+
+    document.addEventListener('selectionchange', updateActiveColor);
+    return () => document.removeEventListener('selectionchange', updateActiveColor);
+  }, [enabled.colorBold]);
 
   const emitChange = () => {
     const editor = editorRef.current;
@@ -206,6 +224,23 @@ export default function RichTextEditor({
   const runCommand = (command, commandValue = null) => {
     editorRef.current?.focus();
     document.execCommand(command, false, commandValue);
+    emitChange();
+  };
+
+  const handleColorBold = (color) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const liveRange = captureEditorRange(editor);
+    const savedRange = lastRangeRef.current;
+    if (!liveRange && savedRange) {
+      restoreSelection(editor, savedRange);
+    }
+
+    applyColorBold(editor, color);
+    const nextRange = captureEditorRange(editor);
+    if (nextRange) lastRangeRef.current = nextRange;
+    setActiveColorBold(getActiveColorBold(editor));
     emitChange();
   };
 
@@ -394,7 +429,21 @@ export default function RichTextEditor({
           </label>
         )}
         <div className="rich-text__toolbar" role="toolbar" aria-label={label ? `Formátování: ${label}` : 'Formátování textu'}>
-          {enabled.bold && (
+          {enabled.colorBold && COLOR_BOLD_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`rich-text__btn rich-text__btn--bold rich-text__btn--color-bold rich-text__btn--color-bold-${color}${activeColorBold === color ? ' is-active' : ''}`}
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => handleColorBold(color)}
+              aria-label={getColorBoldLabel(color)}
+              aria-pressed={activeColorBold === color}
+              title={getColorBoldLabel(color)}
+            >
+              <strong>B</strong>
+            </button>
+          ))}
+          {enabled.bold && !enabled.colorBold && (
             <button type="button" className="rich-text__btn rich-text__btn--bold" onClick={() => runCommand('bold')} aria-label="Tučně">
               <strong>B</strong>
             </button>

@@ -4,12 +4,13 @@ import FlowConnector from '../FlowConnector';
 import InstagramFeed from '../InstagramFeed';
 import Lightbox from '../Lightbox';
 import ParallaxSection, { ParallaxSocialSection } from '../ParallaxSection';
+import BlockSocialLinks from '../BlockSocialLinks';
 import PastEvents from '../PastEvents';
 import UpcomingEvents from '../UpcomingEvents';
 import SectionLabel from '../SectionLabel';
 import { PAGE_BLOCK_TYPES } from '../../data/page-blocks';
 import { getEventCoverStyle } from '../../utils/event-cover-pattern';
-import { getImageTextGridStyle, getImageTripletBlockStyle, getNegativeSpaceBlockStyle, getReferenceGridStyle, getSpaceBlockStyle, getWideImageBlockStyle, isReferenceWideLayout } from '../../utils/page-blocks';
+import { getButtonTextGridStyle, getImageTextGridStyle, getImageTripletBlockStyle, getReferenceGridStyle, getWideImageBlockStyle, isReferenceWideLayout } from '../../utils/page-blocks';
 import { buildYoutubeEmbedHtml, transformRichTextForDisplay } from '../../utils/rich-text-embeds';
 import MedallionsBlock from './MedallionsBlock';
 import CardCarouselBlock from './CardCarouselBlock';
@@ -386,6 +387,43 @@ function ImageTextBlock({ block }) {
   );
 }
 
+function ButtonTextBlock({ block }) {
+  const reversedClass = block.reversed ? ' page-block__button-text--reversed' : '';
+  const alignClass = ` page-block--align-${block.align || 'left'}`;
+  const hasButton = Boolean(block.label?.trim() && block.href?.trim());
+  const gridStyle = getButtonTextGridStyle({
+    buttonSharePercent: block.buttonSharePercent,
+    gapRem: block.gapRem,
+  });
+
+  return (
+    <section className={`page-block page-block--button-text reveal${reversedClass}${alignClass}`}>
+      <div className="container">
+        <div className="page-block__content">
+          <div className="page-block__button-text-grid" style={gridStyle}>
+            <div className="page-block__button-text-action">
+              {hasButton && (
+                <PageBlockLinkButton
+                  label={block.label}
+                  href={block.href}
+                  openInNewTab={block.openInNewTab}
+                  color={block.color}
+                  large
+                />
+              )}
+            </div>
+            <RichTextBlock
+              html={block.html}
+              align={block.align}
+              className="page-block__button-text-copy blog-detail__body"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function PageBlockRenderer({ block, variant = 'home' }) {
   if (!block?.type) return null;
 
@@ -433,6 +471,9 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
     case PAGE_BLOCK_TYPES.imageText:
       return <ImageTextBlock block={block} />;
 
+    case PAGE_BLOCK_TYPES.buttonText:
+      return <ButtonTextBlock block={block} />;
+
     case PAGE_BLOCK_TYPES.reference:
       return <ReferenceBlock block={block} />;
 
@@ -450,6 +491,15 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
 
     case PAGE_BLOCK_TYPES.socials:
       return <ParallaxSocialSection block={block} />;
+
+    case PAGE_BLOCK_TYPES.socialButtons:
+      return (
+        <section className="page-block page-block--social-buttons reveal">
+          <div className="container">
+            <BlockSocialLinks links={block.links} />
+          </div>
+        </section>
+      );
 
     case PAGE_BLOCK_TYPES.parallaxImage:
       return <ParallaxSection imageUrl={block.imageUrl} heightVh={block.heightVh} overlay={block} patternSeed={block.id} />;
@@ -521,24 +571,6 @@ export default function PageBlockRenderer({ block, variant = 'home' }) {
             </div>
           </div>
         </section>
-      );
-
-    case PAGE_BLOCK_TYPES.space:
-      return (
-        <div
-          className="page-block page-block--space"
-          style={getSpaceBlockStyle(block.heightRem)}
-          aria-hidden="true"
-        />
-      );
-
-    case PAGE_BLOCK_TYPES.negativeSpace:
-      return (
-        <div
-          className="page-block page-block--negative-space"
-          style={getNegativeSpaceBlockStyle(block.pullRem)}
-          aria-hidden="true"
-        />
       );
 
     case PAGE_BLOCK_TYPES.medallions:

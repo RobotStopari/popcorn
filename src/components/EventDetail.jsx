@@ -7,6 +7,7 @@ import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import { siteText } from '../utils/admin-text';
 import { trackOutboundClick } from '../utils/analytics-track';
 import EventCategoryLabel from './EventCategoryLabel';
+import EventStampBadge from './EventStampBadge';
 import EventGallery from './EventGallery';
 import NotFoundPage from './NotFoundPage';
 import PersonContactLink from './PersonContactLink';
@@ -206,6 +207,9 @@ function OrganiserCard({ contact }) {
           {contact.nick && (
             <span className="event-detail__organiser-nick">({contact.nick})</span>
           )}
+          {contact.zapalovacYear?.trim() && (
+            <span className="event-detail__organiser-year">– {contact.zapalovacYear.trim()}</span>
+          )}
         </div>
         {hasContacts && <OrganiserChevron open={open} />}
       </button>
@@ -371,6 +375,41 @@ function PastDetail({ event }) {
   );
 }
 
+function EventDetailTitle({ name, stampId }) {
+  const stamp = (
+    <EventStampBadge
+      stampId={stampId}
+      className="event-detail__stamp"
+    />
+  );
+
+  const title = typeof name === 'string' ? name : '';
+  if (!stampId) return title;
+
+  const parts = title.trim().split(/(\s+)/);
+  if (parts.length < 2) {
+    return (
+      <span className="event-detail__title-end">
+        {title}
+        {stamp}
+      </span>
+    );
+  }
+
+  const lastWord = parts[parts.length - 1];
+  const before = parts.slice(0, -1).join('');
+
+  return (
+    <>
+      {before}
+      <span className="event-detail__title-end">
+        {lastWord}
+        {stamp}
+      </span>
+    </>
+  );
+}
+
 function BackLink({ className = 'event-detail__back', past = false }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -425,7 +464,9 @@ export default function EventDetail({ slug }) {
       <BackLink past={past} />
 
       <header className="event-detail__header reveal reveal--scale">
-        <h1 className="event-detail__title">{event.name}</h1>
+        <h1 className="event-detail__title">
+          <EventDetailTitle name={event.name} stampId={event.stampId} />
+        </h1>
         <div className="event-detail__meta">
           <time className={dateClass} dateTime={event.dateStart}>{event.dateLabel}</time>
           {past && (

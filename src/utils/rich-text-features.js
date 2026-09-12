@@ -1,5 +1,6 @@
 const ALL_FEATURES = {
-  bold: true,
+  bold: false,
+  colorBold: true,
   italic: true,
   underline: true,
   heading: true,
@@ -30,6 +31,7 @@ export const RICH_TEXT_FEATURE_SETS = {
   },
   medallionDescription: {
     bold: true,
+    colorBold: false,
     italic: true,
     underline: false,
     heading: false,
@@ -40,6 +42,7 @@ export const RICH_TEXT_FEATURE_SETS = {
   },
   notificationBody: {
     bold: true,
+    colorBold: false,
     italic: true,
     underline: false,
     heading: false,

@@ -34,12 +34,26 @@ export function subscribeOrganiserPresets(onData, onError) {
   );
 }
 
+async function findExistingPresetDocs(payload) {
+  if (payload.email) {
+    const existing = await getDocs(query(presetsRef, where('email', '==', payload.email)));
+    return existing.docs;
+  }
+
+  const existing = await getDocs(query(presetsRef, where('name', '==', payload.name)));
+  return existing.docs.filter((docSnap) => {
+    const data = docSnap.data();
+    return !(data.email || '').trim()
+      && (data.nick || '').trim() === payload.nick;
+  });
+}
+
 export async function saveOrganiserPreset(organiser) {
   const payload = organiserToPresetPayload(organiser);
-  const existing = await getDocs(query(presetsRef, where('email', '==', payload.email)));
+  const existingDocs = await findExistingPresetDocs(payload);
 
-  if (!existing.empty) {
-    const presetId = existing.docs[0].id;
+  if (existingDocs.length) {
+    const presetId = existingDocs[0].id;
     await updateDoc(doc(db, 'organiserPresets', presetId), {
       ...payload,
       updatedAt: serverTimestamp(),

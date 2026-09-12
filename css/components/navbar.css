@@ -137,7 +137,8 @@
 .nav-dropdown__menu {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  left: auto;
+  right: 0;
   min-width: 220px;
   background: var(--white);
   border: var(--border);

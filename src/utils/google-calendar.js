@@ -42,6 +42,8 @@ function buildCalendarDetails(event) {
     lines.push('', `${organisers.label || organisersTitle}:`);
     organisers.contacts.forEach((contact) => {
       const parts = [contact.name];
+      if (contact.nick) parts[0] = `${contact.name} (${contact.nick})`;
+      if (contact.zapalovacYear) parts[0] = `${parts[0]} – ${contact.zapalovacYear}`;
       if (contact.email) parts.push(contact.email);
       if (contact.phone) parts.push(contact.phone);
       lines.push(parts.join(' · '));
@@ -50,6 +52,8 @@ function buildCalendarDetails(event) {
     lines.push('', `${organisersTitle}:`);
     organisers.forEach((contact) => {
       const parts = [contact.name];
+      if (contact.nick) parts[0] = `${contact.name} (${contact.nick})`;
+      if (contact.zapalovacYear) parts[0] = `${parts[0]} – ${contact.zapalovacYear}`;
       if (contact.email) parts.push(contact.email);
       if (contact.phone) parts.push(contact.phone);
       lines.push(parts.join(' · '));

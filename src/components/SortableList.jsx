@@ -71,6 +71,7 @@ export default function SortableList({
   getItemKey = (item) => item.id,
   getItemClassName,
   isItemDraggable,
+  getItemStyle,
   renderItem,
   renderGhostItem,
 }) {
@@ -229,6 +230,7 @@ export default function SortableList({
             : 0;
 
           const itemExtraClass = getItemClassName?.(item, index) || '';
+          const itemStyle = getItemStyle?.(item, index) || {};
 
           return (
             <li
@@ -239,6 +241,7 @@ export default function SortableList({
               className={`${itemClassName}${isDragging ? ' admin-sortable__item--dragging' : ''}${itemExtraClass ? ` ${itemExtraClass}` : ''}`.trim()}
               style={{
                 transform: `translateY(${shift}px)`,
+                ...itemStyle,
               }}
             >
               {integratedHandle ? (
