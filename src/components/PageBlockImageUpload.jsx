@@ -94,10 +94,94 @@ export default function PageBlockImageUpload({
   const isBanner = variant === 'banner';
   const isSquare = variant === 'square';
   const isLogo = variant === 'logo';
-  const useStacked = stacked || isBanner;
+  const isAvatar = variant === 'avatar';
+  const useStacked = stacked || isBanner || isAvatar;
   const previewSrc = isLogo && imagePublicId?.trim()
     ? buildCloudinaryDisplayUrl(imagePublicId.trim(), { width: 320, height: 400 })
     : imageUrl;
+
+  if (isAvatar) {
+    return (
+      <div className="admin-page-block-image admin-page-block-image--avatar">
+        <div className="admin-page-block-image__avatar-wrap">
+          <button
+            type="button"
+            className={`admin-page-block-image__avatar${pickDisabled ? ' is-disabled' : ''}${uploading ? ' is-uploading' : ''}`}
+            onClick={handlePickClick}
+            disabled={pickDisabled}
+            aria-controls={inputId}
+            aria-label={previewSrc ? 'Změnit fotografii' : 'Nahrát fotografii'}
+          >
+            {previewSrc ? (
+              <img
+                src={previewSrc}
+                alt=""
+                className="admin-page-block-image__img"
+              />
+            ) : (
+              <span
+                className="admin-page-block-image__placeholder"
+                style={patternStyle}
+                aria-hidden="true"
+              />
+            )}
+            <span className="admin-page-block-image__avatar-overlay" aria-hidden="true">
+              {uploading ? '…' : previewSrc ? 'Změnit' : 'Nahrát'}
+            </span>
+          </button>
+
+          {previewSrc && (
+            <button
+              type="button"
+              className="admin-page-block-image__avatar-remove"
+              onClick={handleRemove}
+              disabled={disabled || uploading}
+              aria-label="Odstranit fotografii"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {!cloudinaryReady && (
+          <p className="admin-error admin-page-block-image__error">
+            {isCloudinaryCloudNameConfigured()
+              ? (
+                <>
+                  Cloudinary preset není nastaven — doplňte
+                  {' '}
+                  <code>{uploadConfig.envKey}</code>
+                  {' '}
+                  do `.env.local`.
+                </>
+              )
+              : (
+                <>
+                  Cloudinary není nakonfigurováno — doplňte
+                  {' '}
+                  <code>VITE_CLOUDINARY_CLOUD_NAME</code>
+                  {' '}
+                  do `.env.local` (viz README).
+                </>
+              )}
+          </p>
+        )}
+
+        {error && <p className="admin-error admin-page-block-image__error">{error}</p>}
+
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="file"
+          accept="image/*"
+          className="admin-event-images__input admin-page-block-image__input"
+          onChange={handleFileChange}
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

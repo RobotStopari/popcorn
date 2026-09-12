@@ -17,6 +17,7 @@
 }
 
 .event-card-wrap {
+  position: relative;
   min-height: 0;
 }
 

@@ -908,7 +908,7 @@ export default function AdminPageBlockEditor({
       <div className="admin-page-block-editor">
         <BlockEditorSection
           title="Medailonky"
-          hint="Profilové karty lidí. Každá osoba má fotku, kontakty a krátký popis."
+          hint="Každou osobu rozbalíte zvlášť. Role pište čárkou."
         >
           <AdminMedallionsEditor
             people={block.people}

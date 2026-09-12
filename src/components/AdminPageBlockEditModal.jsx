@@ -19,7 +19,9 @@ const COMPACT_PREVIEW_BLOCK_TYPES = new Set([
 export default function AdminPageBlockEditModal({
   open,
   block,
+  saving = false,
   onClose,
+  onDone,
   onChange,
 }) {
   const { mounted, visible } = useAnimatedPresence(open, 240);
@@ -69,12 +71,12 @@ export default function AdminPageBlockEditModal({
     if (!mounted) return undefined;
 
     const onKeydown = (event) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && !saving) onClose();
     };
 
     document.addEventListener('keydown', onKeydown);
     return () => document.removeEventListener('keydown', onKeydown);
-  }, [mounted, onClose]);
+  }, [mounted, onClose, saving]);
 
   if (!mounted || !block) return null;
 
@@ -93,14 +95,23 @@ export default function AdminPageBlockEditModal({
       aria-modal="true"
       aria-labelledby="admin-page-block-modal-title"
     >
-      <div className="admin-modal__backdrop" onClick={onClose} aria-hidden="true" />
+      <div
+        className="admin-modal__backdrop"
+        onClick={saving ? undefined : onClose}
+        aria-hidden="true"
+      />
       <AdminModalPanel
         ref={scrollRef}
         className="admin-modal__panel--page admin-page-block-modal__panel"
         footer={(
           <div className="admin-modal__actions admin-page-block-modal__footer">
-            <button type="button" className="btn btn--primary" onClick={onClose}>
-              {adminText('common.done')}
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={onDone || onClose}
+              disabled={saving}
+            >
+              {saving ? adminText('common.saving') : adminText('common.done')}
             </button>
           </div>
         )}

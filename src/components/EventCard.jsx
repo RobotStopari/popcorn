@@ -46,15 +46,15 @@ export default function EventCard({ event, index, past = false }) {
 
   return (
     <article className={`event-card-wrap${delayClass} reveal`}>
+      <EventStampBadge
+        stampId={event.stampId}
+        className="event-card__stamp"
+      />
       <a
         href={href}
         className={`event-card shine-parent${pastClass}${noImageClass}`}
         onClick={() => trackNavClick(href, event.name)}
       >
-        <EventStampBadge
-          stampId={event.stampId}
-          className="event-card__stamp"
-        />
         <div className="event-card__media">
           {hasCover ? (
             <EventCardImage event={event} />

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { buildPersonContactLinks } from '../../utils/contact-links';
 import { getEventCoverStyle } from '../../utils/event-cover-pattern';
-import { stripMedallionDescriptionPreview } from '../../utils/page-blocks';
+import { parseMedallionRoles, stripMedallionDescriptionPreview } from '../../utils/page-blocks';
 import MedallionDetailModal from '../MedallionDetailModal';
+import MedallionRoleTags from '../MedallionRoleTags';
 import PersonContactLink from '../PersonContactLink';
 
 function MedallionPhoto({ person }) {
@@ -29,6 +30,7 @@ function MedallionPhoto({ person }) {
 
 function MedallionCard({ person, onOpen }) {
   const links = buildPersonContactLinks(person);
+  const roles = parseMedallionRoles(person.roles);
   const descriptionPreview = useMemo(
     () => stripMedallionDescriptionPreview(person.descriptionHtml),
     [person.descriptionHtml],
@@ -58,43 +60,22 @@ function MedallionCard({ person, onOpen }) {
       onKeyDown={handleKeyDown}
       aria-label={`Otevřít medailonek: ${person.name}`}
     >
-      <div className="page-block__medallion-top">
+      <div className="page-block__medallion-media">
         <div className="page-block__medallion-photo">
           <MedallionPhoto person={person} />
         </div>
       </div>
 
       <div className="page-block__medallion-body">
-        <div className="page-block__medallion-heading">
-          <h3 className="page-block__medallion-name">{person.name}</h3>
+        <div className={`page-block__medallion-heading${person.nick?.trim() ? ' page-block__medallion-heading--has-nick' : ''}`}>
           {person.nick?.trim() && (
             <p className="page-block__medallion-nick">{person.nick.trim()}</p>
           )}
+          <h3 className="page-block__medallion-name">{person.name}</h3>
         </div>
 
-        {hasContacts && (
-          <div
-            className="page-block__medallion-links"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-          >
-            <PersonContactLink type="email" href={links.emailHref} label={person.email} />
-            <PersonContactLink type="phone" href={links.phoneHref} label={person.phone} />
-            <PersonContactLink
-              type="instagram"
-              href={links.instagramHref}
-              label="Instagram"
-              tooltip={person.instagram}
-              external
-            />
-            <PersonContactLink
-              type="facebook"
-              href={links.facebookHref}
-              label="Facebook"
-              tooltip={person.facebook}
-              external
-            />
-          </div>
+        {roles.length > 0 && (
+          <MedallionRoleTags roles={person.roles} className="page-block__medallion-roles" />
         )}
 
         {hasDescription && (
@@ -104,9 +85,36 @@ function MedallionCard({ person, onOpen }) {
           </p>
         )}
 
-        <span className="page-block__medallion-cta">
-          {descriptionPreview.truncated ? 'Číst více' : 'Zobrazit profil'}
-        </span>
+        <div className="page-block__medallion-footer">
+          {hasContacts && (
+            <div
+              className="page-block__medallion-links"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <PersonContactLink type="email" href={links.emailHref} label={person.email} />
+              <PersonContactLink type="phone" href={links.phoneHref} label={person.phone} />
+              <PersonContactLink
+                type="instagram"
+                href={links.instagramHref}
+                label="Instagram"
+                tooltip={person.instagram}
+                external
+              />
+              <PersonContactLink
+                type="facebook"
+                href={links.facebookHref}
+                label="Facebook"
+                tooltip={person.facebook}
+                external
+              />
+            </div>
+          )}
+
+          <span className="page-block__medallion-cta">
+            {descriptionPreview.truncated ? 'Číst více' : 'Zobrazit profil'}
+          </span>
+        </div>
       </div>
     </article>
   );
@@ -123,7 +131,7 @@ export default function MedallionsBlock({ block }) {
       <section className="page-block page-block--medallions">
         <div className="container">
           <div className="page-block__content">
-            <div className="page-block__medallions-grid">
+            <div className={`page-block__medallions-grid page-block__medallions-grid--${Math.min(people.length, 3)}`}>
               {people.map((person) => (
                 <MedallionCard
                   key={person.id}

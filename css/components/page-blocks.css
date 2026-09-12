@@ -983,22 +983,34 @@
 }
 
 .page-block--medallions {
-  padding: 2rem 0 2.5rem;
+  padding: 2rem 0 2.75rem;
 }
 
 .page-block__medallions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.75rem), 1fr));
+  gap: 1.25rem 1.35rem;
+  justify-content: center;
+}
+
+.page-block__medallions-grid--1 {
+  grid-template-columns: minmax(0, 22rem);
+  justify-content: center;
+  margin-inline: auto;
 }
 
 .page-block__medallion-card {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 24rem;
+  justify-self: center;
   overflow: hidden;
+  isolation: isolate;
   border: var(--border);
   border-radius: var(--radius);
   background: var(--white);
+  background-clip: padding-box;
   box-shadow: var(--shadow);
   cursor: pointer;
   transition:
@@ -1007,8 +1019,8 @@
 }
 
 .page-block__medallion-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-hover);
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0 var(--black);
 }
 
 .page-block__medallion-card:focus-visible {
@@ -1016,23 +1028,32 @@
   outline-offset: 3px;
 }
 
-.page-block__medallion-top {
+.page-block__medallion-media {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
-  padding: 1.35rem 1.25rem 1.15rem;
+  padding: 1.5rem 1.15rem 0.85rem;
+}
+
+.page-block__medallion-media::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 32% 0;
+  z-index: 0;
   background: var(--orange-pale);
-  border-bottom: var(--border);
-  border-top-left-radius: calc(var(--radius) - 3px);
-  border-top-right-radius: calc(var(--radius) - 3px);
+  border-radius: calc(var(--radius) - 3px) calc(var(--radius) - 3px) 0 0;
 }
 
 .page-block__medallion-photo {
-  width: 6.5rem;
-  height: 6.5rem;
+  position: relative;
+  z-index: 1;
+  width: 7.75rem;
+  height: 7.75rem;
   border: var(--border);
   border-radius: 999px;
   background: var(--white);
-  box-shadow: var(--shadow);
+  box-shadow: 4px 4px 0 var(--black);
   overflow: hidden;
 }
 
@@ -1049,9 +1070,35 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 0.75rem;
-  padding: 1.15rem 1.25rem 1.35rem;
+  gap: 0.7rem;
+  padding: 0.95rem 1.15rem 1.15rem;
   text-align: center;
+}
+
+.medallion-roles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medallion-roles__tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.18rem 0.58rem 0.16rem;
+  border: 2px solid var(--black);
+  border-radius: 999px;
+  background: var(--orange);
+  box-shadow: 1px 1px 0 var(--black);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .page-block__medallion-heading {
@@ -1059,34 +1106,62 @@
   gap: 0.15rem;
 }
 
-.page-block__medallion-name {
-  margin: 0;
-  font-size: 1.08rem;
-  font-weight: 800;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-
 .page-block__medallion-nick {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: clamp(1.7rem, 4vw, 2.05rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--black);
+}
+
+.page-block__medallion-name {
+  margin: 0;
+  font-size: 1.18rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.page-block__medallion-heading--has-nick .page-block__medallion-name {
+  font-size: 0.92rem;
   font-weight: 600;
-  line-height: 1.3;
   color: var(--gray);
+}
+
+.page-block__medallion-description {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--black) 74%, var(--gray));
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.page-block__medallion-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 0.75rem;
+  margin-top: auto;
+  padding-top: 0.15rem;
 }
 
 .page-block__medallion-links {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.35rem;
-  width: 100%;
+  gap: 0.4rem;
   margin: 0;
 }
 
 .page-block__medallion-links .event-detail__organiser-link {
-  width: 2rem;
-  height: 2rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border: var(--border);
   box-shadow: 2px 2px 0 var(--black);
   background: var(--white);
@@ -1098,32 +1173,18 @@
 }
 
 .page-block__medallion-links .event-detail__organiser-link-icon svg {
-  width: 0.95rem;
-  height: 0.95rem;
-}
-
-.page-block__medallion-description {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.65;
-  color: color-mix(in srgb, var(--black) 72%, var(--gray));
-  text-align: left;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  width: 1rem;
+  height: 1rem;
 }
 
 .page-block__medallion-cta {
-  align-self: center;
-  margin-top: auto;
-  padding: 0.5rem 1rem;
+  padding: 0.48rem 0.9rem;
   border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-  background: var(--white);
-  font-size: 0.82rem;
-  font-weight: 700;
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--black);
+  background: var(--orange);
+  font-size: 0.8rem;
+  font-weight: 800;
   color: var(--black);
   transition:
     transform var(--transition),
@@ -1133,8 +1194,8 @@
 
 .page-block__medallion-card:hover .page-block__medallion-cta {
   transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-hover);
-  background: var(--orange);
+  box-shadow: 3px 3px 0 var(--black);
+  background: var(--white);
   color: var(--black);
 }
 
@@ -1164,7 +1225,7 @@ body.medallion-modal-open {
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(17, 17, 17, 0.82);
+  background: rgba(17, 17, 17, 0.78);
   cursor: pointer;
 }
 
@@ -1173,22 +1234,24 @@ body.medallion-modal-open {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(100%, 32rem);
-  max-height: min(90vh, 42rem);
+  width: min(100%, 38rem);
+  max-height: min(90vh, 46rem);
   overflow: hidden;
+  isolation: isolate;
   background: var(--white);
+  background-clip: padding-box;
   border: var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-hover);
-  transform: translateY(10px);
+  box-shadow: 8px 8px 0 var(--black);
+  transform: translateY(14px) scale(0.98);
   opacity: 0;
   transition:
-    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.24s ease;
 }
 
 .medallion-modal--visible .medallion-modal__panel {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
   opacity: 1;
 }
 
@@ -1200,14 +1263,14 @@ body.medallion-modal-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.45rem;
+  height: 2.45rem;
   padding: 0;
   border: var(--border);
   border-radius: 999px;
   background: var(--white);
   color: var(--black);
-  box-shadow: var(--shadow);
+  box-shadow: 2px 2px 0 var(--black);
   cursor: pointer;
   transition:
     transform var(--transition),
@@ -1217,28 +1280,30 @@ body.medallion-modal-open {
 
 .medallion-modal__close:hover {
   transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-hover);
-  background: var(--orange-pale);
+  box-shadow: 4px 4px 0 var(--black);
+  background: var(--orange);
 }
 
 .medallion-modal__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.15rem 1.25rem;
   flex-shrink: 0;
-  padding: 1.75rem 1.5rem 1.25rem;
-  text-align: center;
+  padding: 1.5rem 3.6rem 1.25rem 1.4rem;
+  overflow: hidden;
+  border-radius: calc(var(--radius) - 3px) calc(var(--radius) - 3px) 0 0;
   background: var(--orange-pale);
   border-bottom: var(--border);
-  border-top-left-radius: calc(var(--radius) - 3px);
-  border-top-right-radius: calc(var(--radius) - 3px);
 }
 
 .medallion-modal__photo {
-  width: 7.25rem;
-  height: 7.25rem;
-  margin: 0 auto 0.9rem;
+  width: 7.5rem;
+  height: 7.5rem;
   border: var(--border);
   border-radius: 999px;
   background: var(--white);
-  box-shadow: var(--shadow);
+  box-shadow: 4px 4px 0 var(--black);
   overflow: hidden;
 }
 
@@ -1251,20 +1316,38 @@ body.medallion-modal-open {
   object-fit: cover;
 }
 
-.medallion-modal__name {
-  margin: 0;
-  font-size: clamp(1.25rem, 3vw, 1.55rem);
-  font-weight: 800;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+.medallion-modal__identity {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.medallion-modal__roles {
+  justify-content: flex-start;
 }
 
 .medallion-modal__nick {
-  margin: 0.2rem 0 0;
-  font-size: 0.92rem;
+  margin: 0;
+  font-size: clamp(1.85rem, 4vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--black);
+}
+
+.medallion-modal__name {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.medallion-modal__identity--has-nick .medallion-modal__name {
+  font-size: 1rem;
   font-weight: 600;
-  line-height: 1.3;
-  color: var(--gray);
+  letter-spacing: 0;
+  color: color-mix(in srgb, var(--black) 62%, var(--gray));
 }
 
 .medallion-modal__scroll {
@@ -1272,60 +1355,56 @@ body.medallion-modal-open {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1.25rem 1.5rem 1.5rem;
+  padding: 1.2rem 1.4rem 1.5rem;
   display: grid;
-  gap: 1.35rem;
+  gap: 1.2rem;
   -webkit-overflow-scrolling: touch;
 }
 
 .medallion-modal__section {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
 .medallion-modal__section-title {
   margin: 0;
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 0.35rem 0.75rem 0.3rem;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--black);
-  background: var(--orange);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: 2px 2px 0 var(--black);
+  color: var(--gray);
 }
 
 .medallion-modal__contacts {
   display: grid;
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  background: var(--white);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
 .medallion-modal__contact {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.8rem 1rem;
-  border-bottom: var(--border);
+  gap: 0.6rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.45rem 0.85rem 0.45rem 0.45rem;
+  border: var(--border);
+  border-radius: 999px;
   text-decoration: none;
   color: inherit;
   background: var(--white);
-  transition: background-color var(--transition);
-}
-
-.medallion-modal__contact:last-child {
-  border-bottom: 0;
+  box-shadow: 2px 2px 0 var(--black);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition);
 }
 
 .medallion-modal__contact:hover {
-  background: var(--orange-pale);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+  background: var(--white);
+  color: var(--black);
 }
 
 .medallion-modal__contact-icon {
@@ -1333,17 +1412,16 @@ body.medallion-modal-open {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.1rem;
+  height: 2.1rem;
   border: var(--border);
   border-radius: 999px;
   background: var(--white);
-  box-shadow: 2px 2px 0 var(--black);
 }
 
 .medallion-modal__contact-icon svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .medallion-modal__contact--email .medallion-modal__contact-icon {
@@ -1364,39 +1442,24 @@ body.medallion-modal-open {
 
 .medallion-modal__contact-copy {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.05rem;
   min-width: 0;
 }
 
 .medallion-modal__contact-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--gray);
 }
 
 .medallion-modal__contact-text {
-  font-size: 0.92rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
   word-break: break-word;
-}
-
-.medallion-modal__contact--email:hover .medallion-modal__contact-text {
-  color: var(--red);
-}
-
-.medallion-modal__contact--phone:hover .medallion-modal__contact-text {
-  color: var(--blue);
-}
-
-.medallion-modal__contact--instagram:hover .medallion-modal__contact-text {
-  color: #c13584;
-}
-
-.medallion-modal__contact--facebook:hover .medallion-modal__contact-text {
-  color: #1877f2;
+  color: var(--black);
 }
 
 .medallion-modal__description {
@@ -1413,22 +1476,57 @@ body.medallion-modal-open {
   margin-top: 0.85rem;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
+  .page-block--medallions {
+    padding: 1.5rem 0 2rem;
+  }
+
+  .page-block__medallions-grid,
+  .page-block__medallions-grid--1 {
+    grid-template-columns: 1fr;
+  }
+
+  .page-block__medallion-card {
+    max-width: none;
+  }
+
+  .page-block__medallion-photo {
+    width: 7rem;
+    height: 7rem;
+  }
+
   .medallion-modal {
-    padding: 0.75rem;
+    align-items: flex-end;
+    padding: 0;
   }
 
   .medallion-modal__panel {
-    max-height: 92vh;
+    width: 100%;
+    max-height: min(94dvh, 100%);
+    border-radius: 1.25rem 1.25rem 0 0;
+    box-shadow: none;
+    transform: translateY(24px);
+  }
+
+  .medallion-modal--visible .medallion-modal__panel {
+    transform: translateY(0);
   }
 
   .medallion-modal__header {
-    padding: 1.65rem 1.25rem 1.1rem;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 1.35rem 1.15rem 1.1rem;
+  }
+
+  .medallion-modal__roles {
+    justify-content: center;
   }
 
   .medallion-modal__scroll {
-    padding: 1rem 1.15rem 1.25rem;
+    padding: 1rem 1.1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
+
 }
 
 /* ── Card carousel ── */

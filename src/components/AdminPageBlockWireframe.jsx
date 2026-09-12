@@ -363,6 +363,10 @@ function WireMedallions({ block }) {
                 <img src={person.imageUrl} alt="" className="block-wireframe__medallion-img" />
               )}
             </span>
+            <span className="block-wireframe__medallion-tags">
+              <span />
+              <span />
+            </span>
             <span className="block-wireframe__medallion-line block-wireframe__medallion-line--name" />
             <span className="block-wireframe__medallion-line" />
             <span className="block-wireframe__medallion-icons">

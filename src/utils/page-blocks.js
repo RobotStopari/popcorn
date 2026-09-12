@@ -362,6 +362,23 @@ function normalizeYoutubeFields(raw = {}) {
   };
 }
 
+export const MEDALLION_ROLES_MAX = 8;
+export const MEDALLION_ROLE_MAX_LENGTH = 40;
+
+export function parseMedallionRoles(value) {
+  const source = Array.isArray(value) ? value.join(',') : String(value || '');
+  const roles = [];
+
+  for (const part of source.split(',')) {
+    const role = part.trim().replace(/\s+/g, ' ');
+    if (!role) continue;
+    roles.push(role.slice(0, MEDALLION_ROLE_MAX_LENGTH));
+    if (roles.length >= MEDALLION_ROLES_MAX) break;
+  }
+
+  return roles;
+}
+
 function normalizeMedallionPerson(raw = {}) {
   const id = typeof raw?.id === 'string' && raw.id ? raw.id : createBlockId();
 
@@ -369,6 +386,9 @@ function normalizeMedallionPerson(raw = {}) {
     id,
     name: typeof raw.name === 'string' ? raw.name : '',
     nick: typeof raw.nick === 'string' ? raw.nick : '',
+    roles: Array.isArray(raw.roles)
+      ? parseMedallionRoles(raw.roles).join(', ')
+      : (typeof raw.roles === 'string' ? raw.roles : ''),
     email: typeof raw.email === 'string' ? raw.email : '',
     phone: typeof raw.phone === 'string' ? raw.phone : '',
     instagram: typeof raw.instagram === 'string' ? raw.instagram : '',

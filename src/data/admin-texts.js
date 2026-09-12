@@ -858,7 +858,7 @@ export const ADMIN_TEXTS = {
       youtube: 'Vložené YouTube video',
       citationSmall: 'Menší citace v šířce odstavce',
       reference: 'Kulatá fotka a citace — jako by to řekla daná osoba',
-      medallions: 'Profilové karty lidí s kontakty',
+      medallions: 'Profilové karty lidí s rolemi a kontakty',
       cardCarousel: 'Horizontální karusel s kartami s odkazem',
       randomLink: 'Náhodně vybraný odkaz z administrace',
       randomBook: 'Náhodně vybraná publikace z administrace',

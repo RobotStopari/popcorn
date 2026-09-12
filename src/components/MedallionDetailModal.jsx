@@ -4,8 +4,10 @@ import { ICONS } from '../data/icons';
 import { useAnimatedPresence } from '../hooks/useAnimatedPresence';
 import { buildPersonContactLinks } from '../utils/contact-links';
 import { getEventCoverStyle } from '../utils/event-cover-pattern';
+import { parseMedallionRoles } from '../utils/page-blocks';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import { siteText } from '../utils/admin-text';
+import MedallionRoleTags from './MedallionRoleTags';
 
 const CONTACT_ICONS = {
   email: ICONS.email,
@@ -36,7 +38,7 @@ function MedallionPhoto({ person }) {
   );
 }
 
-function MedallionContactRow({ type, href, text, external = false }) {
+function MedallionContactChip({ type, href, text, external = false }) {
   const label = text?.trim();
   if (!href || !label) return null;
 
@@ -87,11 +89,11 @@ function MedallionContacts({ person }) {
   if (!rows.length) return null;
 
   return (
-    <section className="medallion-modal__section">
+    <section className="medallion-modal__section medallion-modal__section--contacts">
       <h3 className="medallion-modal__section-title">{siteText('medallion.contactSection')}</h3>
       <div className="medallion-modal__contacts">
         {rows.map((row) => (
-          <MedallionContactRow key={row.type} {...row} />
+          <MedallionContactChip key={row.type} {...row} />
         ))}
       </div>
     </section>
@@ -101,6 +103,7 @@ function MedallionContacts({ person }) {
 export default function MedallionDetailModal({ person, open, onClose }) {
   const { mounted, visible } = useAnimatedPresence(open, 220);
   const displayHtml = transformRichTextForDisplay(person?.descriptionHtml || '');
+  const roles = parseMedallionRoles(person?.roles);
 
   useEffect(() => {
     if (!mounted) return undefined;
@@ -152,12 +155,17 @@ export default function MedallionDetailModal({ person, open, onClose }) {
           <div className="medallion-modal__photo">
             <MedallionPhoto person={person} />
           </div>
-          <h2 id="medallion-modal-title" className="medallion-modal__name">
-            {person.name}
-          </h2>
-          {person.nick?.trim() && (
-            <p className="medallion-modal__nick">{person.nick.trim()}</p>
-          )}
+          <div className={`medallion-modal__identity${person.nick?.trim() ? ' medallion-modal__identity--has-nick' : ''}`}>
+            {person.nick?.trim() && (
+              <p className="medallion-modal__nick">{person.nick.trim()}</p>
+            )}
+            <h2 id="medallion-modal-title" className="medallion-modal__name">
+              {person.name}
+            </h2>
+            {roles.length > 0 && (
+              <MedallionRoleTags roles={person.roles} className="medallion-modal__roles" />
+            )}
+          </div>
         </header>
 
         <div className="medallion-modal__scroll">

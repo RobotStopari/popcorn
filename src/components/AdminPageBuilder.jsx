@@ -1032,7 +1032,12 @@ export default function AdminPageBuilder({
       <AdminPageBlockEditModal
         open={Boolean(editingBlockForModal)}
         block={editingBlockForModal}
+        saving={saving}
         onClose={() => setEditingBlockId(null)}
+        onDone={async () => {
+          setEditingBlockId(null);
+          await savePage();
+        }}
         onChange={(patch) => {
           const blockId = editingBlockIdRef.current;
           if (blockId) {
