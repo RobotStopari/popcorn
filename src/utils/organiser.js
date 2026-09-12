@@ -1,3 +1,14 @@
+import {
+  ORGANISER_NAME_MAX,
+  ORGANISER_NICK_MAX,
+  getOrganiserEmailError,
+  getOrganiserFacebookError,
+  getOrganiserPhoneError,
+  getZapalovacYearError,
+  normalizeFacebookUrl,
+  normalizeInstagramHandle,
+} from './event-field-limits';
+
 export function organiserFromPreset(preset) {
   return {
     name: preset.name || '',
@@ -5,8 +16,8 @@ export function organiserFromPreset(preset) {
     zapalovacYear: preset.zapalovacYear || '',
     email: preset.email || '',
     phone: preset.phone || '',
-    instagram: preset.instagram || '',
-    facebook: preset.facebook || '',
+    instagram: normalizeInstagramHandle(preset.instagram),
+    facebook: normalizeFacebookUrl(preset.facebook),
   };
 }
 
@@ -22,8 +33,8 @@ export function normalizeOrganiserPreset(raw) {
     zapalovacYear: raw.zapalovacYear?.trim() || '',
     email: raw.email?.trim() || '',
     phone: raw.phone?.trim() || '',
-    instagram: raw.instagram?.trim() || '',
-    facebook: raw.facebook?.trim() || '',
+    instagram: normalizeInstagramHandle(raw.instagram),
+    facebook: normalizeFacebookUrl(raw.facebook),
   };
 }
 
@@ -45,16 +56,17 @@ export function presetDisplayLabel(preset) {
 
 export function organiserToPresetPayload(organiser) {
   const email = organiser.email.trim();
-  const at = email.lastIndexOf('@');
-  const safeEmail = at > 0 && at < email.length - 1 ? email : '';
+  const year = organiser.zapalovacYear?.trim() || '';
+  const phone = organiser.phone.trim();
+  const facebook = normalizeFacebookUrl(organiser.facebook);
 
   return {
-    name: organiser.name.trim(),
-    nick: organiser.nick.trim(),
-    zapalovacYear: organiser.zapalovacYear?.trim() || '',
-    email: safeEmail,
-    phone: organiser.phone.trim(),
-    instagram: organiser.instagram.trim(),
-    facebook: organiser.facebook.trim(),
+    name: organiser.name.trim().slice(0, ORGANISER_NAME_MAX),
+    nick: organiser.nick.trim().slice(0, ORGANISER_NICK_MAX),
+    zapalovacYear: getZapalovacYearError(year) ? '' : year,
+    email: getOrganiserEmailError(email) ? '' : email,
+    phone: getOrganiserPhoneError(phone) ? '' : phone,
+    instagram: normalizeInstagramHandle(organiser.instagram),
+    facebook: getOrganiserFacebookError(facebook) ? '' : facebook,
   };
 }

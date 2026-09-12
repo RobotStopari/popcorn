@@ -102,6 +102,15 @@ export function validateDateRange(event) {
     return 'Vyplňte datum začátku i konce akce.';
   }
 
+  const startYear = Number(String(event.dateStart).slice(0, 4));
+  const endYear = Number(String(event.dateEnd).slice(0, 4));
+  if (
+    !Number.isFinite(startYear) || startYear < 2015 || startYear > 2300
+    || !Number.isFinite(endYear) || endYear < 2015 || endYear > 2300
+  ) {
+    return 'Datum musí být v letech 2015 až 2300.';
+  }
+
   const start = getEventStartDateTime(event);
   const end = getEventEndDateTime(event);
 

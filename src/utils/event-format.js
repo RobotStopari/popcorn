@@ -5,6 +5,19 @@ import {
   validateDateRange,
 } from './event-dates';
 import {
+  EVENT_TITLE_MAX,
+  ORGANISER_NAME_MAX,
+  ORGANISER_NICK_MAX,
+  PARTICIPANT_NAME_MAX,
+  getEventPriceError,
+  getOrganiserEmailError,
+  getOrganiserFacebookError,
+  getOrganiserPhoneError,
+  getZapalovacYearError,
+  normalizeFacebookUrl,
+  normalizeInstagramHandle,
+} from './event-field-limits';
+import {
   normalizeEventImageList,
   getUpcomingGalleryImages,
   getPastGalleryImages,
@@ -92,7 +105,7 @@ export function isEventListedPublicly(event) {
 
 export function isEventPublishable(form) {
   if (!form.title?.trim()) return false;
-  if (form.title.trim().length > 200) return false;
+  if (form.title.trim().length > EVENT_TITLE_MAX) return false;
   return !validateDateRange(form);
 }
 
@@ -305,6 +318,8 @@ export function eventToFormState(event) {
         ...createEmptyOrganiser(),
         ...item,
         zapalovacYear: item.zapalovacYear || '',
+        instagram: normalizeInstagramHandle(item.instagram),
+        facebook: normalizeFacebookUrl(item.facebook),
       }))
       : [],
     participants: event.participants?.map(toFormParticipant) || [],
@@ -336,7 +351,7 @@ export function formStateToPayload(form) {
   const placeCoords = normalizePlaceCoords(form.placeLat, form.placeLng);
 
   return {
-    title: form.title.trim(),
+    title: form.title.trim().slice(0, EVENT_TITLE_MAX),
     slug: form.slug?.trim() || '',
     dateStart: form.dateStart,
     timeStart: form.timeStart,
@@ -345,27 +360,29 @@ export function formStateToPayload(form) {
     place: form.place.trim(),
     placeLat: placeCoords?.lat ?? null,
     placeLng: placeCoords?.lng ?? null,
-    price: form.price.trim(),
+    price: getEventPriceError(form.price) ? '' : form.price.trim(),
     description: form.description,
     organisers: form.organisers
       .map((item) => {
         const email = item.email.trim();
-        const at = email.lastIndexOf('@');
-        const safeEmail = at > 0 && at < email.length - 1 ? email : '';
+        const safeEmail = getOrganiserEmailError(email) ? '' : email;
+        const year = item.zapalovacYear?.trim() || '';
+        const phone = item.phone.trim();
+        const facebook = normalizeFacebookUrl(item.facebook);
 
         return {
-          name: item.name.trim(),
-          nick: item.nick.trim(),
-          zapalovacYear: item.zapalovacYear?.trim() || '',
+          name: item.name.trim().slice(0, ORGANISER_NAME_MAX),
+          nick: item.nick.trim().slice(0, ORGANISER_NICK_MAX),
+          zapalovacYear: getZapalovacYearError(year) ? '' : year,
           email: safeEmail,
-          phone: item.phone.trim(),
-          instagram: item.instagram.trim(),
-          facebook: item.facebook.trim(),
+          phone: getOrganiserPhoneError(phone) ? '' : phone,
+          instagram: normalizeInstagramHandle(item.instagram),
+          facebook: getOrganiserFacebookError(facebook) ? '' : facebook,
         };
       })
       .filter((item) => item.name),
     participants: form.participants
-      .map((item) => ({ name: item.name.trim() }))
+      .map((item) => ({ name: item.name.trim().slice(0, PARTICIPANT_NAME_MAX) }))
       .filter((item) => item.name),
     registrationLink: form.registrationLink.trim(),
     report: form.report,

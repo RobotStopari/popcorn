@@ -153,6 +153,18 @@
   margin-top: -0.5rem;
 }
 
+.admin-form__field-error {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--red);
+}
+
+.admin-form__group:has(.admin-form__field-error) .admin-form__hint {
+  margin-top: 0;
+}
+
 .admin-form__group:has(.event-stamp-select) > .admin-form__hint {
   margin-top: 0.35rem;
 }
@@ -738,6 +750,7 @@
 }
 
 .admin-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -746,6 +759,12 @@
 
 .admin-toggle input {
   position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
   opacity: 0;
   pointer-events: none;
 }
@@ -2356,6 +2375,13 @@
   grid-template-columns: auto auto minmax(0, 1fr) auto;
 }
 
+.admin-form__participant-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
 .admin-form--event .admin-form__participants-list {
   gap: 0;
 }
@@ -2535,6 +2561,10 @@
 .event-share-form .admin-modal__panel--event-form,
 .event-share-form .event-share-form__content {
   background: var(--white);
+}
+
+.admin-modal--event-form .admin-modal__scroll {
+  overflow-anchor: none;
 }
 
 .admin-form--event .admin-form__hint,
@@ -7477,15 +7507,19 @@ body.admin-sortable-dragging * {
 }
 
 .admin-place-map__canvas-wrap {
+  height: 260px;
   border: 2px solid color-mix(in srgb, var(--black) 12%, transparent);
   border-radius: var(--radius-sm);
   overflow: hidden;
   box-shadow: none;
 }
 
-.admin-place-map__canvas {
+.admin-place-map__canvas,
+.admin-place-map__canvas.leaflet-container {
   width: 100%;
+  height: 260px;
   min-height: 260px;
+  max-height: 260px;
   background: var(--gray-pale);
 }
 

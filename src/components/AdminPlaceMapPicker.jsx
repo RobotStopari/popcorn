@@ -71,6 +71,7 @@ export default function AdminPlaceMapPicker({
         const L = await loadLeaflet();
         if (!active || !mapRootRef.current || !L) return;
 
+        mapRootRef.current.style.height = '260px';
         const center = coords || DEFAULT_CENTER;
         mapInstance = L.map(mapRootRef.current, {
           center: [center.lat, center.lng],
@@ -114,6 +115,9 @@ export default function AdminPlaceMapPicker({
         updateMarker(coords);
         mapRef.current = mapInstance;
         setMapReady(true);
+        window.setTimeout(() => {
+          if (active) mapInstance.invalidateSize();
+        }, 80);
       } catch (err) {
         if (active) {
           setError(err.message || 'Mapu se nepodařilo načíst.');

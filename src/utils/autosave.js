@@ -28,6 +28,7 @@ export function getAutosaveFormHandlers(persist) {
       persist();
     },
     onChange: (event) => {
+      if (event.target?.dataset?.noAutosave === 'true') return;
       if (isImmediateAutosaveControl(event.target)) persist();
     },
     onClick: (event) => {

@@ -21,6 +21,28 @@ import {
 } from '../utils/event-format';
 import { eventHasMissingTimes, isEventPast, suggestEndDate, suggestEndTime, validateDateRange } from '../utils/event-dates';
 import {
+  EVENT_DATE_MAX,
+  EVENT_DATE_MIN,
+  EVENT_PRICE_MAX,
+  EVENT_PRICE_MIN,
+  EVENT_TITLE_MAX,
+  ORGANISER_NAME_MAX,
+  ORGANISER_NICK_MAX,
+  getEventDateYearError,
+  getEventPriceError,
+  getEventTitleError,
+  getOrganiserEmailError,
+  getOrganiserFacebookError,
+  getOrganiserFieldError,
+  getOrganiserNameError,
+  getOrganiserNickError,
+  getOrganiserPhoneError,
+  getParticipantNameError,
+  getZapalovacYearError,
+  isEventDateYearAllowed,
+  normalizeInstagramHandle,
+} from '../utils/event-field-limits';
+import {
   isCompleteOrganiser,
   organiserFromPreset,
   presetDisplayLabel,
@@ -34,6 +56,7 @@ import RichTextEditor from './RichTextEditor';
 import AdminOrganiserEmailField from './AdminOrganiserEmailField';
 import AdminPlaceMapPicker from './AdminPlaceMapPicker';
 import UrlInput from './UrlInput';
+import PrefixInput from './PrefixInput';
 import AutosaveStatus from './AutosaveStatus';
 import EventCategorySelect from './EventCategorySelect';
 import EventStampSelect from './EventStampSelect';
@@ -77,7 +100,7 @@ function TabBlock({ title, hint, accent = '', children }) {
   );
 }
 
-function FieldGroup({ label, required = false, children, hint }) {
+function FieldGroup({ label, required = false, children, hint, error }) {
   return (
     <div className="admin-form__group">
       {label && (
@@ -87,6 +110,7 @@ function FieldGroup({ label, required = false, children, hint }) {
         </label>
       )}
       {children}
+      {error && <p className="admin-form__field-error">{error}</p>}
       {hint && <p className="admin-form__hint">{hint}</p>}
     </div>
   );
@@ -204,29 +228,23 @@ export default function AdminEventFormModal({
   const [pendingIncompleteTabs, setPendingIncompleteTabs] = useState([]);
   const [attentionTabs, setAttentionTabs] = useState(() => new Set());
   const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
+  const [rejectedDateError, setRejectedDateError] = useState({ dateStart: '', dateEnd: '' });
   const panelRef = useRef(null);
   const skipFormResetRef = useRef(false);
+  const formSessionOpenRef = useRef(false);
+  const eventRef = useRef(event);
   const formRef = useRef(form);
   const persistSoonRef = useRef(() => {});
   const { run: runAutosave, remember: rememberAutosave, status: autosaveStatus } = useAutosaveRunner();
   const navigate = useNavigate();
   const { events } = useEvents();
   const { mounted, visible } = useAnimatedPresence(open, 240);
-  const eventId = event?.id ?? null;
-  const eventFormSyncKey = event
-    ? [
-      event.id,
-      event.updatedAt?.toMillis?.() ?? event.updatedAt?.seconds ?? '',
-      event.category,
-      event.externalPageEnabled,
-      event.externalPageUrl ?? '',
-      event.calendarOnly,
-    ].join(':')
-    : 'new';
 
   useEffect(() => {
     formRef.current = form;
   }, [form]);
+
+  eventRef.current = event;
 
   const visibleTabs = shareMode
     ? TABS.filter((tab) => tab.id !== 'sharing')
@@ -235,25 +253,30 @@ export default function AdminEventFormModal({
   useEffect(() => {
     if (!open) {
       setSaveSuccessOpen(false);
-      return;
-    }
-
-    if (skipFormResetRef.current) {
+      formSessionOpenRef.current = false;
       skipFormResetRef.current = false;
       return;
     }
 
+    if (formSessionOpenRef.current || skipFormResetRef.current) {
+      skipFormResetRef.current = false;
+      formSessionOpenRef.current = true;
+      return;
+    }
+
+    formSessionOpenRef.current = true;
+    const currentEvent = eventRef.current;
     setForm(() => {
-      const next = eventToFormState(event);
+      const next = eventToFormState(currentEvent);
       // New drafts only — existing events must keep the public seed (id / stored).
-      if (!event?.id && !next.coverPatternSeed) {
+      if (!currentEvent?.id && !next.coverPatternSeed) {
         next.coverPatternSeed = createCoverPatternSeed('event-cover');
       }
       formRef.current = next;
       rememberAutosave(formStateToPayload(next));
       return next;
     });
-    setSlugTouched(Boolean(event?.slug && event.slug !== event?.id));
+    setSlugTouched(Boolean(currentEvent?.slug && currentEvent.slug !== currentEvent?.id));
     setActiveTab('basic');
     setTabDirection(0);
     setError('');
@@ -266,7 +289,8 @@ export default function AdminEventFormModal({
     setPendingIncompleteTabs([]);
     setAttentionTabs(new Set());
     setSaveSuccessOpen(false);
-  }, [open, event, eventFormSyncKey]);
+    setRejectedDateError({ dateStart: '', dateEnd: '' });
+  }, [open, rememberAutosave]);
 
   useEffect(() => {
     if (open && form.calendarOnly) {
@@ -383,6 +407,12 @@ export default function AdminEventFormModal({
   };
 
   const handleStartDateChange = (value) => {
+    if (value && !isEventDateYearAllowed(value)) {
+      setRejectedDateError((prev) => ({ ...prev, dateStart: getEventDateYearError(value) }));
+      return;
+    }
+
+    setRejectedDateError((prev) => ({ ...prev, dateStart: '' }));
     setForm((prev) => {
       const next = {
         ...prev,
@@ -392,6 +422,16 @@ export default function AdminEventFormModal({
       formRef.current = next;
       return next;
     });
+  };
+
+  const handleEndDateChange = (value) => {
+    if (value && !isEventDateYearAllowed(value)) {
+      setRejectedDateError((prev) => ({ ...prev, dateEnd: getEventDateYearError(value) }));
+      return;
+    }
+
+    setRejectedDateError((prev) => ({ ...prev, dateEnd: '' }));
+    updateField('dateEnd', value);
   };
 
   const handleStartDateBlur = () => {
@@ -692,10 +732,23 @@ export default function AdminEventFormModal({
     const calendarOnlyMode = form.calendarOnly === true;
     const publishing = isEventPublishable(form);
 
+    const titleError = getEventTitleError(form.title);
+    if (titleError) {
+      return { message: titleError, tab: 'basic' };
+    }
+
+    const dateStartError = rejectedDateError.dateStart || getEventDateYearError(form.dateStart);
+    const dateEndError = rejectedDateError.dateEnd || getEventDateYearError(form.dateEnd);
+    if (dateStartError || dateEndError) {
+      return { message: dateStartError || dateEndError, tab: 'basic' };
+    }
+
+    const priceError = getEventPriceError(form.price);
+    if (priceError) {
+      return { message: priceError, tab: 'basic' };
+    }
+
     if (!publishing) {
-      if (form.title.trim().length > 200) {
-        return { message: 'Název může mít maximálně 200 znaků.', tab: 'basic' };
-      }
       if (form.place.trim().length > 200) {
         return { message: 'Místo může mít maximálně 200 znaků.', tab: 'basic' };
       }
@@ -711,9 +764,6 @@ export default function AdminEventFormModal({
       }
       const slugError = validateEventSlug(form.slug);
       if (slugError) return { message: slugError, tab: 'basic' };
-      if (form.title.trim().length > 200) {
-        return { message: 'Název může mít maximálně 200 znaků.', tab: 'basic' };
-      }
       if (form.place.trim().length > 200) {
         return { message: 'Místo může mít maximálně 200 znaků.', tab: 'basic' };
       }
@@ -768,6 +818,20 @@ export default function AdminEventFormModal({
       };
     }
 
+    const organiserFieldError = form.organisers
+      .map((item) => getOrganiserFieldError(item))
+      .find(Boolean);
+    if (organiserFieldError) {
+      return { message: organiserFieldError, tab: 'organisers' };
+    }
+
+    const participantFieldError = form.participants
+      .map((item) => getParticipantNameError(item.name))
+      .find(Boolean);
+    if (participantFieldError) {
+      return { message: participantFieldError, tab: 'registration' };
+    }
+
     return null;
   };
 
@@ -789,6 +853,10 @@ export default function AdminEventFormModal({
   };
 
   const calendarOnlyUi = form.calendarOnly === true;
+  const titleError = getEventTitleError(form.title);
+  const dateStartError = rejectedDateError.dateStart || getEventDateYearError(form.dateStart);
+  const dateEndError = rejectedDateError.dateEnd || getEventDateYearError(form.dateEnd);
+  const priceError = getEventPriceError(form.price);
   const filledOrganisers = form.organisers.filter(organiserHasContent).length;
   const filledParticipants = form.participants.filter((participant) => participant.name.trim()).length;
   const tabBadges = {
@@ -836,12 +904,12 @@ export default function AdminEventFormModal({
             <AdminTabPanel id="basic" idPrefix="event" activeTab={calendarOnlyUi ? 'basic' : activeTab} direction={tabDirection}>
               <div className="admin-event-tab">
                 <TabBlock title="O akci" hint="Název, adresa, razítko a kategorie." accent="identity">
-                  <FieldGroup label="Název akce" required>
+                  <FieldGroup label="Název akce" required error={titleError}>
                     <input
                       type="text"
                       className="admin-form__input"
                       value={form.title}
-                      maxLength={200}
+                      maxLength={EVENT_TITLE_MAX}
                       onChange={(e) => updateField('title', e.target.value)}
                       placeholder="Např. Letní setkání Popcorn"
                       required
@@ -894,8 +962,10 @@ export default function AdminEventFormModal({
                           type="checkbox"
                           checked={form.externalPageEnabled}
                           disabled={saving || form.calendarOnly}
+                          data-no-autosave="true"
                           onChange={(event) => {
                             const enabled = event.target.checked;
+                            const scrollTop = panelRef.current?.scrollTop;
                             setForm((prev) => {
                               const next = {
                                 ...prev,
@@ -904,6 +974,12 @@ export default function AdminEventFormModal({
                               };
                               formRef.current = next;
                               return next;
+                            });
+                            window.requestAnimationFrame(() => {
+                              if (panelRef.current && scrollTop != null) {
+                                panelRef.current.scrollTop = scrollTop;
+                              }
+                              persistSoonRef.current();
                             });
                           }}
                         />
@@ -970,11 +1046,13 @@ export default function AdminEventFormModal({
 
                 <TabBlock title="Termín" hint="Kdy akce začíná a končí." accent="dates">
                   <div className="admin-form__row admin-form__row--dates">
-                    <FieldGroup label="Datum začátku" required>
+                    <FieldGroup label="Datum začátku" required error={dateStartError}>
                       <input
                         type="date"
                         className="admin-form__input"
                         value={form.dateStart}
+                        min={EVENT_DATE_MIN}
+                        max={EVENT_DATE_MAX}
                         onChange={(e) => handleStartDateChange(e.target.value)}
                         onBlur={handleStartDateBlur}
                         required
@@ -989,12 +1067,14 @@ export default function AdminEventFormModal({
                         onBlur={handleStartTimeBlur}
                       />
                     </FieldGroup>
-                    <FieldGroup label="Datum konce" required>
+                    <FieldGroup label="Datum konce" required error={dateEndError}>
                       <input
                         type="date"
                         className="admin-form__input"
                         value={form.dateEnd}
-                        onChange={(e) => updateField('dateEnd', e.target.value)}
+                        min={EVENT_DATE_MIN}
+                        max={EVENT_DATE_MAX}
+                        onChange={(e) => handleEndDateChange(e.target.value)}
                         required
                       />
                     </FieldGroup>
@@ -1023,15 +1103,15 @@ export default function AdminEventFormModal({
                         placeholder="Adresa nebo název místa"
                       />
                     </FieldGroup>
-                    <FieldGroup label="Cena (Kč)">
+                    <FieldGroup label="Cena (Kč)" error={priceError}>
                       <input
                         type="number"
-                        min="0"
+                        min={EVENT_PRICE_MIN}
+                        max={EVENT_PRICE_MAX}
                         step="1"
                         className="admin-form__input"
                         value={form.price}
                         onChange={(e) => updateField('price', e.target.value)}
-                        placeholder="0"
                       />
                     </FieldGroup>
                   </div>
@@ -1217,25 +1297,27 @@ export default function AdminEventFormModal({
                     <div key={`organiser-${index}`} className="admin-form__repeatable-item admin-form__repeatable-item--people">
                       <div className="admin-form__card-badge">#{index + 1}</div>
                       <div className="admin-form__row">
-                        <FieldGroup label="Jméno" required>
+                        <FieldGroup label="Jméno" required error={getOrganiserNameError(organiser.name)}>
                           <input
                             type="text"
                             className="admin-form__input"
                             value={organiser.name}
+                            maxLength={ORGANISER_NAME_MAX}
                             onChange={(e) => updateOrganiser(index, 'name', e.target.value)}
                           />
                         </FieldGroup>
-                        <FieldGroup label="Přezdívka">
+                        <FieldGroup label="Přezdívka" error={getOrganiserNickError(organiser.nick)}>
                           <input
                             type="text"
                             className="admin-form__input"
                             value={organiser.nick}
+                            maxLength={ORGANISER_NICK_MAX}
                             onChange={(e) => updateOrganiser(index, 'nick', e.target.value)}
                           />
                         </FieldGroup>
                       </div>
                       <div className="admin-form__row">
-                        <FieldGroup label="Ročník Zapalovače">
+                        <FieldGroup label="Ročník Zapalovače" error={getZapalovacYearError(organiser.zapalovacYear)}>
                           <input
                             type="text"
                             className="admin-form__input"
@@ -1247,13 +1329,13 @@ export default function AdminEventFormModal({
                         </FieldGroup>
                       </div>
                       <div className="admin-form__row">
-                        <FieldGroup label="E-mail">
+                        <FieldGroup label="E-mail" error={getOrganiserEmailError(organiser.email)}>
                           <AdminOrganiserEmailField
                             value={organiser.email}
                             onChange={(email) => updateOrganiser(index, 'email', email)}
                           />
                         </FieldGroup>
-                        <FieldGroup label="Telefon">
+                        <FieldGroup label="Telefon" error={getOrganiserPhoneError(organiser.phone)}>
                           <input
                             type="text"
                             className="admin-form__input"
@@ -1264,20 +1346,18 @@ export default function AdminEventFormModal({
                       </div>
                       <div className="admin-form__row">
                         <FieldGroup label="Instagram">
-                          <input
-                            type="text"
-                            className="admin-form__input"
+                          <PrefixInput
+                            prefix="@"
                             value={organiser.instagram}
-                            onChange={(e) => updateOrganiser(index, 'instagram', e.target.value)}
-                            placeholder="@uzivatel"
+                            onChange={(next) => updateOrganiser(index, 'instagram', normalizeInstagramHandle(next) || next)}
+                            placeholder="uzivatel"
+                            autoComplete="off"
                           />
                         </FieldGroup>
-                        <FieldGroup label="Facebook">
-                          <input
-                            type="text"
-                            className="admin-form__input"
+                        <FieldGroup label="Facebook" error={getOrganiserFacebookError(organiser.facebook)}>
+                          <UrlInput
                             value={organiser.facebook}
-                            onChange={(e) => updateOrganiser(index, 'facebook', e.target.value)}
+                            onChange={(next) => updateOrganiser(index, 'facebook', next)}
                             placeholder="facebook.com/..."
                           />
                         </FieldGroup>

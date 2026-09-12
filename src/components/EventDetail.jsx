@@ -6,6 +6,7 @@ import { buildGoogleCalendarUrl } from '../utils/google-calendar';
 import { transformRichTextForDisplay } from '../utils/rich-text-embeds';
 import { siteText } from '../utils/admin-text';
 import { trackOutboundClick } from '../utils/analytics-track';
+import { formatExternalContactLabel } from '../utils/contact-links';
 import EventCategoryLabel from './EventCategoryLabel';
 import EventStampBadge from './EventStampBadge';
 import EventGallery from './EventGallery';
@@ -183,7 +184,7 @@ function OrganiserCard({ contact }) {
       type: 'facebook',
       href: contact.facebookHref,
       label: siteText('common.contact.facebook'),
-      value: contact.facebook,
+      value: formatExternalContactLabel(contact.facebook),
       external: true,
     },
   ].filter((item) => item.href && item.value);

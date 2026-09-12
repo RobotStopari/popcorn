@@ -1,3 +1,7 @@
+export function formatExternalContactLabel(value) {
+  return String(value || '').trim().replace(/^https?:\/\//i, '');
+}
+
 export function normalizeSocialContactUrl(value, type) {
   const trimmed = value?.trim();
   if (!trimmed) return '';

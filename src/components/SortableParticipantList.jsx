@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { PARTICIPANT_NAME_MAX, getParticipantNameError } from '../utils/event-field-limits';
 import SortableList from './SortableList';
 
 function TrashIcon() {
@@ -66,27 +67,33 @@ export default function SortableParticipantList({
           <span className="admin-form__participant-index" aria-hidden="true">
             {index + 1}
           </span>
-          <input
-            ref={(element) => {
-              if (element) {
-                inputRefs.current[participant.clientId] = element;
-              } else {
-                delete inputRefs.current[participant.clientId];
-              }
-            }}
-            type="text"
-            className="admin-form__input"
-            value={participant.name}
-            onChange={(event) => onUpdate(index, event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                onAdd?.();
-              }
-            }}
-            placeholder="Jméno účastníka"
-            aria-label={`Jméno účastníka ${index + 1}`}
-          />
+          <div className="admin-form__participant-field">
+            <input
+              ref={(element) => {
+                if (element) {
+                  inputRefs.current[participant.clientId] = element;
+                } else {
+                  delete inputRefs.current[participant.clientId];
+                }
+              }}
+              type="text"
+              className="admin-form__input"
+              value={participant.name}
+              maxLength={PARTICIPANT_NAME_MAX}
+              onChange={(event) => onUpdate(index, event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  onAdd?.();
+                }
+              }}
+              placeholder="Jméno účastníka"
+              aria-label={`Jméno účastníka ${index + 1}`}
+            />
+            {getParticipantNameError(participant.name) && (
+              <p className="admin-form__field-error">{getParticipantNameError(participant.name)}</p>
+            )}
+          </div>
           <button
             type="button"
             className="admin-form__participant-remove"
