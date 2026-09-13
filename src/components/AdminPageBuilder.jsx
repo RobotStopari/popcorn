@@ -629,6 +629,17 @@ export default function AdminPageBuilder({
       skipTitleToH1SyncRef.current = true;
       setForm((prev) => ({ ...prev, title: patch.text }));
     }
+
+    if (
+      page?.id === 'home'
+      && patch.text !== undefined
+      && sourceBlock?.type === PAGE_BLOCK_TYPES.citation
+      && sourceBlock.id === blocksRef.current.find((item) => item.type === PAGE_BLOCK_TYPES.citation)?.id
+    ) {
+      const nextIntro = typeof patch.text === 'string' ? patch.text : '';
+      homeIntroRef.current = nextIntro;
+      setHomeIntro(nextIntro);
+    }
   };
 
   const handleRequestRemoveBlock = (blockId) => {
@@ -656,9 +667,7 @@ export default function AdminPageBuilder({
 
   const savePage = async ({ close = false } = {}) => {
     const currentForm = formRef.current;
-    const currentBlocks = page?.id === 'home'
-      ? applyHomeIntroToBlocks(blocksRef.current, homeIntroRef.current)
-      : blocksRef.current;
+    const currentBlocks = blocksRef.current;
     const h1Block = currentBlocks.find((block) => block.type === PAGE_BLOCK_TYPES.h1);
     const resolvedTitle = page?.id === NOT_FOUND_PAGE_ID
       ? NOT_FOUND_PAGE_ADMIN_TITLE
@@ -849,7 +858,14 @@ export default function AdminPageBuilder({
                     className="admin-form__input"
                     rows={3}
                     value={homeIntro}
-                    onChange={(e) => setHomeIntro(e.target.value)}
+                    onChange={(e) => {
+                      const nextIntro = e.target.value;
+                      homeIntroRef.current = nextIntro;
+                      setHomeIntro(nextIntro);
+                      const nextBlocks = applyHomeIntroToBlocks(blocksRef.current, nextIntro);
+                      blocksRef.current = nextBlocks;
+                      setBlocks(nextBlocks);
+                    }}
                     required
                   />
                   <p className="admin-form__hint">{getPageIntroFieldCopy(page)?.hint}</p>
